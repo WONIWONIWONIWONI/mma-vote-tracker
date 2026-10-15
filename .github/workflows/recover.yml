@@ -1,0 +1,29 @@
+name: Recover MMA collector
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Collect MMA TOP6 votes']
+    types: [completed]
+  schedule:
+    - cron: '2,17,32,47 * * * *'
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: mma-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recover missing or stalled worker
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python collector/supervisor.py

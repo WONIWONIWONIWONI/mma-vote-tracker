@@ -1,13 +1,14 @@
 /* Short-horizon descriptive projection, not a probability or a seasonal model. */
 (function(root){
  'use strict';
- function fit(points,minutes=60){
+ function fit(points,minutes=60,options={}){
   const clean=points.filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.v)).sort((a,b)=>a.t-b.t);
   if(!clean.length)return null;
   const last=clean.at(-1), rows=clean.filter(p=>p.t>=last.t-minutes*60000);
   const span=(last.t-rows[0].t)/60000;
   if(rows.length<6||span<15)return null;
-  if(rows.some((p,i)=>i&&(p.t-rows[i-1].t)>10*60000))return null;
+  const maxGap=Math.max(0,...rows.slice(1).map((p,i)=>(p.t-rows[i].t)/60000));
+  if(maxGap>(options.allowGaps?30:10))return null;
   const halfLife=Math.max(10,minutes/2);
   let sw=0,sx=0,sy=0;
   const data=rows.map(p=>{const x=(p.t-last.t)/60000,w=2**(x/halfLife);sw+=w;sx+=w*x;sy+=w*p.v;return {x,y:p.v,w};});
@@ -18,10 +19,10 @@
   const slope=xy/xx,intercept=my-slope*mx;
   const error=data.reduce((s,p)=>s+p.w*(p.y-intercept-slope*p.x)**2,0);
   const r2=yy>1e-9?Math.max(0,1-error/yy):1;
-  return {slope,intercept,r2,rmse:Math.sqrt(error/sw),span,n:rows.length,last:last.v,time:last.t,horizon:Math.min(30,span/2)};
+  return {slope,intercept,r2,rmse:Math.sqrt(error/sw),span,n:rows.length,last:last.v,time:last.t,horizon:Math.min(30,span/2),maxGap,hasGaps:maxGap>10};
  }
  function forecast(points,minutes=60,requestedHorizon=null){
-  const model=fit(points,minutes);
+  const model=fit(points,minutes,{allowGaps:true});
   if(!model||model.r2<0.3)return null;
   const horizon=Number.isFinite(requestedHorizon)&&requestedHorizon>0?Math.min(1440,requestedHorizon):model.horizon;
   return {...model,horizon,points:[0,1,2,3,4,5,6].map(i=>{const m=i*horizon/6;return {time:model.time+m*60000,value:model.last+model.slope*m};})};

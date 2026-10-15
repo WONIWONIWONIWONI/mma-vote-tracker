@@ -51,6 +51,7 @@
     $('source-time').textContent=kst(last.sourceAt);
     $('collected-time').textContent=`${age<1?'1분 미만':age+'분'} 전 관측`;
     let note=stopped?'수집 기간이 끝났습니다. 마지막 기록을 표시합니다.':state.loadFailed?'멜론 직접 조회에 실패해 마지막 확인값을 표시합니다. 새로고침으로 다시 시도하세요.':'접속·새로고침 시 멜론 직접 조회 · 자동 조회 없음 · 추이용 서버 기록은 약 5분 간격입니다.';
+    if(state.archive?.collector?.state==='error')note+=' 추이용 수집기가 오류를 재시도하고 있습니다.';
     if(state.archiveFailed)note+=' 과거 기록 동기화가 지연되어 기존 기록을 유지합니다.';
     const archiveLast=state.archive?.snapshots.at(-1),archiveAge=archiveLast?Math.floor((Date.now()-Date.parse(archiveLast.sourceAt))/60000):0;
     if(archiveLast&&archiveAge>=2&&!stopped)note+=` 추이용 공용 이력은 ${kst(archiveLast.sourceAt,'time')}까지입니다 (${archiveAge}분 전).`;
@@ -85,19 +86,29 @@
     return {ids:valid.filter(v=>v.delta===max).map(v=>v.id),label:valid.length<row.values.length?'관측 팀 중 최다':'최다 증가'};
   }
   function renderHourly(){
-    const {teams,dates,date,rows}=hourlyModel();
+    const {teams,dates,date,rows}=hourlyModel(),mobile=matchMedia('(max-width:760px)').matches;
+    const limit=mobile&&state.hourlyLimit===6?3:state.hourlyLimit,shown=rows.slice(0,limit);
+    const shortName=t=>t.id==='3709231'?'리센느':t.name;
     $('hourly-date').innerHTML=dates.map(d=>`<option value="${d}"${d===date?' selected':''}>${d.replaceAll('-','.')} KST</option>`).join('');
-    $('hourly-list').innerHTML=`<table class="hourly-compact"><thead><tr><th>시간 / 최다 증가</th>${teams.map(t=>`<th style="color:${colorOf(t)}">${escapeHTML(t.name)}</th>`).join('')}</tr></thead><tbody>`+rows.slice(0,state.hourlyLimit).map(row=>{
-      const winner=hourWinner(row),best=teams.filter(t=>winner.ids.includes(t.id));
-      const max=Math.max(1,...row.values.map(v=>Math.abs(v.delta??0)));
-      const end=MMAHourly.dayKey(row.end)!==row.date?'24:00':kst(row.end,'time');
+    const table=`<table class="hourly-compact"><thead><tr><th>시간 / 최다 증가</th>${teams.map(t=>`<th style="color:${colorOf(t)}">${escapeHTML(t.name)}</th>`).join('')}</tr></thead><tbody>`+shown.map(row=>{
+      const winner=hourWinner(row),best=teams.filter(t=>winner.ids.includes(t.id)),max=Math.max(1,...row.values.map(v=>Math.abs(v.delta??0))),end=MMAHourly.dayKey(row.end)!==row.date?'24:00':kst(row.end,'time');
       return `<tr><th><b>${kst(row.start,'time')}–${end}</b><small>${best.length?escapeHTML(best.map(t=>t.name).join(' · '))+' ★':winner.label}</small><em>${row.ongoing?'집계 중':row.values.every(v=>v.complete)?'1시간 전체':'일부 구간'}</em></th>`+teams.map(t=>{
         const v=row.values.find(v=>v.id===t.id),coverage=v.delta==null?'기록 부족':`${kst(v.from,'time')}–${kst(v.to,'time')} 관측`;
         return `<td class="${winner.ids.includes(t.id)?'hour-winner':''}" style="--color:${colorOf(t)}" title="${coverage}"><strong>${v.delta==null?'—':change(v.delta)}</strong><span class="mini-bar"><i style="width:${Math.abs(v.delta??0)/max*100}%"></i></span><small>${v.complete?'':coverage}</small></td>`;
       }).join('')+'</tr>';
     }).join('')+'</tbody></table>';
-    $('hourly-more').hidden=rows.length<=state.hourlyLimit;$('hourly-more').textContent=`이날 전체 시간 보기 (${rows.length}개)`;
-    $('hourly-note').textContent='★ 같은 관측 구간의 최다 증가 팀(동률 포함) · 막대는 같은 행 안에서 비교 · 일부 구간은 실제 관측 시각을 표시합니다. 관측 구간이 다른 팀들은 우승 표시 없이 비교합니다.';
+    const cards=shown.map(row=>{
+      const winner=hourWinner(row),best=teams.filter(t=>winner.ids.includes(t.id)),max=Math.max(1,...row.values.map(v=>Math.abs(v.delta??0))),end=MMAHourly.dayKey(row.end)!==row.date?'24:00':kst(row.end,'time');
+      const label=row.ongoing?'집계 중':row.values.every(v=>v.complete)?'1시간 전체':'일부 구간';
+      const lead=best.length?`${best.length>1?'공동 ':''}최다 증가 · ${escapeHTML(best.map(shortName).join(' · '))} <b>${change(row.values.find(v=>v.id===best[0].id).delta)}표</b>`:winner.label;
+      return `<article class="hour-card"><div class="hour-card-head"><h3>${kst(row.start,'time')}–${end}</h3><span>${label}</span></div><p class="hour-card-winner">${lead}</p><div class="hour-card-grid">`+teams.map(t=>{
+        const v=row.values.find(v=>v.id===t.id),coverage=v.delta==null?'기록 부족':v.complete?'':`${kst(v.from,'time')}–${kst(v.to,'time')} 관측`;
+        return `<div class="hour-card-team ${winner.ids.includes(t.id)?'hour-card-best':''}" style="--color:${colorOf(t)}"><div><span class="hour-card-name">${escapeHTML(shortName(t))}</span><strong>${v.delta==null?'—':change(v.delta)+'표'}</strong></div><span class="mini-bar"><i style="width:${Math.abs(v.delta??0)/max*100}%"></i></span>${coverage?`<small>${coverage}</small>`:''}</div>`;
+      }).join('')+'</div></article>';
+    }).join('');
+    $('hourly-list').innerHTML=`<div class="hourly-desktop">${table}</div><div class="hourly-cards">${cards}</div>`;
+    $('hourly-more').hidden=rows.length<=limit;$('hourly-more').textContent=`이날 전체 시간 보기 (${rows.length}개)`;
+    $('hourly-note').textContent='같은 관측 구간에서 가장 많이 증가한 팀을 강조합니다. 일부 구간은 실제 관측 시각을 표시하며, 관측 구간이 다른 팀들은 최다 증가를 정하지 않습니다.';
   }
   function axisLabel(value,axis){
     return state.metric==='share'?value.toFixed(axis.decimals)+'%':fmt(Math.round(value));
@@ -143,8 +154,7 @@
     const g=graphGeometry(),{rows,series,forecasts,lastTime,W,H,box,x,y,xmin,xmax,axis}=g,svg=$('trend-chart');
     svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.height=`${H}px`;svg.dataset.ymin=g.ymin;svg.dataset.ymax=g.ymax;svg.dataset.xmin=xmin;svg.dataset.xmax=xmax;
     svg.style.touchAction='none';svg.style.cursor=trendDrag?'grabbing':'grab';
-    for(const [id,value] of [['trend-zoom',state.zoom],['trend-time-zoom',state.timeZoom]]){const control=$(id);control.querySelectorAll('[data-custom]').forEach(o=>o.remove());if(![...control.options].some(o=>+o.value===value)){const option=new Option(value.toFixed(1)+'배',String(value));option.dataset.custom='true';control.add(option);}control.value=String(value);}
-    $('trend-zoom-in').disabled=state.zoom>=16&&state.timeZoom>=16;$('trend-zoom-out').disabled=state.zoom<=1&&state.timeZoom<=1;
+    svg.dataset.zoomX=state.timeZoom;svg.dataset.zoomY=state.zoom;
     $('chart-unit').textContent=state.metric==='share'?'전체 대비 점유율 (%)':'득표수 (표)';
     $('chart-axis-note').textContent=`시간축 ${Number(state.timeZoom.toFixed(1))}배 · 세로 ${Number(state.zoom.toFixed(1))}배 · ${axisRangeLabel(g)}`;
     $('chart-legend').innerHTML=latest().top4.map(t=>`<button class="legend-item team-toggle ${state.hiddenTeams.has(t.id)?'muted-team':''}" data-team="${escapeHTML(t.id)}" aria-pressed="${!state.hiddenTeams.has(t.id)}" style="--color:${colorOf(t)}"><i></i>${escapeHTML(t.name)}</button>`).join('');
@@ -160,7 +170,8 @@
     svg.innerHTML=`<title>선택한 팀의 실제 추이와 조건부 예측</title><defs><clipPath id="trend-clip"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs>${grid.join('')}<g clip-path="url(#trend-clip)">${lines}${hits}${future}</g>`;
     svg.querySelectorAll('[data-point]').forEach(el=>{const show=()=>{if(!trendDrag)showTooltip(rows[+el.dataset.point],series,el,g);};el.addEventListener('pointerenter',show);el.addEventListener('focus',show);el.addEventListener('pointerleave',hideTooltip);el.addEventListener('blur',hideTooltip);});
     const fh=svg.querySelector('#forecast-hit');if(fh){fh.addEventListener('pointermove',e=>{if(trendDrag)return;const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,t=Math.max(lastTime,Math.min(xmax,xmin+(px-box.x)/box.w*(xmax-xmin)));const tt=$('tooltip');tt.innerHTML=`<strong>${kst(t)} · 예측(실제값 아님)</strong>`+forecasts.filter(f=>t<=f.points.at(-1).time).map(f=>`<p><span style="color:${f.color}">${escapeHTML(f.name)}</span><b>${state.metric==='share'?Math.max(0,Math.min(100,f.last+f.slope*(t-lastTime)/60000)).toFixed(2)+'%':fmt(Math.round(Math.max(0,f.last+f.slope*(t-lastTime)/60000)))+'표'}</b></p>`).join('');tt.hidden=false;tt.style.left=Math.max(0,Math.min(r.width-tt.offsetWidth,(e.clientX-r.left)-tt.offsetWidth))+'px';tt.style.top='38px';});fh.addEventListener('pointerleave',hideTooltip);}
-    $('chart-note').textContent=`실선: 실제 관측 · ${state.forecast?(forecasts.length?`점선: 최근 60분 가중 선형회귀 (${forecasts.length}/${series.length}팀) · ${state.forecastMinutes}분 조건부 추정`:'예측 보류: 관측 부족·공백·정정 또는 불안정한 추세'):'예측 끔'} · 미관측 구간은 직선 연결${state.forecast&&state.forecastMinutes>30?' · 긴 예측일수록 오차가 커질 수 있습니다.':''}`;
+    const gapModels=forecasts.filter(f=>f.hasGaps),gapNote=gapModels.length?` · 최대 ${Math.max(...gapModels.map(f=>f.maxGap)).toFixed(1)}분 관측 공백 포함 · 추정 신뢰도 낮음`:'';
+    $('chart-note').textContent=`실선: 실제 관측 · ${state.forecast?(forecasts.length?`점선: 최근 60분 가중 선형회귀 (${forecasts.length}/${series.length}팀) · ${state.forecastMinutes}분 조건부 추정`:'예측 대기: 관측 부족·30분 초과 공백·득표 정정 또는 불안정한 추세'):'예측 끔'} · 미관측 구간은 직선 연결${gapNote}${state.forecast&&state.forecastMinutes>30?' · 긴 예측일수록 오차가 커질 수 있습니다.':''}${forecasts.length&&xmax<=lastTime?' · 예측선은 현재 화면 오른쪽에 있습니다. 최신으로 버튼을 눌러 확인하세요.':''}`;
     $('chart-window').textContent=`${kst(xmin,'short')} — ${kst(xmax,'short')}${xmax>lastTime?' (예측 구간 포함)':' 실제 관측 구간'}`;
   }
   function showTooltip(s,series,el,g){const tt=$('tooltip');tt.innerHTML=`<strong>${kst(s.sourceAt)} KST</strong>`+series.map(line=>{const v=getValue(s,line);return `<p><span><i style="background:${line.color}"></i>${escapeHTML(line.name)}</span><b>${v==null?'—':state.metric==='share'?v.toFixed(2)+'%':fmt(v)+'표'}</b></p>`;}).join('');tt.hidden=false;const wrap=$('trend-chart').getBoundingClientRect();const p=g.x(Date.parse(s.sourceAt))/g.W*wrap.width;tt.style.left=Math.max(0,Math.min(wrap.width-tt.offsetWidth,p+12))+'px';tt.style.top='38px';}
@@ -280,7 +291,7 @@
   document.querySelectorAll('[data-range]').forEach(button=>button.addEventListener('click',()=>{state.range=button.dataset.range;state.timeZoom=1;state.timeEnd=null;state.yView=null;document.querySelectorAll('[data-range]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));});state.yView=null;hideTooltip();renderChart();}));
   $('hourly-date').addEventListener('change',event=>{state.hourlyDate=event.target.value;state.hourlyLimit=6;renderHourly();});
   $('hourly-more').addEventListener('click',()=>{state.hourlyLimit=24;renderHourly();});
-  $('refresh-button').addEventListener('click',()=>refresh(true));$('csv-button').addEventListener('click',exportCSV);$('copy-button').addEventListener('click',copySummary);$('load-more').addEventListener('click',()=>{state.historyLimit+=12;renderHistory();});$('history-details').addEventListener('toggle',()=>{$('history-toggle-label').textContent=$('history-details').open?'접기':'펼치기';});let resizeTimer;addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(renderChart,120);});
+  $('refresh-button').addEventListener('click',()=>refresh(true));$('csv-button').addEventListener('click',exportCSV);$('copy-button').addEventListener('click',copySummary);$('load-more').addEventListener('click',()=>{state.historyLimit+=12;renderHistory();});$('history-details').addEventListener('toggle',()=>{$('history-toggle-label').textContent=$('history-details').open?'접기':'펼치기';});let resizeTimer;addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderChart();renderHourly();},120);});
   $('chart-legend').addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(!b)return;const id=b.dataset.team;if(state.hiddenTeams.has(id))state.hiddenTeams.delete(id);else if(getSeries().length>1)state.hiddenTeams.add(id);state.zoom=1;state.yView=null;hideTooltip();renderChart();});
   function setChartZoom(nextX,nextY,anchor={x:.5,y:.5}){
     const g=graphGeometry(),atTime=g.xmin+anchor.x*(g.xmax-g.xmin),atValue=g.ymax-anchor.y*(g.ymax-g.ymin);
@@ -288,11 +299,7 @@
     state.timeZoom=nextX;state.yView={min:atValue-(1-anchor.y)*spanY,max:atValue+anchor.y*spanY};state.zoom=nextY;
     state.timeEnd=atTime+(1-anchor.x)*(g.baseXmax-g.baseXmin)/nextX;hideTooltip();renderChart();
   }
-  $('trend-zoom').addEventListener('change',e=>{state.zoom=+e.target.value;state.yView=null;hideTooltip();renderChart();});
-  $('trend-time-zoom').addEventListener('change',e=>setChartZoom(+e.target.value,state.zoom));
   $('trend-focus').addEventListener('change',()=>{state.hiddenTeams.delete($('trend-focus').value);state.yView=null;hideTooltip();renderChart();});
-  $('trend-zoom-in').addEventListener('click',()=>setChartZoom(Math.min(16,state.timeZoom*2),Math.min(16,state.zoom*2)));
-  $('trend-zoom-out').addEventListener('click',()=>setChartZoom(Math.max(1,state.timeZoom/2),Math.max(1,state.zoom/2)));
   let trendDrag=null,trendPinch=null;const trendPointers=new Map();
   function chartPointer(clientX,clientY,g=graphGeometry()){
     const rect=$('trend-chart').getBoundingClientRect();return {x:Math.max(0,Math.min(1,((clientX-rect.left)*g.W/rect.width-g.box.x)/g.box.w)),y:Math.max(0,Math.min(1,((clientY-rect.top)*g.H/rect.height-g.box.y)/g.box.h))};
@@ -328,6 +335,7 @@
   ['pointerup','pointercancel','lostpointercapture'].forEach(name=>$('trend-chart').addEventListener(name,endTrendDrag));
   ['gesturestart','gesturechange','gestureend'].forEach(name=>$('trend-chart').addEventListener(name,e=>e.preventDefault(),{passive:false}));
   $('trend-chart').addEventListener('wheel',e=>{
+    if(!e.ctrlKey)return;
     e.preventDefault();const g=graphGeometry(),rect=$('trend-chart').getBoundingClientRect();
     const anchor={x:Math.max(0,Math.min(1,((e.clientX-rect.left)*g.W/rect.width-g.box.x)/g.box.w)),y:Math.max(0,Math.min(1,((e.clientY-rect.top)*g.H/rect.height-g.box.y)/g.box.h))},factor=e.deltaY<0?2:.5;
     setChartZoom(Math.max(1,Math.min(16,state.timeZoom*factor)),Math.max(1,Math.min(16,state.zoom*factor)),anchor);

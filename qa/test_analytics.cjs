@@ -20,3 +20,11 @@ assert.equal(extended.horizon,180);
 assert.equal(extended.points.at(-1).time-extended.time,180*60000);
 assert.equal(extended.points.at(-1).value,extended.last+extended.slope*180);
 console.log('User-selected forecast horizon extends the same fitted trend to three hours.');
+
+const gap=points(100,2).filter((p,i)=>i<25||i>35);
+assert.equal(A.fit(gap),null,'strict ETA model still withholds long gaps');
+const recovered=A.forecast(gap,60,180);
+assert.ok(recovered&&recovered.hasGaps,'projection uses actual unequal timestamps and labels the gap');
+assert.ok(Math.abs(recovered.slope-2)<1e-8);assert.equal(recovered.maxGap,12);
+assert.equal(A.forecast(points(100,2).filter((p,i)=>i<10||i>45)),null,'very long gaps remain withheld');
+console.log('Gap-aware projection passes, while strict ETA and very long gaps remain conservative.');

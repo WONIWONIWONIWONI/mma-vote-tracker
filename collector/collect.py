@@ -1,5 +1,6 @@
 """Read only the public endpoint used by Melon's TOP10 page."""
 import json, urllib.request, datetime, pathlib, time, sys, subprocess
+from supervisor import Actions
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / 'dist/data'
 ENDS_AT = '2026-10-29T15:10:00+00:00' # official deadline + final observation window
@@ -82,52 +83,101 @@ def merge_history(remote, pending):
     newest = max((remote, pending), key=lambda data: stamp(data.get('collector', {}).get('checkedAt') or data['snapshots'][-1]['sourceAt']))
     return {**remote, **newest, 'snapshots': [rows[key] for key in sorted(rows)]}
 
+def git_run(args, **kwargs):
+    return subprocess.run(args,cwd=ROOT,timeout=30,**kwargs)
+
+def git_output(args, **kwargs):
+    return subprocess.check_output(args,cwd=ROOT,timeout=30,**kwargs)
+
 def publish():
-    subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
-    if subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode:
-        subprocess.run(['git','commit','-m','data: record MMA TOP6 observation'],cwd=ROOT,check=True)
+    git_run(['git','add','dist/data'],check=True)
+    if git_run(['git','diff','--cached','--quiet']).returncode:
+        git_run(['git','commit','-m','data: record MMA TOP6 observation'],check=True)
         for attempt in range(3):
-            push = subprocess.run(['git','push'],cwd=ROOT)
+            push = git_run(['git','push'])
             if push.returncode == 0:
                 return
             if attempt == 2:
                 raise subprocess.CalledProcessError(push.returncode,['git','push'])
             print('Push rejected; syncing with origin/main and retrying',flush=True)
             pending = json.loads((DATA/'history.json').read_text())
-            subprocess.run(['git','fetch','origin','main'],cwd=ROOT,check=True)
-            rebase = subprocess.run(['git','rebase','origin/main'],cwd=ROOT)
-            if rebase.returncode:
-                conflicts = subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],cwd=ROOT,text=True).splitlines()
+            git_run(['git','fetch','origin','main'],check=True)
+            rebase = git_run(['git','rebase','origin/main'])
+            for resolution in range(100):
+                if rebase.returncode == 0:
+                    break
+                conflicts = git_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
                 expected = {'dist/data/history.json','dist/data/latest.json','dist/data/seed.js'}
                 if not conflicts or not set(conflicts).issubset(expected):
-                    subprocess.run(['git','rebase','--abort'],cwd=ROOT,check=True)
+                    git_run(['git','rebase','--abort'],check=True)
                     raise subprocess.CalledProcessError(rebase.returncode,['git','rebase','origin/main'])
-                remote = json.loads(subprocess.check_output(['git','show','origin/main:dist/data/history.json'],cwd=ROOT,text=True))
+                remote = json.loads(git_output(['git','show','origin/main:dist/data/history.json'],text=True))
                 save(merge_history(remote,pending))
-                subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
-                empty = subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode == 0
-                subprocess.run(['git','-c','core.editor=true','rebase','--skip' if empty else '--continue'],cwd=ROOT,check=True)
+                git_run(['git','add','dist/data'],check=True)
+                empty = git_run(['git','diff','--cached','--quiet']).returncode == 0
+                rebase = git_run(['git','-c','core.editor=true','rebase','--skip' if empty else '--continue'])
+            else:
+                git_run(['git','rebase','--abort'],check=True)
+                raise RuntimeError('Too many pending data rebases')
 
-def run_loop(duration=2*3600, interval=300):
-    """Keep collection cadence inside one runner; cron only supplies the next runner."""
+def run_loop(duration=2*3600, interval=300, supervisor=None, max_extension=2*3600):
+    """Queue/verify a successor; keep collecting if a handoff cannot yet be confirmed."""
     if duration <= 0 or interval < 60:
         raise ValueError('Invalid collector duration or interval')
-    deadline = time.monotonic() + duration
-    while time.monotonic() < deadline:
-        collect()
-        try:
-            # Publish error status too, without inventing a successful observation.
-            publish()
-        except (subprocess.CalledProcessError, OSError) as error:
-            print('Publish failed; keeping local observations for the next attempt:', error, flush=True)
-        if now() >= ENDS_AT:
+    supervisor=supervisor or Actions.from_environment()
+    started=time.monotonic();soft_end=started+duration
+    hard_end=soft_end+(max_extension if supervisor else 0)
+    next_collect=started;next_supervise=started
+    successor=False;failures=0;last_good=-float('inf');last_published=False;handoff_checked=False
+    while time.monotonic()<hard_end:
+        tick=time.monotonic()
+        if tick>=next_collect:
+            succeeded=False
+            try:
+                succeeded=collect()
+                publish()  # Keep error heartbeats visible too.
+                last_published=True
+            except (subprocess.SubprocessError,OSError,ValueError,RuntimeError) as error:
+                last_published=False
+                print('Collection/publish retry pending:',type(error).__name__,flush=True)
+            if succeeded and last_published:
+                failures=0;last_good=time.monotonic()
+                next_collect=time.monotonic()+interval-time.time()%interval
+            else:
+                failures+=1
+                next_collect=time.monotonic()+min(120,15*2**min(failures-1,3))
+            if now()>=ENDS_AT:
+                break
+        if supervisor and time.monotonic()>=next_supervise:
+            try:
+                successor=supervisor.ensure_successor()
+            except (OSError,ValueError,RuntimeError) as error:
+                successor=False
+                print('Successor verification retry:',type(error).__name__,flush=True)
+            next_supervise=time.monotonic()+(interval if successor else 30)
+        tick=time.monotonic()
+        if tick>=soft_end:
+            if not supervisor:
+                break
+            if not handoff_checked:
+                next_supervise=tick;handoff_checked=True
+                continue
+            if successor and last_published and failures==0:
+                if tick-last_good<=30:
+                    print('Handoff: fresh observation saved and successor verified',flush=True)
+                    break
+                # Take a final real observation immediately before releasing the runner.
+                next_collect=tick
+        boundary=hard_end if supervisor else soft_end
+        wake=min(next_collect,next_supervise if supervisor else boundary,boundary)
+        if tick<soft_end:
+            wake=min(wake,soft_end)
+        if not supervisor and wake>=soft_end:
             break
-        remaining = deadline - time.monotonic()
-        delay = interval - time.time() % interval
-        if delay >= remaining:
-            break
-        print('Next collection in', round(delay, 1), 'seconds', flush=True)
-        time.sleep(delay)
+        if wake>tick:
+            time.sleep(min(30,wake-tick))
+    else:
+        print('Hard runtime limit reached; recovery workflow will check the next worker',flush=True)
 
 if __name__ == '__main__':
     if '--loop' in sys.argv:

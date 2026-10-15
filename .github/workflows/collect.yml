@@ -1,6 +1,11 @@
 name: Collect MMA TOP6 votes
 on:
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Collector start reason'
+        required: false
+        default: 'manual'
   push:
     branches: [main]
     paths: ['collector/**', '.github/workflows/collect.yml']
@@ -8,6 +13,7 @@ on:
     - cron: '13,43 * * * *'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: mma-collector
   cancel-in-progress: ${{ github.event_name == 'push' }}
@@ -22,7 +28,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: |
+      - name: Collect and prepare successor
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           python collector/collect.py --loop

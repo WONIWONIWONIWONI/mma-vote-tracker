@@ -22,6 +22,7 @@ class PublishTests(unittest.TestCase):
             write(a,[base]);git(a,'add','.');git(a,'commit','-m','seed');git(a,'push','-u','origin','main')
             b=root/'b';git(root,'clone',str(remote),str(b));configure(b)
             write(a,[base,row('41:50',200)]);git(a,'add','.');git(a,'commit','-m','remote observation');git(a,'push')
+            write(b,[base,row('41:30',210)]);git(b,'add','.');git(b,'commit','-m','first unpublished point')
             write(b,[base,row('41:30',210),row('42:00',220)])
             with patch.object(collect,'ROOT',b),patch.object(collect,'DATA',b/'dist/data'):collect.publish()
             result=json.loads(git(b,'show','origin/main:dist/data/history.json'))

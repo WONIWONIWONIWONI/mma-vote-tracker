@@ -176,3 +176,12 @@
 
 
 .axis-options{margin-top:12px;color:var(--muted);font-size:11px}.axis-options summary{cursor:pointer;width:max-content}.axis-options .trend-tools{margin-top:8px}.trend-tools select{max-width:190px}.trend-tools button{min-height:36px}
+
+.hourly-cards{display:none}
+@media(max-width:760px){
+ .hourly-desktop{display:none}.hourly-cards{display:grid;gap:12px}.hourly-scroll{overflow:visible;padding:0 14px}
+ .hour-card{min-width:0;border:1px solid var(--line);border-radius:10px;background:#151321;padding:13px}
+ .hour-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.hour-card-head h3{font-size:14px;margin:0;font-variant-numeric:tabular-nums}.hour-card-head>span{font-size:9px;border:1px solid var(--line);border-radius:10px;padding:3px 7px;color:var(--muted)}
+ .hour-card-winner{font-size:10px;line-height:1.6;margin:8px 0 11px;color:var(--lime);overflow-wrap:anywhere}.hour-card-winner b{white-space:nowrap}
+ .hour-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.hour-card-team{min-width:0;background:#ffffff04;border:1px solid transparent;border-radius:7px;padding:8px}.hour-card-team>div{display:flex;align-items:center;justify-content:space-between;gap:5px}.hour-card-name{min-width:0;color:var(--color);font-size:10px;overflow-wrap:anywhere}.hour-card-team strong{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}.hour-card-team small{display:block;color:var(--muted);font-size:8px;margin-top:5px}.hour-card-team .mini-bar{margin-top:7px}.hour-card-best{border-color:#ff789a66;background:#ff789a0d}
+}
