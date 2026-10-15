@@ -109,7 +109,6 @@
     var m = margins(W), plotW = W - m.l - m.r, lim = zoomLimits(W);
     var wanted = state.zoom[state.tf] || FRAMES[state.tf].show;
     wanted = Math.max(lim.min, Math.min(lim.max, wanted));
-    state.zoom[state.tf] = wanted;
     var n = Math.min(wanted, state.candles.length || wanted);
     var all = state.candles, maxOff = Math.max(0, all.length - n);
     if (state.offset > maxOff) state.offset = maxOff;
