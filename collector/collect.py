@@ -70,21 +70,22 @@ def collect():
     return True
 
 def publish():
-    subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
-    if subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode:
-        subprocess.run(['git','commit','-m','data: record MMA TOP6 observation'],cwd=ROOT,check=True)
-        for attempt in range(3):
-            push = subprocess.run(['git','push'],cwd=ROOT)
-            if push.returncode == 0:
-                return
-            if attempt == 2:
-                raise subprocess.CalledProcessError(push.returncode,['git','push'])
-            print('Push rejected; syncing with origin/main and retrying',flush=True)
-            subprocess.run(['git','fetch','origin','main'],cwd=ROOT,check=True)
-            subprocess.run(['git','rebase','origin/main'],cwd=ROOT,check=True)
+    for attempt in range(5):
+        subprocess.run(['git', 'add', 'dist/data'], cwd=ROOT, check=True)
+        if subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=ROOT).returncode:
+            return
+        subprocess.run(['git', 'commit', '-m', 'data: record MMA TOP6 observation'], cwd=ROOT, check=True)
+        push = subprocess.run(['git', 'push'], cwd=ROOT)
+        if push.returncode == 0:
+            return
+        if attempt == 4:
+            raise subprocess.CalledProcessError(push.returncode, ['git', 'push'])
+        print('Push rejected; refreshing the archive and retrying', flush=True)
+        subprocess.run(['git', 'fetch', 'origin', 'main'], cwd=ROOT, check=True)
+        subprocess.run(['git', 'reset', '--hard', 'origin/main'], cwd=ROOT, check=True)
+        collect()
 
 if __name__ == '__main__':
     succeeded = collect()
-    if succeeded:
-        publish()
+    publish()
     sys.exit(0 if succeeded else 1)
