@@ -5,16 +5,16 @@ on:
     branches: [main]
     paths: ['collector/**', '.github/workflows/collect.yml']
   schedule:
-    - cron: '13,43 * * * *'
+    - cron: '*/5 * * * *'
 permissions:
   contents: write
 concurrency:
   group: mma-collector
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: false
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 315
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,4 +25,4 @@ jobs:
       - run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          python collector/collect.py --loop
+          python collector/collect.py

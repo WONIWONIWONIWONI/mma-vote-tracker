@@ -83,15 +83,8 @@ def publish():
             subprocess.run(['git','fetch','origin','main'],cwd=ROOT,check=True)
             subprocess.run(['git','rebase','origin/main'],cwd=ROOT,check=True)
 
-if __name__=='__main__':
-    if '--loop' not in sys.argv:
-        sys.exit(0 if collect() else 1)
-    deadline=time.monotonic()+5*3600
-    while time.monotonic()<deadline:
-        collect()
-        try:
-            publish()
-        except (subprocess.CalledProcessError, OSError) as error:
-            print('Publish failed; retaining local observations for next retry:', error, flush=True)
-        if now() >= ENDS_AT: break
-        time.sleep(60-time.time()%60)
+if __name__ == '__main__':
+    succeeded = collect()
+    if succeeded:
+        publish()
+    sys.exit(0 if succeeded else 1)

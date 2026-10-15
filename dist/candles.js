@@ -5,7 +5,7 @@
   'use strict';
 
   /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = '#ff789a';    // 부호 표차 상승 (빨강)
+  var UP_COLOR = '#ff4757';    // 부호 표차 상승 (빨강)
   var DOWN_COLOR = '#4fc8e0';  // 부호 표차 하락 (파랑)
   var FLAT_COLOR = '#a58e9c';  // 변화 없음
   var FRAMES = {
@@ -117,6 +117,14 @@
     var end = all.length - state.offset, start = Math.max(0, end - n);
     return { m: m, plotW: plotW, n: n, start: start, end: end, vis: all.slice(start, end), maxOff: maxOff };
   }
+  function chartRatio(clientX) {
+    if (!state.view) return 0.5;
+    var rect = el.svg.getBoundingClientRect();
+    var width = Math.max(1, rect.width);
+    var x = (clientX - rect.left) * (state.view.W / width);
+    return Math.max(0, Math.min(1, (x - state.view.m.l) / Math.max(1, state.view.plotW)));
+  }
+
   function setZoom(nextN, anchorRatio) {
     if (!state.view || !state.candles.length) return;
     var W = state.view.W || Math.max(300, Math.floor(el.wrap.clientWidth) || 600);
@@ -269,6 +277,7 @@
     el.svg.setAttribute('width', W);
     el.svg.setAttribute('height', H);
     el.svg.innerHTML = chartInner(W, H, v, state.hover);
+    el.svg.style.cursor = v.maxOff > 0 ? 'grab' : 'default';
 
     var vis = v.vis;
     if (vis.length) {
@@ -494,7 +503,7 @@
     el.svg.addEventListener('wheel', function (e) {
       if (!state.view || !state.view.vis.length) return;
       var rect = el.svg.getBoundingClientRect();
-      var anchor = Math.max(0, Math.min(1, (e.clientX - rect.left) / Math.max(1, rect.width)));
+      var anchor = chartRatio(e.clientX);
 
       if (e.ctrlKey) {
         e.preventDefault();
@@ -531,7 +540,7 @@
         tPinchN = state.view ? state.view.n : (state.zoom[state.tf] || FRAMES[state.tf].show);
         var rr = el.svg.getBoundingClientRect();
         var mid = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        tPinchAnchor = Math.max(0, Math.min(1, (mid - rr.left) / Math.max(1, rr.width)));
+        tPinchAnchor = chartRatio(mid);
         hideTip();
         return;
       }
@@ -591,10 +600,42 @@
     el.wrap.addEventListener('selectstart', function (e) { e.preventDefault(); });
     el.wrap.addEventListener('contextmenu', function (e) { if (state.touch) e.preventDefault(); });
 
-    // 마우스 hover/tooltip은 기존 Pointer Events 유지.
-    el.svg.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch') onPointer(e); });
-    el.svg.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'touch') onPointer(e); });
-    el.svg.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch') hideTip(); });
+    // 마우스 드래그로 시간축을 이동하고, 드래그가 아니면 기존 툴팁을 표시합니다.
+    var mouseDrag = null;
+    el.svg.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0 || !state.view || state.view.maxOff <= 0) {
+        if (e.pointerType !== 'touch') onPointer(e);
+        return;
+      }
+      mouseDrag = { id: e.pointerId, startX: e.clientX, lastX: e.clientX, moved: false, carry: 0 };
+      el.svg.setPointerCapture(e.pointerId);
+    });
+    el.svg.addEventListener('pointermove', function (e) {
+      if (mouseDrag && e.pointerId === mouseDrag.id) {
+        var dx = e.clientX - mouseDrag.lastX;
+        if (!mouseDrag.moved && Math.abs(e.clientX - mouseDrag.startX) > 4) {
+          mouseDrag.moved = true; hideTip(); el.svg.style.cursor = 'grabbing';
+        }
+        if (mouseDrag.moved) {
+          mouseDrag.carry += dx;
+          var slot = Math.max(1.2, state.view && state.view.slot || 4);
+          var move = Math.trunc(mouseDrag.carry / slot);
+          if (move) { mouseDrag.carry -= move * slot; panCandles(move); }
+        } else onPointer(e);
+        mouseDrag.lastX = e.clientX;
+        return;
+      }
+      if (e.pointerType !== 'touch') onPointer(e);
+    });
+    function endMouseDrag(e) {
+      if (!mouseDrag || e.pointerId !== mouseDrag.id) return;
+      mouseDrag = null;
+      el.svg.style.cursor = state.view && state.view.maxOff > 0 ? 'grab' : 'default';
+    }
+    el.svg.addEventListener('pointerup', endMouseDrag);
+    el.svg.addEventListener('pointercancel', endMouseDrag);
+    el.svg.addEventListener('lostpointercapture', endMouseDrag);
+    el.svg.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch' && !mouseDrag) hideTip(); });
     document.addEventListener('pointerdown', function (e) { if (!el.svg.contains(e.target) && !el.tip.hidden) hideTip(); });
     root.querySelector('#cd-image').addEventListener('click', exportPng);
     var timer;

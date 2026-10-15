@@ -4,10 +4,10 @@
   const $ = id => document.getElementById(id);
   const nf = new Intl.NumberFormat('ko-KR');
   const palette = ['#ff789a', '#b997ff', '#4fc8e0', '#ffc06c', '#83d9b5', '#9cbcff'];
-  const colors = {'994944':'#ff789a','3709231':'#b997ff','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
+  const colors = {'994944':'#ff789a','3709231':'#e6ff54','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
   const gapDefs = [[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(([a,b],i)=>({id:`gap${a}${b}`,a,b,name:`${a+1}–${b+1}위`,color:palette[i]}));
   function rankGap(s,g){return s.top4[g.a].votes-s.top4[g.b].votes;}
-  const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,forecast:true,range:'1',historyLimit:12,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
+  const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,forecast:true,range:'1',historyLimit:12,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,archiveFetching:false,localObservations:[],directOK:false,archiveFailed:false};
   const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => nf.format(n);
   const share = (team,snap) => 100*team.votes/snap.totalVotes;
@@ -50,7 +50,7 @@
     $('status-label').textContent=stopped?'수집 종료':state.loadFailed?'직접 조회 실패':direct?'멜론 직접 조회':'보관 기록';
     $('source-time').textContent=kst(last.sourceAt);
     $('collected-time').textContent=`${age<1?'1분 미만':age+'분'} 전 관측`;
-    let note=stopped?'수집 기간이 끝났습니다. 마지막 기록을 표시합니다.':state.loadFailed?'멜론 직접 조회에 실패해 마지막 확인값을 표시합니다. 새로고침으로 다시 시도하세요.':'접속·새로고침 시 멜론 직접 조회 · 자동 조회 없음 · 추이용 서버 기록은 1분 간격입니다.';
+    let note=stopped?'수집 기간이 끝났습니다. 마지막 기록을 표시합니다.':state.loadFailed?'멜론 직접 조회에 실패해 마지막 확인값을 표시합니다. 새로고침으로 다시 시도하세요.':'접속·새로고침 시 멜론 직접 조회 · 자동 조회 없음 · 추이용 서버 기록은 약 5분 간격입니다.';
     if(state.archiveFailed)note+=' 과거 기록 동기화가 지연되어 기존 기록을 유지합니다.';
     if(age>=2&&!stopped)note+=' 현재 수치가 필요하면 새로고침을 눌러 주세요.';
     $('notice-text').textContent=note;$('notice').className='notice '+(!state.loadFailed&&age<2?'good':'');
@@ -174,6 +174,8 @@
     render();
   }
   async function loadArchive(){
+    if(state.archiveFetching)return;
+    state.archiveFetching=true;
     try{
       let candidate;
       if(!state.historyLoaded)candidate=await fetchRecord(liveHistoryURL);
@@ -182,13 +184,13 @@
       if(state.archive&&Date.parse(candidate.snapshots.at(-1).sourceAt)<Date.parse(state.archive.snapshots.at(-1).sourceAt))throw new Error('Older archive');
       state.archive=candidate;state.historyLoaded=true;state.archiveFailed=false;
     }catch{state.archiveFailed=true;}
-    applyData();
+    finally{state.archiveFetching=false;applyData();}
   }
   async function refresh(manual=false){
     if(state.fetching||location.protocol==='file:')return;
     state.fetching=true;state.lastCheckedAt=Date.now();$('refresh-button').disabled=true;
     // Start archival sync independently: a slow GitHub response must not delay live cards.
-    const archiveTask=loadArchive();
+    void loadArchive();
     try{
       if(Date.now()<operationEnd()){
         const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
@@ -202,7 +204,7 @@
         }finally{clearTimeout(timer);}
       }
     }catch{state.loadFailed=true;render();if(manual)toast('멜론 직접 조회 실패 · 마지막 확인값을 유지합니다.');}
-    finally{await archiveTask;state.fetching=false;$('refresh-button').disabled=false;}
+    finally{state.fetching=false;$('refresh-button').disabled=false;}
   }
   function toast(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').hidden=true,4200);}
   function download(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),10000);}
