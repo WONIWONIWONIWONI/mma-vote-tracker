@@ -108,9 +108,33 @@ def publish():
                 empty = subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode == 0
                 subprocess.run(['git','-c','core.editor=true','rebase','--skip' if empty else '--continue'],cwd=ROOT,check=True)
 
+def run_loop(duration=2*3600, interval=300):
+    """Keep collection cadence inside one runner; cron only supplies the next runner."""
+    if duration <= 0 or interval < 60:
+        raise ValueError('Invalid collector duration or interval')
+    deadline = time.monotonic() + duration
+    while time.monotonic() < deadline:
+        collect()
+        try:
+            # Publish error status too, without inventing a successful observation.
+            publish()
+        except (subprocess.CalledProcessError, OSError) as error:
+            print('Publish failed; keeping local observations for the next attempt:', error, flush=True)
+        if now() >= ENDS_AT:
+            break
+        remaining = deadline - time.monotonic()
+        delay = interval - time.time() % interval
+        if delay >= remaining:
+            break
+        print('Next collection in', round(delay, 1), 'seconds', flush=True)
+        time.sleep(delay)
+
 if __name__ == '__main__':
-    succeeded = collect()
-    if succeeded:
-        publish()
-    sys.exit(0 if succeeded else 1)
+    if '--loop' in sys.argv:
+        run_loop()
+    else:
+        succeeded = collect()
+        if succeeded:
+            publish()
+        sys.exit(0 if succeeded else 1)
 
