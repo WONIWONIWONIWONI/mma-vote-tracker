@@ -131,7 +131,7 @@
   }
   function plotRatio(clientX) {
     var r = el.svg.getBoundingClientRect(), v = state.view;
-    return Math.max(0, Math.min(1, ((clientX-r.left)*v.W/r.width-v.m.l)/v.plotW));
+    return Math.max(0, Math.min(1, ((clientX-r.left)*v.W/r.width-v.firstX)/Math.max(1,v.plotW-2*v.edgePad)));
   }
   function panCandles(delta) {
     if (!state.view || !delta) return;
@@ -211,7 +211,9 @@
   /* ===== 그래프 그리기 (SVG 조각 문자열) ===== */
   function chartInner(W, H, v, hover) {
     var m = v.m, ph = H - m.t - m.b, vis = v.vis, s = [];
-    var slot = v.plotW / Math.max(vis.length, 1);
+    var edgePad=Math.min(7,v.plotW/2),firstX=m.l+(vis.length>1?edgePad:v.plotW/2);
+    var slot=vis.length>1?(v.plotW-2*edgePad)/(vis.length-1):v.plotW;
+    v.firstX=firstX;v.edgePad=edgePad;
     var lo = Infinity, hi = -Infinity;
     vis.forEach(function (c) { if (c.l < lo) lo = c.l; if (c.h > hi) hi = c.h; });
     if (!vis.length) { lo = 0; hi = 10; }
@@ -230,7 +232,7 @@
     for (var q = 0; q < steps.length; q++) { if (steps[q] >= want) { k = steps[q]; break; } }
     var lastDay = -1;
     vis.forEach(function (c, i) {
-      var cx = m.l + slot * (i + 0.5);
+      var cx = firstX + slot * i;
       if (i === hover && !state.touch) s.push('<rect x="' + f1(cx - slot / 2) + '" y="' + m.t + '" width="' + f1(slot) + '" height="' + ph + '" fill="#ffffff0f"/>');
       if (Math.round(c.t / size) % k === 0) {
         var day = kst(c.t).D;
@@ -243,7 +245,7 @@
     });
 
     vis.forEach(function (c, i) {
-      var cx = m.l + slot * (i + 0.5);
+      var cx = firstX + slot * i;
       var bw = Math.min(10, Math.max(0.6, slot * 0.38));
       var col = gapColor(c.o,c.c), op = c.gapped ? 0.5 : 1;
       var yo = Y(c.o), yc = Y(c.c);
@@ -316,7 +318,7 @@
     h += '</div>';
     el.tip.innerHTML = h;
     el.tip.hidden = false;
-    var cx = (v.m.l + v.slot * (i + 0.5)) * (el.svg.getBoundingClientRect().width / v.W);
+    var cx = (v.firstX + v.slot * i) * (el.svg.getBoundingClientRect().width / v.W);
     var tw = el.tip.offsetWidth, W = el.wrap.clientWidth;
     el.tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
     el.tip.style.top = '30px';
@@ -327,7 +329,7 @@
     state.touch = e.pointerType === 'touch';
     if (!v || !v.vis.length) return;
     var r = el.svg.getBoundingClientRect(), x = (e.clientX - r.left) * (v.W / r.width);
-    var i = Math.floor((x - v.m.l) / v.slot);
+    var i = Math.round((x - v.firstX) / v.slot);
     if (i < 0 || i >= v.vis.length) { hideTip(); return; }
     if (i !== state.hover) { state.hover = i; render(); }
     showTip(i, e.clientX);
@@ -433,7 +435,7 @@
       '.cd-legend i{display:inline-block;width:7px;height:7px;border-radius:2px}' +
       '.cd-wrap{position:relative;margin-top:16px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}' +
       '.cd-unit{display:block;font-size:10px;color:var(--muted);padding:3px 0 2px;margin-bottom:10px}' +
-      '.cd-wrap svg{display:block;width:100%;height:auto;overflow:visible;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:grab}' +
+      '.cd-wrap svg{display:block;width:100%;max-width:100%;height:auto;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:grab}' +
       '.cd-nav{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 14px}' +
       '.cd-nav button:disabled{opacity:.35;cursor:default}' +
       '.cd-bottom{display:flex;justify-content:space-between;gap:15px;border-top:1px solid var(--line);padding-top:12px;font-size:10px;color:var(--muted);line-height:1.6}' +
@@ -515,7 +517,7 @@
 
     // PC: 휠=시간축 이동, Ctrl+휠=X축 시간 밀도 압축/확장.
     var wheelCarry = 0;
-    el.svg.addEventListener('wheel', function (e) {
+    el.wrap.addEventListener('wheel', function (e) {
       if (!state.view || !state.view.vis.length) return;
       var anchor = plotRatio(e.clientX);
 

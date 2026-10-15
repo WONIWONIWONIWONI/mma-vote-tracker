@@ -1,5 +1,5 @@
 import unittest
-from collect import parse
+from collect import parse, merge_history
 
 class ParserTests(unittest.TestCase):
     def payload(self):
@@ -34,5 +34,17 @@ class ParserTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse(payload, '2026-10-15T00:00:00Z')
 
+class MergeTests(unittest.TestCase):
+    def test_conflicting_push_keeps_both_histories_and_latest_correction(self):
+        def row(t, value):
+            return {'sourceAt':'2026-10-15T12:'+t+'Z','totalVotes':value}
+        remote={'snapshots':[row('40:00',100),row('41:50',200)],'collector':{'state':'ok','checkedAt':'2026-10-15T12:41:50Z'}}
+        local={'snapshots':[row('40:00',100),row('41:30',210),row('42:00',220)],'collector':{'state':'error','checkedAt':'2026-10-15T12:42:00Z'}}
+        result=merge_history(remote,local)
+        self.assertEqual([r['totalVotes'] for r in result['snapshots']],[100,200,220])
+        self.assertEqual(result['collector']['state'],'error')
+        self.assertEqual(merge_history(local,remote),result)
+
 if __name__ == '__main__':
     unittest.main()
+

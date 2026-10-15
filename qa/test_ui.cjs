@@ -66,22 +66,24 @@ async function setup(browser,mobile=false){
  await page.locator('#cd-zoom-in').click();await page.locator('#cd-zoom-in').click();await page.locator('#cd-svg').scrollIntoViewIfNeeded();
  const view=()=>page.locator('#cd-svg').evaluate(e=>({start:+e.dataset.start,n:+e.dataset.count,total:+e.dataset.total,W:e.viewBox.baseVal.width}));
  const before=await view();assert.ok(before.n<before.total);
+ async function noRightBlank(){const gap=await page.locator('#cd-svg').evaluate(e=>{const bars=[...e.querySelectorAll('rect')].filter(r=>['#ff789a','#4fc8e0','#a58e9c'].includes(r.getAttribute('fill')));const last=bars.at(-1);return e.viewBox.baseVal.width-(+last.getAttribute('x')+ +last.getAttribute('width'));});assert.ok(gap>=0&&gap<22,`bounded right margin: ${gap}`);}
+ await noRightBlank();
  if(!mobile){
   const r=await page.locator('#cd-svg').boundingBox();const left=62,ratio=.72,x=r.x+(left+(before.W-left-8)*ratio)*r.width/before.W,y=r.y+r.height*.5;
   await page.mouse.move(x,y);await page.keyboard.down('Control');await page.mouse.wheel(0,-100);await page.keyboard.up('Control');
   await page.waitForFunction(n=>+document.querySelector('#cd-svg').dataset.count<n,before.n);
-  const zoomed=await view();assert.ok(Math.abs((before.start+ratio*before.n)-(zoomed.start+ratio*zoomed.n))<1.1,'wheel keeps the candle under the cursor');
+  const zoomed=await view();await noRightBlank();assert.ok(Math.abs((before.start+ratio*before.n)-(zoomed.start+ratio*zoomed.n))<1.1,'wheel keeps the candle under the cursor');
   const box=await page.locator('#cd-svg').boundingBox();await page.mouse.move(box.x+box.width*.5,box.y+box.height*.5);await page.mouse.down();await page.mouse.move(box.x+box.width*.5+100,box.y+box.height*.5,{steps:10});await page.mouse.up();assert.ok((await view()).start<zoomed.start,'mouse drag moves toward older candles');
  }else{
   const cdp=await context.newCDPSession(page),r=await page.locator('#cd-svg').boundingBox(),x=r.x+r.width*.55,y=r.y+r.height*.5;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x-35,y},{x:x+35,y}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-50,y},{x:x+50,y}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-60,y},{x:x+60,y}]});
-  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});const zoomed=await view();assert.ok(zoomed.n<before.n,'pinch zooms');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});const zoomed=await view();await noRightBlank();assert.ok(zoomed.n<before.n,'pinch zooms');
   const ratio=(x-r.x-44)/(r.width-44-8);assert.ok(Math.abs(before.start+ratio*before.n-zoomed.start-ratio*zoomed.n)<1.5,'pinch keeps its original anchor across multiple moves');
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+70,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});assert.ok((await view()).start<zoomed.start,'touch drag moves toward older candles');
  }
- await page.locator('#cd-reset').click();const full=await view();assert.equal(full.n,full.total);assert.equal(full.start,0);
+ await page.locator('#cd-reset').click();await noRightBlank();const full=await view();assert.equal(full.n,full.total);assert.equal(full.start,0);
  // A GitHub API limit falls back to raw; a failed live fetch preserves the last observation.
  failLive=true;failAPI=true;const stamp=await page.evaluate(()=>window.MMA_DATA.snapshots.at(-1).sourceAt);
  const rawResponse=page.waitForResponse(r=>new URL(r.url()).hostname==='raw.githubusercontent.com');
