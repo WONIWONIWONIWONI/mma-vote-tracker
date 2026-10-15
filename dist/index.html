@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1020">
+  <meta name="theme-color" content="#100e19">
   <title>MMA TOP 4 — 투표 트래커</title>
   <meta name="description" content="2026 MMA 상위 4팀의 득표수, 점유율, 표차와 시간별 변화를 한눈에.">
-  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=20261007-combined-image">
+  <link rel="icon" href="./favicon.svg?v=20261015-mma-plum" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css?v=20261015-mma-plum">
   <script src="./data/seed.js"></script>
   <script src="./hourly.js?v=20261007-top4-hourly" defer></script>
   <script src="./axis.js?v=20261007-adaptive-axis" defer></script>
-  <script src="./exports.js?v=20261007-smaller-export-type" defer></script>
-  <script src="./app.js?v=20261007-combined-image" defer></script>
-  <script src="./candles.js?v=20261008-5m-1h-6h" defer></script>
+  <script src="./exports.js?v=20261015-mma-plum" defer></script>
+  <script src="./app.js?v=20261015-mma-plum" defer></script>
+  <script src="./candles.js?v=20261015-candles-compact" defer></script>
 </head>
 <body>
   <div class="site-shell">
@@ -38,7 +38,7 @@
       <section class="panel has-image-button cd-panel" id="candle-panel" aria-labelledby="cd-title"></section>
         <section class="panel activity-panel has-image-button" aria-labelledby="recent-title"><button type="button" class="quiet-button panel-image-button" data-image="pace" aria-label="직전 관측 대비 움직임 PNG 저장" title="직전 관측 대비 움직임 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button><div class="panel-heading compact"><div><div class="section-kicker">THE PACE</div><h2 id="recent-title">직전 관측 대비 움직임</h2></div><span class="panel-tag" id="pace-tag">기록 대기</span></div><div class="table-scroll"><table><thead><tr><th scope="col">아티스트</th><th scope="col">표수 변화</th><th scope="col">점유율 변화</th></tr></thead><tbody id="pace-body"></tbody></table></div><p class="panel-footnote" id="pace-note"></p></section>
       <section class="panel hourly-panel has-image-button" aria-labelledby="hourly-title"><button type="button" class="quiet-button panel-image-button" data-image="hourly" aria-label="선택 날짜의 전체 시간대별 증가량 PNG 저장" title="선택 날짜의 전체 시간대별 증가량 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>
-        <div class="panel-heading compact"><div><div class="section-kicker">BY THE HOUR</div><h2 id="hourly-title">시간대별 득표 증가량</h2><p class="hourly-intro">한 시간 동안 네 팀이 얼마나 더 얻었는지 비교해요.</p></div><label class="hourly-date-label">날짜 선택<select id="hourly-date" aria-label="시간대별 증가량 날짜"></select></label></div>
+        <div class="panel-heading compact"><div><div class="section-kicker">BY THE HOUR</div><h2 id="hourly-title">시간대별 득표 증가량</h2><p class="hourly-intro">한 시간 동안 네 팀이 얼마나 더 얻었는지 비교해요.</p></div><label class="hourly-date-label">날짜 선택<select id="hourly-date" class="control-select" aria-label="시간대별 증가량 날짜"></select></label></div>
         <div class="hourly-scroll" tabindex="0" aria-label="시간대별 득표 증가량 · 세로 스크롤"><ol id="hourly-list" class="hourly-list"></ol></div>
         <button class="load-more" id="hourly-more" hidden>이날 전체 시간 보기</button>
         <p class="panel-footnote" id="hourly-note"></p>
