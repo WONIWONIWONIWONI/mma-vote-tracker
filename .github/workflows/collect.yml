@@ -9,7 +9,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: mma-collector
+  group: mma-collector-short-run
   cancel-in-progress: false
 jobs:
   collect:
