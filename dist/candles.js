@@ -1,5 +1,5 @@
 /* 표차 캔들차트 — dist/candles.js
- * 리센느−경쟁팀 표차를 주식 캔들(5분봉·1시간봉·6시간봉)로 보여줍니다.
+ * 리센느를 기준으로 TOP6 다섯 팀과의 표차를 캔들(5분봉·1시간봉·6시간봉)로 보여줍니다.
  * 기존 app.js 는 건드리지 않고, 이 파일이 스스로 기록(history.json)을 읽어 그립니다. */
 (function () {
   'use strict';
@@ -31,15 +31,43 @@
   function f1(n) { return Math.round(n * 10) / 10; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  /* ===== 기록 → 한 점(리센느 − 리센느를 제외한 최고 득표 팀) ===== */
+  function isRescene(team) { return String(team.id) === '3709231' || /rescene|리센느/i.test(team.name || ''); }
+  function latestSnapshot() {
+    var rows = Object.values(snapshots);
+    if (!rows.length) rows = window.MMA_SEED && window.MMA_SEED.snapshots || [];
+    return rows.slice().sort(function (a, b) { return Date.parse(a.sourceAt) - Date.parse(b.sourceAt); }).pop() || null;
+  }
+  function syncGapOptions() {
+    var select = document.getElementById('gap-pair');
+    if (!select) return false;
+    var last = latestSnapshot();
+    var ranked = last && last.top4 ? last.top4.slice().sort(function (a, b) { return a.rank - b.rank; }) : [];
+    var rescene = ranked.find(isRescene);
+    var rivals = rescene ? ranked.filter(function (team) { return !isRescene(team); }) : [];
+    var previous = select.value;
+    var next = rivals.some(function (team) { return String(team.id) === previous; }) ? previous : String(rivals[0] && rivals[0].id || '');
+    var signature = rivals.map(function (team) { return String(team.id) + ':' + team.name + ':' + team.rank; }).join('|');
+    if (select.dataset.pairOptions !== signature) {
+      select.innerHTML = rivals.map(function (team, i) {
+        return '<option value="' + esc(String(team.id)) + '">' + (team.rank || i + 1) + '위 · 리센느 − ' + esc(team.name) + '</option>';
+      }).join('') || '<option value="">상대 팀 기록 대기</option>';
+      select.dataset.pairOptions = signature;
+    }
+    if (next) select.value = next;
+    select.disabled = !rivals.length;
+    return previous !== next;
+  }
+  /* 표차는 항상 리센느 득표수 − 선택한 상대 팀 득표수입니다. */
   function toPoint(s) {
-    if (!s || !s.top4 || s.top4.length < 2) return null;
+    if (!s || !Array.isArray(s.top4) || s.top4.length < 2) return null;
     var t = Date.parse(s.sourceAt);
     if (!isFinite(t)) return null;
     var tp = s.top4.slice().sort(function (x, y) { return x.rank - y.rank; });
-    var pair = (document.getElementById('gap-pair')?.value || '0,1').split(',').map(Number);
-    var first = tp[pair[0]], second = tp[pair[1]];
-    return {t:t,a:first.votes,b:second.votes,an:first.name,bn:second.name};
+    var rescene = tp.find(isRescene);
+    var opponentId = document.getElementById('gap-pair')?.value;
+    var opponent = tp.find(function (team) { return String(team.id) === opponentId; });
+    if (!rescene || !opponent) return null;
+    return {t:t,a:rescene.votes,b:opponent.votes,an:rescene.name,bn:opponent.name};
   }
 
   /* ===== 점들 → 캔들 (시가=직전 관측 표차, 종가=구간 마지막, 고가·저가=구간 최대·최소) ===== */
@@ -250,7 +278,7 @@
       btns[i].className = on ? 'selected' : '';
       btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
     }
-    el.unit.textContent = '선택한 순위 간 표차 (표) · ' + FRAMES[state.tf].label;
+    el.unit.textContent = '리센느 − 선택 팀 표차 (표) · ' + FRAMES[state.tf].label;
     renderPace();
   }
 
@@ -325,13 +353,13 @@
     }
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + totalH + '" viewBox="0 0 ' + W + ' ' + totalH + '">' +
       '<rect width="100%" height="100%" fill="#100e19"/>' +
-      '<text x="28" y="32" font-size="19" font-weight="700" fill="#f2f4ee"' + font + '>MMA · 순위 간 표차 흐름 분석</text>' +
+      '<text x="28" y="32" font-size="19" font-weight="700" fill="#f2f4ee"' + font + '>MMA · 리센느 기준 표차 흐름 분석</text>' +
       '<text x="28" y="55" font-size="11" fill="#9aa093"' + font + '>현재 득표 페이스 · ' + paceLabel + ' 기준  |  캔들 ' + FRAMES[state.tf].label + '</text>' +
-      '<text x="28" y="75" font-size="10" fill="#7d8478"' + font + '>최신 표차 ' + num(lc.c) + '표 · ' + esc(last.an) + ' ' + num(last.a) + ' vs ' + esc(last.bn) + ' ' + num(last.b) + '</text>' +
+      '<text x="28" y="75" font-size="10" fill="#7d8478"' + font + '>최신 표차 ' + signed(lc.c) + '표 · 리센느 ' + num(last.a) + ' − ' + esc(last.bn) + ' ' + num(last.b) + '</text>' +
       cards +
       '<text x="28" y="207" font-size="10" fill="#9aa093"' + font + '>표차 캔들 · ' + md(a.t) + ' ' + hm(a.t) + ' ~ ' + md(b.t) + ' ' + hm(b.t) + '</text>' +
       '<g transform="translate(0,' + HDR + ')">' + chartInner(W, H, v, -1) + '</g>' +
-      '<text x="28" y="' + (H + HDR + 21) + '" font-size="9" fill="#7d8478"' + font + '><tspan fill="' + UP_COLOR + '">■</tspan> 표차 확대  <tspan fill="' + DOWN_COLOR + '">■</tspan> 표차 축소  · 표차 = 선택한 상위 순위 − 하위 순위 · 데이터 출처 Melon</text>' +
+      '<text x="28" y="' + (H + HDR + 21) + '" font-size="9" fill="#7d8478"' + font + '><tspan fill="' + UP_COLOR + '">■</tspan> 표차 확대  <tspan fill="' + DOWN_COLOR + '">■</tspan> 표차 축소  · 표차 = 리센느 − 선택한 상대 팀 · 데이터 출처 Melon</text>' +
       '</svg>';
     var img = new Image();
     img.onload = function () {
@@ -353,9 +381,17 @@
 
   /* ===== 기록 읽기 · 갱신 ===== */
   function addSnaps(list) {
-    var added = 0;
     list.forEach(function (s) {
-      var minute=Math.floor(Date.parse(s.sourceAt)/60000); var old=snapshots[minute]; if(old)delete state.map[Date.parse(old.sourceAt)]; snapshots[minute]=s;
+      var minute = Math.floor(Date.parse(s.sourceAt) / 60000);
+      var old = snapshots[minute];
+      if (old) delete state.map[Date.parse(old.sourceAt)];
+      snapshots[minute] = s;
+    });
+    var selectionChanged = syncGapOptions();
+    if (selectionChanged) { state.map = {}; state.offset = 0; }
+    var rows = selectionChanged ? Object.values(snapshots) : list;
+    var added = 0;
+    rows.forEach(function (s) {
       var p = toPoint(s);
       if (!p) return;
       var q = state.map[p.t];
@@ -409,7 +445,7 @@
     st.textContent =
       '.cd-panel{margin-top:18px;padding:26px 27px 16px}' +
       '.cd-pair-control{display:flex;align-items:center;gap:9px;margin-left:auto;color:var(--muted);font-size:11px;font-weight:500;white-space:nowrap}' +
-      '.cd-pair-control select{min-width:120px}' +
+      '.cd-pair-control select{min-width:190px;max-width:min(280px,70vw)}' +
       '.cd-tf{display:flex;gap:4px;background:#151321;padding:4px;border-radius:7px;border:1px solid #41374f}' +
       '.cd-tf button{border:0;background:none;color:var(--muted);font-size:11px;border-radius:4px;padding:7px 11px}' +
       '.cd-tf button.selected{background:#4b2d49;color:var(--lime)}' +
@@ -432,7 +468,7 @@
       '.cd-empty{padding:40px 0;text-align:center;color:var(--muted);font-size:12px}' +      '.pc-summary{margin-top:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}.pc-summary-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}.pc-summary-head>span{font-size:10px;color:var(--muted)}.pc-tf{display:flex;gap:4px;background:#151321;padding:4px;border-radius:7px;border:1px solid #41374f}.pc-tf button{border:0;background:none;color:var(--muted);font-size:11px;border-radius:4px;padding:7px 11px}.pc-tf button.selected{background:#4b2d49;color:var(--lime)}' +
       '.pc-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pc-team,.pc-metric{background:#151321;border:1px solid var(--line);border-radius:8px;padding:15px 16px;min-width:0}.pc-team span,.pc-metric span{display:block;color:var(--muted);font-size:10px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pc-team strong,.pc-metric strong{display:block;font-size:18px;font-weight:650;letter-spacing:-.02em;white-space:nowrap}.pc-team small,.pc-metric small{display:block;color:var(--muted);font-size:9px;margin-top:7px;line-height:1.4}.pc-metric strong.down{color:' + DOWN_COLOR + '}.pc-metric strong.up{color:' + UP_COLOR + '}.pc-eta strong{font-size:15px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.35}.pc-note{margin:12px 0 0;color:var(--muted);font-size:9px;line-height:1.55}.pc-empty{grid-column:1/-1;padding:24px;text-align:center;color:var(--muted);font-size:11px}' +
       '@media(max-width:900px){.cd-panel>.panel-heading{flex-wrap:wrap;align-items:flex-start}.cd-pair-control{margin-top:4px}.cd-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:3px}.cd-tf button{padding:8px 4px;font-size:10px}}' +
-      '@media(max-width:760px){.cd-panel{padding:19px 16px 14px}.cd-panel>.panel-heading{padding-right:0}.cd-panel>.panel-heading>div:first-child{width:100%;padding-right:72px;min-height:36px}.cd-pair-control{width:100%;justify-content:space-between;margin:7px 0 0}.cd-pair-control select{min-width:120px}.pc-summary-head{align-items:flex-start;flex-wrap:wrap}.pc-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.pc-tf button{padding:8px 4px;font-size:10px}.pc-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pc-team,.pc-metric{padding:13px 12px}.pc-team strong,.pc-metric strong{font-size:15px}.pc-eta strong{font-size:13px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.4}.cd-controls{margin-top:20px}.cd-bottom{display:block}.cd-bottom>span{display:block;margin-top:7px}.cd-tip{font-size:10px;min-width:145px}}';
+      '@media(max-width:760px){.cd-panel{padding:19px 16px 14px}.cd-panel>.panel-heading{padding-right:0}.cd-panel>.panel-heading>div:first-child{width:100%;padding-right:72px;min-height:36px}.cd-pair-control{width:100%;justify-content:space-between;margin:7px 0 0}.cd-pair-control select{min-width:190px;max-width:100%}.pc-summary-head{align-items:flex-start;flex-wrap:wrap}.pc-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.pc-tf button{padding:8px 4px;font-size:10px}.pc-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pc-team,.pc-metric{padding:13px 12px}.pc-team strong,.pc-metric strong{font-size:15px}.pc-eta strong{font-size:13px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.4}.cd-controls{margin-top:20px}.cd-bottom{display:block}.cd-bottom>span{display:block;margin-top:7px}.cd-tip{font-size:10px;min-width:145px}}';
     document.head.appendChild(st);
   }
   function build() {
@@ -451,12 +487,13 @@
     root.innerHTML =
       '<button type="button" class="quiet-button panel-image-button" id="cd-image" aria-label="표차 캔들차트 PNG 저장" title="표차 캔들차트 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>' +
       '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div>' +
-      '<label class="cd-pair-control" for="gap-pair"><span>비교 순위</span><select id="gap-pair" class="control-select">'+[[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(function(p){return '<option value="'+p.join(',')+'">'+(p[0]+1)+'–'+(p[1]+1)+'위</option>';}).join('')+'</select></label></div>' +
+      '<label class="cd-pair-control" for="gap-pair"><span>상대 팀 (순위순)</span><select id="gap-pair" class="control-select"><option value="">상대 팀 기록 대기</option></select></label></div>' +
       '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="30">30분</button><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="180">3시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">예상 역전시간은 선택 구간의 표차 추세를 선형회귀로 단순 연장한 참고치입니다. 실제 결과를 예측하거나 보장하지 않습니다.</p></div>' +
       '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>표차 확대</span><span><i style="background:' + DOWN_COLOR + '"></i>표차 축소</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
-      '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="선택한 순위 간 표차의 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +
+      '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="리센느와 선택한 상대 팀의 표차 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +
       '<div class="cd-nav"><button class="quiet-button" id="cd-prev" type="button">◀ 이전</button><button class="quiet-button" id="cd-next" type="button">다음 ▶</button><button class="quiet-button" id="cd-latest" type="button">최신</button></div>' +
-      '<div class="cd-bottom"><p>※ 각 관측 시점의 선택한 순위 간 표차입니다. 순위가 바뀌면 비교 팀도 바뀝니다. 몸통은 시가(직전 관측 표차)에서 종가(구간 마지막 표차)까지, 위·아래 선은 구간 중 최고·최저예요. 관측이 빠진 구간은 임의로 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축을 압축·확장. 모바일: 한 손가락 좌우 드래그로 이동, 두 손가락 핀치로 시간축을 압축·확장할 수 있어요.</p><span id="cd-range"></span></div>';
+      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축 조절. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
+    syncGapOptions();
     document.getElementById('gap-pair').addEventListener('change',function(){state.map={};addSnaps(Object.values(snapshots));state.offset=0;rebuild();render();});
     el.pace = root.querySelector('#pc-summary'); el.paceTf = root.querySelector('#pc-tf'); el.paceBody = root.querySelector('#pc-body');
     el.wrap = root.querySelector('#cd-wrap'); el.svg = root.querySelector('#cd-svg'); el.tip = root.querySelector('#cd-tip');

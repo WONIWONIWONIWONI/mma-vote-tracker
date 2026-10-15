@@ -13,8 +13,8 @@ def parse(payload, stamp):
     if response.get('status') != 'ok':
         raise ValueError('Melon returned a non-ok status')
     rows = response['nominees']
-    if len(rows) < 4:
-        raise ValueError('Fewer than four nominees')
+    if len(rows) < 6:
+        raise ValueError('Fewer than six nominees')
     teams, ids = [], set()
     for row in rows:
         identity = str(row['content']['id'])
@@ -32,7 +32,7 @@ def parse(payload, stamp):
         raise ValueError('Percentage inconsistent with vote total')
     teams.sort(key=lambda t:-t['votes']) # source order breaks equal-vote ties
     for i,t in enumerate(teams):t['rank']=i+1
-    return dict(sourceAt=stamp,collectedAt=stamp,origin='melon_public_api',totalVotes=total,top4=teams[:4])
+    return dict(sourceAt=stamp,collectedAt=stamp,origin='melon_public_api',totalVotes=total,top4=teams[:6])
 
 def save(data):
     DATA.mkdir(parents=True,exist_ok=True)
@@ -72,7 +72,7 @@ def collect():
 def publish():
     subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
     if subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode:
-        subprocess.run(['git','commit','-m','data: record MMA TOP4 observation'],cwd=ROOT,check=True)
+        subprocess.run(['git','commit','-m','data: record MMA TOP6 observation'],cwd=ROOT,check=True)
         for attempt in range(3):
             push = subprocess.run(['git','push'],cwd=ROOT)
             if push.returncode == 0:
