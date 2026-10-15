@@ -94,7 +94,7 @@ async function setup(browser,mobile=false){
   for(const [first,last,label,color] of [[-100,-50,'격차 축소','#ff4757'],[100,150,'격차 확대','#ff4757'],[-100,-150,'격차 확대','#4fc8e0'],[100,50,'격차 축소','#4fc8e0']]){
    const rows=Array.from({length:7},(_,i)=>{const s=snapshot(714+i),gap=first+(last-first)*i/6;s.top4[1].votes=100000+i*10;s.top4[0].votes=s.top4[1].votes-gap;s.top4.sort((a,b)=>b.votes-a.votes);s.totalVotes=s.top4.reduce((n,t)=>n+t.votes,0);s.top4.forEach((t,i)=>{t.rank=i+1;t.reportedShare=Math.round(t.votes/s.totalVotes*100);});return s;});
    await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),{...history,snapshots:rows});
-   const metric=page.locator('.pc-metric').first();assert.ok((await metric.textContent()).includes(label));assert.equal(await metric.locator('strong').evaluate(e=>getComputedStyle(e).color),color==='#ff4757'?'rgb(255, 120, 154)':'rgb(79, 200, 224)');
+   const metric=page.locator('.pc-metric').first();assert.ok((await metric.textContent()).includes(label));assert.equal(await metric.locator('strong').evaluate(e=>getComputedStyle(e).color),color==='#ff4757'?'rgb(255, 71, 87)':'rgb(79, 200, 224)');
   }
  }
  assert.deepEqual(errors,[]);fs.mkdirSync('qa-output',{recursive:true});await page.screenshot({path:`qa-output/${mobile?'mobile':'desktop'}.png`,fullPage:true});
