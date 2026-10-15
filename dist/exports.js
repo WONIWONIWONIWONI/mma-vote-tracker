@@ -33,13 +33,13 @@
     const {canvas,c,text,line,rect}=surface(model,1470);
     text('현재 득표 현황',48,177,14,ink,500);
     model.leaders.forEach((team,i)=>{
-      const top=196+i*152;
-      rect(48,top,904,138);rect(48,top,4,138,team.color);
-      text(team.rank+'위 · '+team.name,68,top+31,20,team.color,600,'left',625);
-      text('전체 투표 대비 점유율',932,top+31,10,muted,400,'right',230);
-      text(team.votes,68,top+89,38,ink,600,'left',590);
-      text(team.share,932,top+87,28,team.color,500,'right',240);
-      text(team.gap,68,top+120,11,muted,500);
+      const top=196+i*112;
+      rect(48,top,904,100);rect(48,top,4,100,team.color);
+      text(team.rank+'위 · '+team.name,68,top+25,18,team.color,600,'left',625);
+      text('전체 투표 대비 점유율',932,top+25,10,muted,400,'right',230);
+      text(team.votes,68,top+67,30,ink,600,'left',590);
+      text(team.share,932,top+67,23,team.color,500,'right',240);
+      text(team.gap,68,top+89,9,muted,500);
     });
     text(model.chartTitle,48,877,17,ink,600);
     const left=108,right=950,top=935,bottom=1285;
@@ -59,14 +59,15 @@
     return canvas;
   }
   function pace(model){
-    const {canvas,text,line}=surface(model,666);
+    const rowY=235,rowGap=68,height=Math.max(666,rowY+Math.max(0,model.rows.length-1)*rowGap+185);
+    const {canvas,text,line}=surface(model,height);
     text('아티스트',48,187,10,muted);text('표수 변화',650,187,10,muted,400,'right');text('점유율 변화',952,187,10,muted,400,'right');
-    model.rows.forEach((row,i)=>{const y=256+i*88;text('● '+row.name,48,y,18,row.color,500,'left',390);text(row.deltaText,650,y,24,row.delta==null?muted:row.delta<0?warning:lime,500,'right',250);text(row.shareText,952,y,22,row.share==null?muted:row.share<0?warning:lime,500,'right',260);line(48,y+30,952,y+30);});
-    text(model.note,48,586,10,muted);
+    model.rows.forEach((row,i)=>{const y=rowY+i*rowGap;text('● '+row.name,48,y,18,row.color,500,'left',390);text(row.deltaText,650,y,24,row.delta==null?muted:row.delta<0?warning:lime,500,'right',250);text(row.shareText,952,y,22,row.share==null?muted:row.share<0?warning:lime,500,'right',260);line(48,y+30,952,y+30);});
+    text(model.note,48,height-80,10,muted);
     return canvas;
   }
   function hourly(model){
-    const rowHeight=246,height=173+model.rows.length*rowHeight+106;
+    const rowHeight=86+48*(model.rows[0]?.values.length||4),height=173+model.rows.length*rowHeight+106;
     const {canvas,text,rect}=surface(model,height);
     model.rows.forEach((row,i)=>{
       const top=166+i*rowHeight;

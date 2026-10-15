@@ -1,14 +1,38 @@
 import unittest
 from collect import parse
+
 class ParserTests(unittest.TestCase):
     def payload(self):
-        return {'response':{'status':'ok','nominees':[{'content':{'id':str(i),'name':str(i)},'voteCount':v,'votePercent':v} for i,v in enumerate([10,40,20,30])]}}
-    def test_sort_and_four(self):
-        s=parse(self.payload(),'2026-10-15T00:00:00Z');self.assertEqual([t['votes'] for t in s['top4']],[40,30,20,10]);self.assertEqual(s['totalVotes'],100)
+        votes = [10, 40, 20, 30, 15, 5]
+        shares = [8, 33, 17, 25, 13, 4]
+        rows = [
+            {'content': {'id': str(i), 'name': str(i)}, 'voteCount': vote, 'votePercent': share}
+            for i, (vote, share) in enumerate(zip(votes, shares))
+        ]
+        return {'response': {'status': 'ok', 'nominees': rows}}
+
+    def test_sort_and_keep_six(self):
+        result = parse(self.payload(), '2026-10-15T00:00:00Z')
+        self.assertEqual([team['votes'] for team in result['top4']], [40, 30, 20, 15, 10, 5])
+        self.assertEqual(result['totalVotes'], 120)
+
+    def test_reject_fewer_than_six(self):
+        payload = self.payload()
+        payload['response']['nominees'] = payload['response']['nominees'][:5]
+        with self.assertRaises(ValueError):
+            parse(payload, '2026-10-15T00:00:00Z')
+
     def test_bad_percentage(self):
-        p=self.payload();p['response']['nominees'][0]['votePercent']=99
-        with self.assertRaises(ValueError):parse(p,'2026-10-15T00:00:00Z')
+        payload = self.payload()
+        payload['response']['nominees'][0]['votePercent'] = 99
+        with self.assertRaises(ValueError):
+            parse(payload, '2026-10-15T00:00:00Z')
+
     def test_duplicate(self):
-        p=self.payload();p['response']['nominees'][0]['content']['id']='1'
-        with self.assertRaises(ValueError):parse(p,'2026-10-15T00:00:00Z')
-if __name__=='__main__':unittest.main()
+        payload = self.payload()
+        payload['response']['nominees'][0]['content']['id'] = '1'
+        with self.assertRaises(ValueError):
+            parse(payload, '2026-10-15T00:00:00Z')
+
+if __name__ == '__main__':
+    unittest.main()
