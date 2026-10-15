@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['dist/**', '.github/workflows/publish.yml']
+    paths: ['dist/**', 'qa/**', '.github/workflows/publish.yml']
 permissions:
   contents: read
   pages: write
@@ -19,9 +19,30 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check calculations and collection parser
+        run: |
+          for test in qa/test_{analytics,axis,data,hourly}.cjs; do node "$test"; done
+          python -m unittest discover -s collector
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          node node_modules/playwright/cli.js install chromium --with-deps
+      - name: Check desktop and mobile interactions
+        run: node qa/test_ui.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
       - uses: actions/deploy-pages@v4
         id: deployment
+
+      - name: Verify deployed site and direct Melon access
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node qa/live_probe.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-browser-checks
+          path: qa-output
+          retention-days: 3
