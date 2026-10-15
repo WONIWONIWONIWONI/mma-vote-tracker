@@ -1,0 +1,28 @@
+name: Collect MMA TOP4 votes
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['collector/**', '.github/workflows/collect.yml']
+  schedule:
+    - cron: '13,43 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: mma-collector
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 315
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python collector/collect.py --loop

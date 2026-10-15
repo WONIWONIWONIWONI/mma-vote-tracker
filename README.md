@@ -1,2 +1,17 @@
-# mma-vote-tracker
-MMA 2026 TOP10 상위 3팀 득표율 및 표차 트래커
+# MMA TOP 4 — VOTE/TRACK
+
+멜론 MMA2026 TOP10 투표의 현재 상위 4팀을 기록합니다. KGMA 트래커의 화면을 기반으로 만들었습니다.
+
+- 1~4위 득표수·공식 표시 득표율, 전체 표수 기준 계산 득표율
+- 여섯 순위 조합의 표차 추이, 비교 순위 선택 캔들(5분·1시간·6시간)
+- 직전 관측 대비 변화, 시간별 증가량, 이미지·CSV 저장
+- 원본 집계 시간이 제공되지 않아 조회 성공 시각(KST)을 사용합니다.
+- 현재 상위 4위 밖의 팀은 저장하지 않습니다. 순위 간 표차는 매 관측의 순위 기준입니다.
+- 공식 공개 API: https://m2.melon.com/m6/mma/2026/vote/top10.json?lang=ko
+- 자동 수집 약 5분 간격. GitHub Actions 작업 대기·교대·원본 오류 시 지연될 수 있습니다. PC를 켜둘 필요 없습니다.
+- 오류 시 마지막 정상값을 보존하고 오류 상태를 표시합니다. 없는 과거 기록은 만들지 않습니다.
+- 공개 status API의 TOP10 종료 시각은 2026-10-29 23:59:59 KST입니다. 최종 확인 여유를 두고 10월 30일 00:10 KST 이후 수집을 종료합니다. 예약 실행은 이후 원본 요청 없이 종료됩니다.
+
+GitHub Pages Source는 GitHub Actions입니다. 화면은 코드 배포 시 갱신하고 데이터는 공개 raw 파일에서 읽습니다.
+
+검증: `node qa/test_axis.cjs`, `node qa/test_hourly.cjs`, `python -m unittest discover -s collector`.
