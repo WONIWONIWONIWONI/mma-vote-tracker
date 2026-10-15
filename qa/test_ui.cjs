@@ -46,10 +46,15 @@ async function setup(browser,mobile=false){
  assert.equal(liveCalls,liveBefore,'no automatic Melon polling');assert.equal(archiveCalls,archivesBefore,'no automatic archive polling');
  const colors=await page.locator('.leader').evaluateAll(rows=>rows.map(e=>e.style.getPropertyValue('--color')));
  assert.equal(new Set(colors).size,6,'all six teams have distinct colors');assert.equal(colors[1],'#b997ff');
+ assert.equal(await page.locator('[data-range].selected').getAttribute('data-range'),'24');await page.locator('[data-range="1"]').click();await page.locator('.axis-options summary').click();
  await page.locator('#trend-chart').scrollIntoViewIfNeeded();await page.locator('#trend-forecast').uncheck();await page.locator('#trend-zoom').selectOption('8');
- async function focused(){const s=await page.evaluate(()=>window.MMA_DATA.snapshots.at(-1));const metric=await page.locator('[data-metric].selected').getAttribute('data-metric');const t=s.top4.find(t=>t.id===ids[1]);const v=metric==='share'?t.votes/s.totalVotes*100:t.votes;const bounds=await page.locator('#trend-chart').evaluate(e=>[+e.dataset.ymin,+e.dataset.ymax]);assert.ok(v>=bounds[0]&&v<=bounds[1],`focus includes Rescene: ${v} in ${bounds}`);return bounds;}
+ async function focused(){const s=await page.evaluate(()=>{const end=+document.getElementById('trend-chart').dataset.xmax;return window.MMA_DATA.snapshots.filter(r=>Date.parse(r.sourceAt)<=end).at(-1);});const metric=await page.locator('[data-metric].selected').getAttribute('data-metric');const t=s.top4.find(t=>t.id===ids[1]);const v=metric==='share'?t.votes/s.totalVotes*100:t.votes;const bounds=await page.locator('#trend-chart').evaluate(e=>[+e.dataset.ymin,+e.dataset.ymax]);assert.ok(v>=bounds[0]&&v<=bounds[1],`focus includes Rescene: ${v} in ${bounds}`);return bounds;}
  const bounds=await focused();
  if(!mobile){const r=await page.locator('#trend-chart').boundingBox();await page.mouse.move(r.x+r.width*.55,r.y+r.height*.5);await page.mouse.down();await page.mouse.move(r.x+r.width*.55,r.y+r.height*.5+70,{steps:8});await page.mouse.up();assert.notEqual((await focusedBounds(page))[0],bounds[0],'mouse pans the vertical viewport');}
+ const oneX=await page.locator('#trend-chart').getAttribute('data-xmin'),oneBox=await page.locator('#trend-chart').boundingBox(),oneXpos=oneBox.x+oneBox.width*.55,oneYpos=oneBox.y+oneBox.height*.5;
+ if(mobile){const cdp=await context.newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:oneXpos,y:oneYpos}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:oneXpos+60,y:oneYpos}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
+ else{await page.mouse.move(oneXpos,oneYpos);await page.mouse.down();await page.mouse.move(oneXpos+80,oneYpos,{steps:8});await page.mouse.up();}
+ assert.notEqual(await page.locator('#trend-chart').getAttribute('data-xmin'),oneX,'horizontal pan works at 1x when only vertical zoom is active');
  await page.locator('#trend-time-zoom').selectOption('4');await page.locator('#trend-chart').scrollIntoViewIfNeeded();
  const timeBounds=()=>page.locator('#trend-chart').evaluate(e=>[+e.dataset.xmin,+e.dataset.xmax]);
  const oldTime=await timeBounds(),oldY=await focusedBounds(page),tr=await page.locator('#trend-chart').boundingBox();
@@ -57,12 +62,28 @@ async function setup(browser,mobile=false){
  if(mobile){const cdp=await context.newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:tx,y:ty}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:tx+65,y:ty+30}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
  else{await page.mouse.move(tx,ty);await page.mouse.down();await page.mouse.move(tx+90,ty+30,{steps:10});await page.mouse.up();}
  const movedTime=await timeBounds();assert.ok(movedTime[0]<oldTime[0],'main chart drags horizontally toward earlier times');assert.ok(Math.abs((movedTime[1]-movedTime[0])-(oldTime[1]-oldTime[0]))<1,'panning preserves horizontal zoom');assert.notEqual((await focusedBounds(page))[0],oldY[0],'diagonal drag moves both axes');
- await page.locator('#trend-right').click();assert.ok((await timeBounds())[0]>movedTime[0],'main chart can move back toward later times');
+ const back=await page.locator('#trend-chart').boundingBox(),backX=back.x+back.width*.55,backY=back.y+back.height*.5;
+ if(mobile){const cdp=await context.newCDPSession(page);await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:backX,y:backY}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:backX-50,y:backY}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
+ else{await page.mouse.move(backX,backY);await page.mouse.down();await page.mouse.move(backX-60,backY,{steps:8});await page.mouse.up();}
+ assert.ok((await timeBounds())[0]>movedTime[0],'hand dragging moves back toward later times');
+ if(mobile){const r=await page.locator('#trend-chart').boundingBox(),x=r.x+r.width*.55,y=r.y+r.height*.5,cdp=await context.newCDPSession(page),old=await timeBounds(),oldY=await focusedBounds(page);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x-35,y},{x:x+35,y}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-50,y},{x:x+50,y}]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-60,y},{x:x+60,y}]});
+  const pinched=await timeBounds(),pinchedY=await focusedBounds(page);assert.ok(pinched[1]-pinched[0]<old[1]-old[0],'main-chart pinch expands the time axis');assert.ok(pinchedY[1]-pinchedY[0]<oldY[1]-oldY[0],'main-chart pinch expands the value axis');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-35,y},{x:x+35,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  const restored=await timeBounds();assert.ok(Math.abs((restored[1]-restored[0])-(old[1]-old[0]))<10,'pinch returns smoothly to its original scale');
+ }
  await page.locator('[data-metric="share"]').click();await focused();await page.locator('[data-range="0.25"]').click();await focused();
  await page.locator('#trend-focus').selectOption(ids[1]);await page.locator('#trend-chart').scrollIntoViewIfNeeded();
  if(mobile){const r=await page.locator('#trend-chart').boundingBox(),cdp=await context.newCDPSession(page);const old=await focusedBounds(page);const x=r.x+r.width*.55,y=r.y+r.height*.5;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y+50}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});assert.notEqual((await focusedBounds(page))[0],old[0],'touch pans the vertical viewport');
  }
+ await page.locator('#trend-forecast').check();await page.locator('#trend-forecast-minutes').selectOption('180');
+ await page.waitForFunction(()=>document.getElementById('chart-note').textContent.includes('180분'));
+ const forecastEnd=await page.locator('#trend-chart').getAttribute('data-xmax'),lastObserved=await page.evaluate(()=>Date.parse(window.MMA_DATA.snapshots.at(-1).sourceAt));
+ assert.ok(Math.abs(+forecastEnd-lastObserved-180*60000)<1000,'selected three-hour forecast is displayed');
+ assert.ok(await page.locator('#trend-chart path[stroke-dasharray]').count()>0);
  await page.locator('#cd-zoom-in').click();await page.locator('#cd-zoom-in').click();await page.locator('#cd-svg').scrollIntoViewIfNeeded();
  const view=()=>page.locator('#cd-svg').evaluate(e=>({start:+e.dataset.start,n:+e.dataset.count,total:+e.dataset.total,W:e.viewBox.baseVal.width}));
  const before=await view();assert.ok(before.n<before.total);

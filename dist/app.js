@@ -7,7 +7,7 @@
   const colors = {'994944':'#ff789a','3709231':'#b997ff','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
   const gapDefs = [[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(([a,b],i)=>({id:`gap${a}${b}`,a,b,name:`${a+1}–${b+1}위`,color:palette[i]}));
   function rankGap(s,g){return s.top4[g.a].votes-s.top4[g.b].votes;}
-  const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,timeZoom:1,timeCenter:50,forecast:true,range:'1',historyLimit:12,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
+  const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,timeZoom:1,timeCenter:50,timeEnd:null,yView:null,forecastMinutes:30,forecast:true,range:'24',historyLimit:12,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
   const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => nf.format(n);
   const share = (team,snap) => 100*team.votes/snap.totalVotes;
@@ -112,26 +112,41 @@
       const source=state.data.snapshots.filter(r=>Date.parse(r.sourceAt)>=lastTime-3600000);
       if(source.some((r,i)=>i&&(()=>{const a=source[i-1].top4.find(t=>t.id===line.id),b=r.top4.find(t=>t.id===line.id);return a&&b&&b.votes<a.votes;})()))return [];
       const points=source.map(r=>({t:Date.parse(r.sourceAt),v:getValue(r,line)})).filter(p=>p.v!=null);
-      const f=MMAAnalytics.forecast(points,60);if(!f||f.time!==lastTime)return [];
+      const f=MMAAnalytics.forecast(points,60,state.forecastMinutes);if(!f||f.time!==lastTime)return [];
       return [{...line,...f,points:f.points.map(p=>({...p,value:Math.max(0,Math.min(state.metric==='share'?100:Infinity,p.value))}))}];
     }):[];
-    const values=rows.flatMap(r=>series.map(line=>getValue(r,line))).filter(Number.isFinite).concat(forecasts.flatMap(f=>f.points.map(p=>p.value)));
-    let axis=MMAAxis.fit(values,state.metric,W<600?4:5);const baseAxis=axis;
-    if(state.zoom>1){const span=(axis.max-axis.min)/state.zoom,min=axis.min+(axis.max-axis.min-span)*state.center/100;const step=span/4;axis={...axis,min,max:min+span,decimals:state.metric==='share'?2:0,ticks:Array.from({length:5},(_,i)=>min+i*step)};}
-    const left=Math.max(55,Math.max(...axis.ticks.map(v=>axisLabel(v,axis).length))*6.5+14),box={x:left,y:24,w:W-left-15,h:H-72};
-    let baseXmin=Date.parse(rows[0].sourceAt),baseXmax=Math.max(lastTime,...forecasts.map(f=>f.points.at(-1).time));
+    const baseRows=rows,all=state.data.snapshots;
+    let baseXmin=Date.parse(baseRows[0].sourceAt),baseXmax=Math.max(lastTime,...forecasts.map(f=>f.points.at(-1).time));
     if(baseXmin===baseXmax){baseXmin-=300000;baseXmax+=300000;}
-    const timeSpan=(baseXmax-baseXmin)/state.timeZoom,xmin=baseXmin+(baseXmax-baseXmin-timeSpan)*state.timeCenter/100,xmax=xmin+timeSpan;
-    return {rows,series,forecasts,lastTime,W,H,box,xmin,xmax,baseXmin,baseXmax,baseAxis,axis,ymin:axis.min,ymax:axis.max,x:t=>box.x+(t-xmin)/(xmax-xmin)*box.w,y:v=>box.y+box.h-(v-axis.min)/(axis.max-axis.min)*box.h};
+    const timeSpan=(baseXmax-baseXmin)/state.timeZoom,minTimeEnd=Math.min(baseXmax,Date.parse(all[0].sourceAt)+timeSpan);
+    const xmax=Math.max(minTimeEnd,Math.min(baseXmax,state.timeEnd??baseXmax)),xmin=xmax-timeSpan;
+    let visible=all.filter(r=>Date.parse(r.sourceAt)>=xmin&&Date.parse(r.sourceAt)<=xmax);
+    const before=all.findLast(r=>Date.parse(r.sourceAt)<xmin),after=all.find(r=>Date.parse(r.sourceAt)>xmax);
+    if(before)visible.unshift(before);if(after)visible.push(after);if(!visible.length)visible=[latest()];
+    const predictedValues=forecasts.flatMap(f=>{const a=Math.max(xmin,f.time),b=Math.min(xmax,f.points.at(-1).time);return b<a?[]:[a,b].map(t=>Math.max(0,Math.min(state.metric==='share'?100:Infinity,f.last+f.slope*(t-f.time)/60000)));});
+    const values=visible.flatMap(r=>series.map(line=>getValue(r,line))).filter(Number.isFinite).concat(predictedValues);
+    const baseAxis=MMAAxis.fit(values,state.metric,W<600?4:5);
+    const span=Math.max(state.metric==='share'?.0004:4,(baseAxis.max-baseAxis.min)/state.zoom);
+    const focusRow=visible.filter(r=>Date.parse(r.sourceAt)<=xmax).at(-1)||latest(),focus=getValue(focusRow,{id:$('trend-focus').value});
+    const center=Number.isFinite(focus)?focus:(baseAxis.min+baseAxis.max)/2;
+    const autoMin=state.zoom>1?Math.max(baseAxis.min,Math.min(baseAxis.max-span,center-span/2)):baseAxis.min;
+    let ymin=state.yView?.min??autoMin,ymax=state.yView?.max??(autoMin+(state.zoom>1?span:baseAxis.max-baseAxis.min));
+    const ceiling=state.metric==='share'?100:Infinity;
+    if(ymin<0){ymax-=ymin;ymin=0;}if(ymax>ceiling){ymin=Math.max(0,ymin-ymax+ceiling);ymax=ceiling;}
+    const step=(ymax-ymin)/4,decimals=state.metric==='share'?Math.max(2,Math.min(6,Math.ceil(-Math.log10(step))+1)):0;
+    const axis=state.zoom===1&&!state.yView?baseAxis:{...baseAxis,min:ymin,max:ymax,decimals,ticks:Array.from({length:5},(_,i)=>ymin+i*step)};
+    const left=Math.max(55,Math.max(...axis.ticks.map(v=>axisLabel(v,axis).length))*6.5+14),box={x:left,y:24,w:W-left-15,h:H-72};
+    return {rows:visible,series,forecasts,lastTime,W,H,box,xmin,xmax,baseXmin,baseXmax,minTimeEnd,baseAxis,axis,ymin,ymax,x:t=>box.x+(t-xmin)/(xmax-xmin)*box.w,y:v=>box.y+box.h-(v-ymin)/(ymax-ymin)*box.h};
   }
+
   function renderChart(){
     const g=graphGeometry(),{rows,series,forecasts,lastTime,W,H,box,x,y,xmin,xmax,axis}=g,svg=$('trend-chart');
     svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.style.height=`${H}px`;svg.dataset.ymin=g.ymin;svg.dataset.ymax=g.ymax;svg.dataset.xmin=xmin;svg.dataset.xmax=xmax;
-    const pannable=state.zoom>1||state.timeZoom>1;
-    svg.style.touchAction=pannable?'none':'pan-y';svg.style.cursor=trendDrag?'grabbing':pannable?'grab':'default';
-    $('trend-left').disabled=state.timeZoom===1||state.timeCenter<=0;$('trend-right').disabled=state.timeZoom===1||state.timeCenter>=100;$('trend-up').disabled=$('trend-down').disabled=state.zoom===1;
+    svg.style.touchAction='none';svg.style.cursor=trendDrag?'grabbing':'grab';
+    for(const [id,value] of [['trend-zoom',state.zoom],['trend-time-zoom',state.timeZoom]]){const control=$(id);control.querySelectorAll('[data-custom]').forEach(o=>o.remove());if(![...control.options].some(o=>+o.value===value)){const option=new Option(value.toFixed(1)+'배',String(value));option.dataset.custom='true';control.add(option);}control.value=String(value);}
+    $('trend-zoom-in').disabled=state.zoom>=16&&state.timeZoom>=16;$('trend-zoom-out').disabled=state.zoom<=1&&state.timeZoom<=1;
     $('chart-unit').textContent=state.metric==='share'?'전체 대비 점유율 (%)':'득표수 (표)';
-    $('chart-axis-note').textContent=`시간축 ${state.timeZoom}배 · 세로 ${state.zoom}배 · ${axisRangeLabel(g)}`;
+    $('chart-axis-note').textContent=`시간축 ${Number(state.timeZoom.toFixed(1))}배 · 세로 ${Number(state.zoom.toFixed(1))}배 · ${axisRangeLabel(g)}`;
     $('chart-legend').innerHTML=latest().top4.map(t=>`<button class="legend-item team-toggle ${state.hiddenTeams.has(t.id)?'muted-team':''}" data-team="${escapeHTML(t.id)}" aria-pressed="${!state.hiddenTeams.has(t.id)}" style="--color:${colorOf(t)}"><i></i>${escapeHTML(t.name)}</button>`).join('');
     const grid=axis.ticks.map(v=>`<line x1="${box.x}" y1="${y(v)}" x2="${box.x+box.w}" y2="${y(v)}" stroke="#3b374d" stroke-dasharray="3 5"/><text x="${box.x-9}" y="${y(v)+4}" text-anchor="end" fill="#aaa3b8" font-size="10">${axisLabel(v,axis)}</text>`);
     const n=W<480?3:6;for(let i=0;i<n;i++){const t=xmin+(xmax-xmin)*i/(n-1);grid.push(`<text x="${x(t)}" y="${H-20}" text-anchor="${i===0?'start':i===n-1?'end':'middle'}" fill="#aaa3b8" font-size="10">${kst(t,'time')}</text>`);}
@@ -145,7 +160,7 @@
     svg.innerHTML=`<title>선택한 팀의 실제 추이와 조건부 예측</title><defs><clipPath id="trend-clip"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs>${grid.join('')}<g clip-path="url(#trend-clip)">${lines}${hits}${future}</g>`;
     svg.querySelectorAll('[data-point]').forEach(el=>{const show=()=>{if(!trendDrag)showTooltip(rows[+el.dataset.point],series,el,g);};el.addEventListener('pointerenter',show);el.addEventListener('focus',show);el.addEventListener('pointerleave',hideTooltip);el.addEventListener('blur',hideTooltip);});
     const fh=svg.querySelector('#forecast-hit');if(fh){fh.addEventListener('pointermove',e=>{if(trendDrag)return;const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,t=Math.max(lastTime,Math.min(xmax,xmin+(px-box.x)/box.w*(xmax-xmin)));const tt=$('tooltip');tt.innerHTML=`<strong>${kst(t)} · 예측(실제값 아님)</strong>`+forecasts.filter(f=>t<=f.points.at(-1).time).map(f=>`<p><span style="color:${f.color}">${escapeHTML(f.name)}</span><b>${state.metric==='share'?Math.max(0,Math.min(100,f.last+f.slope*(t-lastTime)/60000)).toFixed(2)+'%':fmt(Math.round(Math.max(0,f.last+f.slope*(t-lastTime)/60000)))+'표'}</b></p>`).join('');tt.hidden=false;tt.style.left=Math.max(0,Math.min(r.width-tt.offsetWidth,(e.clientX-r.left)-tt.offsetWidth))+'px';tt.style.top='38px';});fh.addEventListener('pointerleave',hideTooltip);}
-    $('chart-note').textContent=`실선: 실제 관측 · ${state.forecast?(forecasts.length?`점선: 최근 60분 가중 선형회귀 (${forecasts.length}/${series.length}팀) · 최대 30분 조건부 추정`:'예측 보류: 관측 부족·공백·정정 또는 불안정한 추세'):'예측 끔'} · 미관측 구간은 직선 연결`;
+    $('chart-note').textContent=`실선: 실제 관측 · ${state.forecast?(forecasts.length?`점선: 최근 60분 가중 선형회귀 (${forecasts.length}/${series.length}팀) · ${state.forecastMinutes}분 조건부 추정`:'예측 보류: 관측 부족·공백·정정 또는 불안정한 추세'):'예측 끔'} · 미관측 구간은 직선 연결${state.forecast&&state.forecastMinutes>30?' · 긴 예측일수록 오차가 커질 수 있습니다.':''}`;
     $('chart-window').textContent=`${kst(xmin,'short')} — ${kst(xmax,'short')}${xmax>lastTime?' (예측 구간 포함)':' 실제 관측 구간'}`;
   }
   function showTooltip(s,series,el,g){const tt=$('tooltip');tt.innerHTML=`<strong>${kst(s.sourceAt)} KST</strong>`+series.map(line=>{const v=getValue(s,line);return `<p><span><i style="background:${line.color}"></i>${escapeHTML(line.name)}</span><b>${v==null?'—':state.metric==='share'?v.toFixed(2)+'%':fmt(v)+'표'}</b></p>`;}).join('');tt.hidden=false;const wrap=$('trend-chart').getBoundingClientRect();const p=g.x(Date.parse(s.sourceAt))/g.W*wrap.width;tt.style.left=Math.max(0,Math.min(wrap.width-tt.offsetWidth,p+12))+'px';tt.style.top='38px';}
@@ -261,48 +276,65 @@
     finally{if(canvas){canvas.width=1;canvas.height=1;}imagePending=false;button.disabled=false;}
   }
   document.addEventListener('click',event=>{const button=event.target.closest('[data-image]');if(button)exportPanel(button);});
-  document.querySelectorAll('[data-metric]').forEach(button=>button.addEventListener('click',()=>{state.metric=button.dataset.metric;document.querySelectorAll('[data-metric]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));});hideTooltip();state.zoom>1?focusTrend():renderChart();}));
-  document.querySelectorAll('[data-range]').forEach(button=>button.addEventListener('click',()=>{state.range=button.dataset.range;state.timeZoom=1;state.timeCenter=50;$('trend-time-zoom').value='1';$('trend-time-center').value='50';$('trend-time-center').disabled=true;document.querySelectorAll('[data-range]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));});hideTooltip();state.zoom>1?focusTrend():renderChart();}));
+  document.querySelectorAll('[data-metric]').forEach(button=>button.addEventListener('click',()=>{state.metric=button.dataset.metric;document.querySelectorAll('[data-metric]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));});state.yView=null;hideTooltip();renderChart();}));
+  document.querySelectorAll('[data-range]').forEach(button=>button.addEventListener('click',()=>{state.range=button.dataset.range;state.timeZoom=1;state.timeEnd=null;state.yView=null;document.querySelectorAll('[data-range]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));});state.yView=null;hideTooltip();renderChart();}));
   $('hourly-date').addEventListener('change',event=>{state.hourlyDate=event.target.value;state.hourlyLimit=6;renderHourly();});
   $('hourly-more').addEventListener('click',()=>{state.hourlyLimit=24;renderHourly();});
   $('refresh-button').addEventListener('click',()=>refresh(true));$('csv-button').addEventListener('click',exportCSV);$('copy-button').addEventListener('click',copySummary);$('load-more').addEventListener('click',()=>{state.historyLimit+=12;renderHistory();});$('history-details').addEventListener('toggle',()=>{$('history-toggle-label').textContent=$('history-details').open?'접기':'펼치기';});let resizeTimer;addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(renderChart,120);});
-  $('chart-legend').addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(!b)return;const id=b.dataset.team;if(state.hiddenTeams.has(id))state.hiddenTeams.delete(id);else if(getSeries().length>1)state.hiddenTeams.add(id);state.zoom=1;$('trend-zoom').value='1';$('trend-center').disabled=true;hideTooltip();renderChart();});
-  function moveTrend(value,timeValue=state.timeCenter){state.center=Math.max(0,Math.min(100,value));state.timeCenter=Math.max(0,Math.min(100,timeValue));$('trend-center').value=String(state.center);$('trend-time-center').value=String(state.timeCenter);hideTooltip();renderChart();}
-  function moveTime(value){moveTrend(state.center,value);}
-  function focusTime(target,ratio=.5){const g=graphGeometry(),span=(g.baseXmax-g.baseXmin)/state.timeZoom;moveTime(state.timeZoom>1?100*((target??g.lastTime)-ratio*span-g.baseXmin)/(g.baseXmax-g.baseXmin-span):50);}
-  $('trend-time-zoom').addEventListener('change',e=>{const old=graphGeometry(),wasZoomed=state.timeZoom>1;state.timeZoom=+e.target.value;$('trend-time-center').disabled=state.timeZoom===1;focusTime(wasZoomed?(old.xmin+old.xmax)/2:old.lastTime);});
-  $('trend-time-center').addEventListener('input',e=>moveTime(+e.target.value));
-  $('trend-left').addEventListener('click',()=>moveTime(state.timeCenter-15));
-  $('trend-right').addEventListener('click',()=>moveTime(state.timeCenter+15));
-  function focusTrend(target){
-    const g=graphGeometry(),span=(g.baseAxis.max-g.baseAxis.min)/state.zoom;
-    const center=target??getValue(latest(),{id:$('trend-focus').value});
-    moveTrend(state.zoom>1&&Number.isFinite(center)?100*(center-span/2-g.baseAxis.min)/(g.baseAxis.max-g.baseAxis.min-span):50);
+  $('chart-legend').addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(!b)return;const id=b.dataset.team;if(state.hiddenTeams.has(id))state.hiddenTeams.delete(id);else if(getSeries().length>1)state.hiddenTeams.add(id);state.zoom=1;state.yView=null;hideTooltip();renderChart();});
+  function setChartZoom(nextX,nextY,anchor={x:.5,y:.5}){
+    const g=graphGeometry(),atTime=g.xmin+anchor.x*(g.xmax-g.xmin),atValue=g.ymax-anchor.y*(g.ymax-g.ymin);
+    const spanY=Math.max(state.metric==='share'?.0004:4,(g.ymax-g.ymin)*state.zoom/nextY);
+    state.timeZoom=nextX;state.yView={min:atValue-(1-anchor.y)*spanY,max:atValue+anchor.y*spanY};state.zoom=nextY;
+    state.timeEnd=atTime+(1-anchor.x)*(g.baseXmax-g.baseXmin)/nextX;hideTooltip();renderChart();
   }
-  $('trend-zoom').addEventListener('change',e=>{
-    const previous=graphGeometry(),wasZoomed=state.zoom>1;state.zoom=+e.target.value;
-    $('trend-center').disabled=state.zoom===1;
-    focusTrend(wasZoomed?(previous.ymin+previous.ymax)/2:undefined);
+  $('trend-zoom').addEventListener('change',e=>{state.zoom=+e.target.value;state.yView=null;hideTooltip();renderChart();});
+  $('trend-time-zoom').addEventListener('change',e=>setChartZoom(+e.target.value,state.zoom));
+  $('trend-focus').addEventListener('change',()=>{state.hiddenTeams.delete($('trend-focus').value);state.yView=null;hideTooltip();renderChart();});
+  $('trend-zoom-in').addEventListener('click',()=>setChartZoom(Math.min(16,state.timeZoom*2),Math.min(16,state.zoom*2)));
+  $('trend-zoom-out').addEventListener('click',()=>setChartZoom(Math.max(1,state.timeZoom/2),Math.max(1,state.zoom/2)));
+  let trendDrag=null,trendPinch=null;const trendPointers=new Map();
+  function chartPointer(clientX,clientY,g=graphGeometry()){
+    const rect=$('trend-chart').getBoundingClientRect();return {x:Math.max(0,Math.min(1,((clientX-rect.left)*g.W/rect.width-g.box.x)/g.box.w)),y:Math.max(0,Math.min(1,((clientY-rect.top)*g.H/rect.height-g.box.y)/g.box.h))};
+  }
+  function startTrendDrag(id,x,y){const g=graphGeometry(),rect=$('trend-chart').getBoundingClientRect();trendDrag={id,x,y,g,width:g.box.w*rect.width/g.W,height:g.box.h*rect.height/g.H};}
+  $('trend-chart').addEventListener('pointerdown',e=>{
+    if(e.button>0)return;$('trend-chart').setPointerCapture(e.pointerId);hideTooltip();e.preventDefault();
+    if(e.pointerType==='touch'){
+      trendPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(trendPointers.size>=2){const [a,b]=[...trendPointers.values()],g=graphGeometry();trendPinch={g,zoom:state.zoom,timeZoom:state.timeZoom,distance:Math.max(1,Math.hypot(b.x-a.x,b.y-a.y)),anchor:chartPointer((a.x+b.x)/2,(a.y+b.y)/2,g)};trendDrag=null;return;}
+    }
+    startTrendDrag(e.pointerId,e.clientX,e.clientY);
   });
-  $('trend-focus').addEventListener('change',()=>{if(state.zoom===1){state.zoom=4;$('trend-zoom').value='4';$('trend-center').disabled=false;}const id=$('trend-focus').value;state.hiddenTeams.delete(id);focusTrend();});
-  $('trend-center').addEventListener('input',e=>moveTrend(+e.target.value));
-  $('trend-up').addEventListener('click',()=>moveTrend(state.center+15));
-  $('trend-down').addEventListener('click',()=>moveTrend(state.center-15));
-  let trendDrag=null;
-  $('trend-chart').addEventListener('pointerdown',e=>{if((state.zoom<=1&&state.timeZoom<=1)||e.button>0)return;const g=graphGeometry(),rect=$('trend-chart').getBoundingClientRect();trendDrag={id:e.pointerId,x:e.clientX,y:e.clientY,center:state.center,timeCenter:state.timeCenter,height:g.box.h*rect.height/g.H,width:g.box.w*rect.width/g.W};$('trend-chart').setPointerCapture(e.pointerId);hideTooltip();e.preventDefault();});
-  $('trend-chart').addEventListener('pointermove',e=>{if(!trendDrag||e.pointerId!==trendDrag.id)return;moveTrend(state.zoom>1?trendDrag.center+(e.clientY-trendDrag.y)/trendDrag.height*100/(state.zoom-1):state.center,state.timeZoom>1?trendDrag.timeCenter-(e.clientX-trendDrag.x)/trendDrag.width*100/(state.timeZoom-1):state.timeCenter);});
-  function endTrendDrag(e){if(trendDrag?.id===e.pointerId){trendDrag=null;$('trend-chart').style.cursor=state.zoom>1||state.timeZoom>1?'grab':'default';hideTooltip();}}
+  $('trend-chart').addEventListener('pointermove',e=>{
+    if(trendPointers.has(e.pointerId))trendPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(trendPinch&&trendPointers.size>=2){
+      const [a,b]=[...trendPointers.values()],p=trendPinch,g=p.g,ratio=Math.hypot(b.x-a.x,b.y-a.y)/p.distance,anchor=chartPointer((a.x+b.x)/2,(a.y+b.y)/2);
+      const nextX=Math.max(1,Math.min(16,p.timeZoom*ratio)),nextY=Math.max(1,Math.min(16,p.zoom*ratio)),spanY=Math.max(state.metric==='share'?.0004:4,(g.ymax-g.ymin)*p.zoom/nextY);
+      const atTime=g.xmin+p.anchor.x*(g.xmax-g.xmin),atValue=g.ymax-p.anchor.y*(g.ymax-g.ymin);
+      state.timeZoom=nextX;state.zoom=nextY;state.timeEnd=atTime+(1-anchor.x)*(g.baseXmax-g.baseXmin)/nextX;state.yView={min:atValue-(1-anchor.y)*spanY,max:atValue+anchor.y*spanY};hideTooltip();renderChart();return;
+    }
+    if(!trendDrag||e.pointerId!==trendDrag.id)return;const d=trendDrag,g=d.g,dy=(e.clientY-d.y)/d.height*(g.ymax-g.ymin);
+    state.timeEnd=Math.max(g.minTimeEnd,Math.min(g.baseXmax,g.xmax-(e.clientX-d.x)/d.width*(g.xmax-g.xmin)));
+    state.yView={min:g.ymin+dy,max:g.ymax+dy};hideTooltip();renderChart();
+  });
+  function endTrendDrag(e){
+    if(e.pointerType==='touch'){
+      if(!trendPointers.has(e.pointerId))return;trendPointers.delete(e.pointerId);trendPinch=null;
+      if(trendPointers.size===1){const [id,p]=[...trendPointers.entries()][0];startTrendDrag(id,p.x,p.y);return;}
+    }
+    if(trendDrag?.id===e.pointerId||!trendPointers.size){trendDrag=null;$('trend-chart').style.cursor='grab';hideTooltip();}
+  }
+  ['pointerup','pointercancel','lostpointercapture'].forEach(name=>$('trend-chart').addEventListener(name,endTrendDrag));
+  ['gesturestart','gesturechange','gestureend'].forEach(name=>$('trend-chart').addEventListener(name,e=>e.preventDefault(),{passive:false}));
   $('trend-chart').addEventListener('wheel',e=>{
-    if(!e.ctrlKey)return;
-    e.preventDefault();const old=graphGeometry(),rect=$('trend-chart').getBoundingClientRect(),ratio=Math.max(0,Math.min(1,((e.clientX-rect.left)*old.W/rect.width-old.box.x)/old.box.w));
-    const steps=[1,2,4,8],index=steps.indexOf(state.timeZoom),next=steps[Math.max(0,Math.min(3,index+(e.deltaY<0?1:-1)))];
-    state.timeZoom=next;$('trend-time-zoom').value=String(next);$('trend-time-center').disabled=next===1;focusTime(old.xmin+ratio*(old.xmax-old.xmin),ratio);
+    e.preventDefault();const g=graphGeometry(),rect=$('trend-chart').getBoundingClientRect();
+    const anchor={x:Math.max(0,Math.min(1,((e.clientX-rect.left)*g.W/rect.width-g.box.x)/g.box.w)),y:Math.max(0,Math.min(1,((e.clientY-rect.top)*g.H/rect.height-g.box.y)/g.box.h))},factor=e.deltaY<0?2:.5;
+    setChartZoom(Math.max(1,Math.min(16,state.timeZoom*factor)),Math.max(1,Math.min(16,state.zoom*factor)),anchor);
   },{passive:false});
-  $('trend-chart').addEventListener('pointerup',endTrendDrag);
-  $('trend-chart').addEventListener('pointercancel',endTrendDrag);
-  $('trend-chart').addEventListener('lostpointercapture',endTrendDrag);
-  $('trend-forecast').addEventListener('change',e=>{state.forecast=e.target.checked;hideTooltip();renderChart();});
-  $('trend-reset').addEventListener('click',()=>{state.hiddenTeams.clear();state.zoom=1;state.center=50;state.timeZoom=1;state.timeCenter=50;$('trend-time-zoom').value='1';$('trend-time-center').value='50';$('trend-time-center').disabled=true;$('trend-zoom').value='1';$('trend-center').value='50';$('trend-center').disabled=true;hideTooltip();renderChart();});
+  $('trend-forecast').addEventListener('change',e=>{state.forecast=e.target.checked;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
+  $('trend-forecast-minutes').addEventListener('change',e=>{state.forecastMinutes=+e.target.value;state.timeEnd=null;state.timeZoom=1;state.yView=null;hideTooltip();renderChart();});
+  $('trend-reset').addEventListener('click',()=>{state.hiddenTeams.clear();state.zoom=1;state.timeZoom=1;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
   state.data=normalize(state.data);state.archive=state.data;render();if(location.protocol!=='file:')refresh();setInterval(status,30000);
 })();
 

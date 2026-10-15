@@ -20,10 +20,11 @@
   const r2=yy>1e-9?Math.max(0,1-error/yy):1;
   return {slope,intercept,r2,rmse:Math.sqrt(error/sw),span,n:rows.length,last:last.v,time:last.t,horizon:Math.min(30,span/2)};
  }
- function forecast(points,minutes=60){
+ function forecast(points,minutes=60,requestedHorizon=null){
   const model=fit(points,minutes);
   if(!model||model.r2<0.3)return null;
-  return {...model,points:[0,1,2,3,4,5,6].map(i=>{const m=i*model.horizon/6;return {time:model.time+m*60000,value:model.last+model.slope*m};})};
+  const horizon=Number.isFinite(requestedHorizon)&&requestedHorizon>0?Math.min(1440,requestedHorizon):model.horizon;
+  return {...model,horizon,points:[0,1,2,3,4,5,6].map(i=>{const m=i*horizon/6;return {time:model.time+m*60000,value:model.last+model.slope*m};})};
  }
  function crossing(gap,model){
   if(Math.abs(gap)<0.5)return {kind:'tied',minutes:0};
@@ -40,3 +41,4 @@
  const api={fit,forecast,crossing,distanceChange};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MMAAnalytics=api;
 })(globalThis);
+
