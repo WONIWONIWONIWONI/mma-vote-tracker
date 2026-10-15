@@ -53,7 +53,7 @@ def collect():
         data['collector']={'state':'stopped','checkedAt':stamp};save(data);return True
     try:
         request=urllib.request.Request(URL+'&t='+str(int(time.time())),headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.melon.com/mma/2026/vote/top10/'})
-        with urllib.request.urlopen(request,timeout=40) as r: payload=json.load(r)
+        with urllib.request.urlopen(request,timeout=20) as r: payload=json.load(r)
         snapshot=parse(payload,now())
         if data['snapshots'] and data['snapshots'][-1]['sourceAt'][:16] == snapshot['sourceAt'][:16]:
             data['snapshots'][-1]=snapshot
@@ -88,6 +88,10 @@ if __name__=='__main__':
         sys.exit(0 if collect() else 1)
     deadline=time.monotonic()+5*3600
     while time.monotonic()<deadline:
-        collect();publish()
+        collect()
+        try:
+            publish()
+        except (subprocess.CalledProcessError, OSError) as error:
+            print('Publish failed; retaining local observations for next retry:', error, flush=True)
         if now() >= ENDS_AT: break
-        time.sleep(10-time.time()%10)
+        time.sleep(60-time.time()%60)
