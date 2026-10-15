@@ -5,20 +5,20 @@
   'use strict';
 
   /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = '#ff5a5f';    // 표차 확대 (빨강)
-  var DOWN_COLOR = '#4a9dff';  // 표차 축소 (파랑)
-  var FLAT_COLOR = '#8f968a';  // 변화 없음
+  var UP_COLOR = '#ff789a';    // 표차 확대 (빨강)
+  var DOWN_COLOR = '#4fc8e0';  // 표차 축소 (파랑)
+  var FLAT_COLOR = '#a58e9c';  // 변화 없음
   var RAW = 'https://raw.githubusercontent.com/WONIWONIWONIWONI/mma-vote-tracker/main/';
   var HISTORY_URLS = [RAW + 'dist/data/history.json', './data/history.json', RAW + 'data/history.json'];
   var POLL_MS = 10000; // RESCENE-relative gap chart
   var FRAMES = {
-    '5': { min: 5, label: '5분봉', show: 72 },
-    '60': { min: 60, label: '1시간봉', show: 48 },
-    '360': { min: 360, label: '6시간봉', show: 28 }
+    '5': { min: 5, label: '5분봉', show: 144 },
+    '60': { min: 60, label: '1시간봉', show: 96 },
+    '360': { min: 360, label: '6시간봉', show: 56 }
   };
   var FONT = 'DM Sans,Noto Sans KR,Apple SD Gothic Neo,Malgun Gothic,sans-serif';
 
-  var state = { touch: false, tf: '5', paceMin: 60, offset: 0, zoom: { '5': 96, '60': 48, '360': 28 }, map: {}, points: [], candles: [], base: null, endsAt: null, lastFull: 0, view: null, hover: -1 };
+  var state = { touch: false, tf: '5', paceMin: 60, offset: 0, zoom: { '5': 144, '60': 96, '360': 56 }, map: {}, points: [], candles: [], base: null, endsAt: null, lastFull: 0, view: null, hover: -1 };
   var root, el = {}, snapshots = {};
 
   /* ===== 작은 도구들 ===== */
@@ -184,8 +184,8 @@
 
     niceTicks(lo, hi, H < 300 ? 4 : 5).forEach(function (t) {
       var y = f1(Y(t));
-      s.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="#2d3d59" stroke-dasharray="2 4" stroke-width="1"/>');
-      s.push('<text x="' + (m.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#9eacc4" font-family=\'' + FONT + '\'>' + num(t) + '</text>');
+      s.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="#3b374d" stroke-dasharray="2 4" stroke-width="1"/>');
+      s.push('<text x="' + (m.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#aaa3b8" font-family=\'' + FONT + '\'>' + num(t) + '</text>');
     });
 
     var size = FRAMES[state.tf].min * 60000;
@@ -197,7 +197,7 @@
       if (i === hover && !state.touch) s.push('<rect x="' + f1(cx - slot / 2) + '" y="' + m.t + '" width="' + f1(slot) + '" height="' + ph + '" fill="#ffffff0f"/>');
       if (Math.round(c.t / size) % k === 0) {
         var day = kst(c.t).D;
-        s.push('<text x="' + f1(cx) + '" y="' + (H - m.b + 16) + '" text-anchor="middle" font-size="10" fill="#9eacc4" font-family=\'' + FONT + '\'>' + hm(c.t) + '</text>');
+        s.push('<text x="' + f1(cx) + '" y="' + (H - m.b + 16) + '" text-anchor="middle" font-size="10" fill="#aaa3b8" font-family=\'' + FONT + '\'>' + hm(c.t) + '</text>');
         if (day !== lastDay) {
           s.push('<text x="' + f1(cx) + '" y="' + (H - m.b + 30) + '" text-anchor="middle" font-size="9" fill="#79816f" font-family=\'' + FONT + '\'>' + md(c.t) + '</text>');
           lastDay = day;
@@ -207,18 +207,17 @@
 
     vis.forEach(function (c, i) {
       var cx = m.l + slot * (i + 0.5);
-      var fullBw = Math.max(0.7, slot - Math.max(0.7, slot * 0.10));
-      var bw = Math.min(6, Math.max(0.45, fullBw * 0.50));
+      var bw = Math.min(4, Math.max(0.6, slot * 0.38));
       var col = c.c > c.o ? UP_COLOR : c.c < c.o ? DOWN_COLOR : FLAT_COLOR, op = c.gapped ? 0.5 : 1;
       var yo = Y(c.o), yc = Y(c.c);
-      s.push('<line x1="' + f1(cx) + '" x2="' + f1(cx) + '" y1="' + f1(Y(c.h)) + '" y2="' + f1(Y(c.l)) + '" stroke="' + col + '" stroke-width="' + (slot < 8 ? 1 : 1.4) + '" opacity="' + op + '"/>');
+      s.push('<line x1="' + f1(cx) + '" x2="' + f1(cx) + '" y1="' + f1(Y(c.h)) + '" y2="' + f1(Y(c.l)) + '" stroke="' + col + '" stroke-width="' + (slot < 7 ? 0.65 : slot < 12 ? 0.85 : 1) + '" opacity="' + op + '"/>');
       s.push('<rect x="' + f1(cx - bw / 2) + '" y="' + f1(Math.min(yo, yc)) + '" width="' + f1(bw) + '" height="' + f1(Math.max(1.5, Math.abs(yo - yc))) + '" fill="' + col + '" opacity="' + op + '"/>');
     });
 
     if (vis.length && v.end === state.candles.length) {
       var lc = vis[vis.length - 1], ly = f1(Y(lc.c));
-      s.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + ly + '" y2="' + ly + '" stroke="#5ddddd" stroke-opacity="0.5" stroke-dasharray="3 4"/>');
-      s.push('<text x="' + (m.l + 4) + '" y="' + (ly - 5) + '" text-anchor="start" font-size="10" fill="#5ddddd" font-family=\'' + FONT + '\'>현재 ' + num(lc.c) + '</text>');
+      s.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + ly + '" y2="' + ly + '" stroke="#ff7594" stroke-opacity="0.5" stroke-dasharray="3 4"/>');
+      s.push('<text x="' + (m.l + 4) + '" y="' + (ly - 5) + '" text-anchor="start" font-size="10" fill="#ff7594" font-family=\'' + FONT + '\'>현재 ' + num(lc.c) + '</text>');
     }
     v.slot = slot;
     return s.join('');
@@ -318,14 +317,14 @@
       ];
       items.forEach(function (it, i) {
         var x = 28 + i * 238, y = 92, cw = 226, ch = 92;
-        cards += '<rect x="' + x + '" y="' + y + '" width="' + cw + '" height="' + ch + '" rx="7" fill="#101a2b" stroke="#2a3a55"/>' +
+        cards += '<rect x="' + x + '" y="' + y + '" width="' + cw + '" height="' + ch + '" rx="7" fill="#151321" stroke="#41374f"/>' +
           '<text x="' + (x+13) + '" y="' + (y+22) + '" font-size="10" fill="#929a8c"' + font + '>' + esc(it[0]) + '</text>' +
           '<text x="' + (x+13) + '" y="' + (y+50) + '" font-size="15" font-weight="650" fill="' + it[3] + '"' + font + '>' + esc(it[1]) + '</text>' +
           '<text x="' + (x+13) + '" y="' + (y+72) + '" font-size="9" fill="#7d8478"' + font + '>' + esc(it[2]) + '</text>';
       });
     }
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + totalH + '" viewBox="0 0 ' + W + ' ' + totalH + '">' +
-      '<rect width="100%" height="100%" fill="#0b1020"/>' +
+      '<rect width="100%" height="100%" fill="#100e19"/>' +
       '<text x="28" y="32" font-size="19" font-weight="700" fill="#f2f4ee"' + font + '>MMA · 순위 간 표차 흐름 분석</text>' +
       '<text x="28" y="55" font-size="11" fill="#9aa093"' + font + '>현재 득표 페이스 · ' + paceLabel + ' 기준  |  캔들 ' + FRAMES[state.tf].label + '</text>' +
       '<text x="28" y="75" font-size="10" fill="#7d8478"' + font + '>최신 표차 ' + num(lc.c) + '표 · ' + esc(last.an) + ' ' + num(last.a) + ' vs ' + esc(last.bn) + ' ' + num(last.b) + '</text>' +
@@ -409,12 +408,14 @@
     var st = document.createElement('style');
     st.textContent =
       '.cd-panel{margin-top:18px;padding:26px 27px 16px}' +
-      '.cd-tf{display:flex;gap:4px;background:#101a2b;padding:4px;border-radius:7px;border:1px solid #2a3a55}' +
+      '.cd-pair-control{display:flex;align-items:center;gap:9px;margin-left:auto;color:var(--muted);font-size:11px;font-weight:500;white-space:nowrap}' +
+      '.cd-pair-control select{min-width:120px}' +
+      '.cd-tf{display:flex;gap:4px;background:#151321;padding:4px;border-radius:7px;border:1px solid #41374f}' +
       '.cd-tf button{border:0;background:none;color:var(--muted);font-size:11px;border-radius:4px;padding:7px 11px}' +
-      '.cd-tf button.selected{background:#204158;color:var(--lime)}' +
+      '.cd-tf button.selected{background:#4b2d49;color:var(--lime)}' +
       '.cd-controls{margin-top:22px;border-bottom:1px solid var(--line);padding-bottom:12px}' +
       '.cd-legend{display:flex;gap:16px;flex-wrap:wrap}' +
-      '.cd-legend span{display:flex;align-items:center;gap:6px;color:#c0c8b5;font-size:10px}' +
+      '.cd-legend span{display:flex;align-items:center;gap:6px;color:#ddced7;font-size:10px}' +
       '.cd-legend i{display:inline-block;width:7px;height:7px;border-radius:2px}' +
       '.cd-wrap{position:relative;margin-top:16px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}' +
       '.cd-unit{display:block;font-size:10px;color:var(--muted);padding:3px 0 2px;margin-bottom:10px}' +
@@ -423,15 +424,15 @@
       '.cd-nav button:disabled{opacity:.35;cursor:default}' +
       '.cd-bottom{display:flex;justify-content:space-between;gap:15px;border-top:1px solid var(--line);padding-top:12px;font-size:10px;color:var(--muted);line-height:1.6}' +
       '.cd-bottom p{margin:0}.cd-bottom>span{flex-shrink:0;font-variant-numeric:tabular-nums}' +
-      '.cd-tip{position:absolute;z-index:5;pointer-events:none;background:#11160ff2;box-shadow:0 5px 22px #0006;border:1px solid #536244;padding:11px 13px;border-radius:7px;font-size:11px;min-width:160px;white-space:nowrap;font-variant-numeric:tabular-nums}' +
+      '.cd-tip{position:absolute;z-index:5;pointer-events:none;background:#211823f2;box-shadow:0 5px 22px #0006;border:1px solid #8b536a;padding:11px 13px;border-radius:7px;font-size:11px;min-width:160px;white-space:nowrap;font-variant-numeric:tabular-nums}' +
       '.cd-tip[hidden]{display:none}' +
       '.cd-tip>strong{display:block;font-size:10px;color:var(--muted);margin-bottom:8px;font-weight:600}' +
       '.cd-tip p{margin:5px 0;display:flex;align-items:center;justify-content:space-between;gap:18px}' +
       '.cd-tip b{font-weight:500}.cd-dim{font-size:10px;color:var(--muted);margin-top:8px}' +
-      '.cd-empty{padding:40px 0;text-align:center;color:var(--muted);font-size:12px}' +      '.pc-summary{margin-top:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}.pc-summary-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}.pc-summary-head>span{font-size:10px;color:var(--muted)}.pc-tf{display:flex;gap:4px;background:#101a2b;padding:4px;border-radius:7px;border:1px solid #2a3a55}.pc-tf button{border:0;background:none;color:var(--muted);font-size:11px;border-radius:4px;padding:7px 11px}.pc-tf button.selected{background:#204158;color:var(--lime)}' +
-      '.pc-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pc-team,.pc-metric{background:#101a2b;border:1px solid var(--line);border-radius:8px;padding:15px 16px;min-width:0}.pc-team span,.pc-metric span{display:block;color:var(--muted);font-size:10px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pc-team strong,.pc-metric strong{display:block;font-size:18px;font-weight:650;letter-spacing:-.02em;white-space:nowrap}.pc-team small,.pc-metric small{display:block;color:var(--muted);font-size:9px;margin-top:7px;line-height:1.4}.pc-metric strong.down{color:' + DOWN_COLOR + '}.pc-metric strong.up{color:' + UP_COLOR + '}.pc-eta strong{font-size:15px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.35}.pc-note{margin:12px 0 0;color:var(--muted);font-size:9px;line-height:1.55}.pc-empty{grid-column:1/-1;padding:24px;text-align:center;color:var(--muted);font-size:11px}' +
-      '@media(max-width:900px){.cd-panel>.panel-heading{flex-wrap:wrap;align-items:flex-start}.cd-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:3px}.cd-tf button{padding:8px 4px;font-size:10px}}' +
-      '@media(max-width:760px){.cd-panel{padding:19px 16px 14px}.pc-summary-head{align-items:flex-start;flex-wrap:wrap}.pc-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.pc-tf button{padding:8px 4px;font-size:10px}.pc-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pc-team,.pc-metric{padding:13px 12px}.pc-team strong,.pc-metric strong{font-size:15px}.pc-eta strong{font-size:13px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.4}.cd-controls{margin-top:20px}.cd-bottom{display:block}.cd-bottom>span{display:block;margin-top:7px}.cd-tip{font-size:10px;min-width:145px}}';
+      '.cd-empty{padding:40px 0;text-align:center;color:var(--muted);font-size:12px}' +      '.pc-summary{margin-top:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}.pc-summary-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}.pc-summary-head>span{font-size:10px;color:var(--muted)}.pc-tf{display:flex;gap:4px;background:#151321;padding:4px;border-radius:7px;border:1px solid #41374f}.pc-tf button{border:0;background:none;color:var(--muted);font-size:11px;border-radius:4px;padding:7px 11px}.pc-tf button.selected{background:#4b2d49;color:var(--lime)}' +
+      '.pc-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.pc-team,.pc-metric{background:#151321;border:1px solid var(--line);border-radius:8px;padding:15px 16px;min-width:0}.pc-team span,.pc-metric span{display:block;color:var(--muted);font-size:10px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pc-team strong,.pc-metric strong{display:block;font-size:18px;font-weight:650;letter-spacing:-.02em;white-space:nowrap}.pc-team small,.pc-metric small{display:block;color:var(--muted);font-size:9px;margin-top:7px;line-height:1.4}.pc-metric strong.down{color:' + DOWN_COLOR + '}.pc-metric strong.up{color:' + UP_COLOR + '}.pc-eta strong{font-size:15px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.35}.pc-note{margin:12px 0 0;color:var(--muted);font-size:9px;line-height:1.55}.pc-empty{grid-column:1/-1;padding:24px;text-align:center;color:var(--muted);font-size:11px}' +
+      '@media(max-width:900px){.cd-panel>.panel-heading{flex-wrap:wrap;align-items:flex-start}.cd-pair-control{margin-top:4px}.cd-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:3px}.cd-tf button{padding:8px 4px;font-size:10px}}' +
+      '@media(max-width:760px){.cd-panel{padding:19px 16px 14px}.cd-panel>.panel-heading{padding-right:0}.cd-panel>.panel-heading>div:first-child{width:100%;padding-right:72px;min-height:36px}.cd-pair-control{width:100%;justify-content:space-between;margin:7px 0 0}.cd-pair-control select{min-width:120px}.pc-summary-head{align-items:flex-start;flex-wrap:wrap}.pc-tf{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.pc-tf button{padding:8px 4px;font-size:10px}.pc-body{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pc-team,.pc-metric{padding:13px 12px}.pc-team strong,.pc-metric strong{font-size:15px}.pc-eta strong{font-size:13px;white-space:normal;overflow-wrap:anywhere;word-break:keep-all;line-height:1.4}.cd-controls{margin-top:20px}.cd-bottom{display:block}.cd-bottom>span{display:block;margin-top:7px}.cd-tip{font-size:10px;min-width:145px}}';
     document.head.appendChild(st);
   }
   function build() {
@@ -449,8 +450,8 @@
     injectStyle();
     root.innerHTML =
       '<button type="button" class="quiet-button panel-image-button" id="cd-image" aria-label="표차 캔들차트 PNG 저장" title="표차 캔들차트 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>' +
-      '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div></div>' +
-      '<label>비교 순위 <select id="gap-pair">'+[[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(function(p){return '<option value="'+p.join(',')+'">'+(p[0]+1)+'–'+(p[1]+1)+'위</option>';}).join('')+'</select></label>' +
+      '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div>' +
+      '<label class="cd-pair-control" for="gap-pair"><span>비교 순위</span><select id="gap-pair" class="control-select">'+[[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(function(p){return '<option value="'+p.join(',')+'">'+(p[0]+1)+'–'+(p[1]+1)+'위</option>';}).join('')+'</select></label></div>' +
       '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="30">30분</button><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="180">3시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">예상 역전시간은 선택 구간의 표차 추세를 선형회귀로 단순 연장한 참고치입니다. 실제 결과를 예측하거나 보장하지 않습니다.</p></div>' +
       '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>표차 확대</span><span><i style="background:' + DOWN_COLOR + '"></i>표차 축소</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
       '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="선택한 순위 간 표차의 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +

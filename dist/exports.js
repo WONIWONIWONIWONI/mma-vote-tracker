@@ -1,7 +1,7 @@
 /* Draw standalone panel images locally, without screenshots or remote services. */
 ((root) => {
   'use strict';
-  const bg='#0b1020',panel='#142238',muted='#a2b1ca',ink='#edf4ff',lime='#5ddddd',warning='#edb184';
+  const bg='#100e19',panel='#191725',muted='#aaa3b8',ink='#f5f0f6',lime='#ff7594',warning='#ffc176';
   const font='"DM Sans", "Noto Sans KR", sans-serif';
   function surface(model,height){
     const width=1000;
@@ -17,7 +17,7 @@
       do{c.font=`${weight} ${size}px ${font}`;if(c.measureText(value).width<=maxWidth||size<=10)break;size--;}while(true);
       c.fillText(value,x,y);
     };
-    const line=(x1,y1,x2,y2,color='#2a3a55')=>{c.beginPath();c.strokeStyle=color;c.lineWidth=1;c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();};
+    const line=(x1,y1,x2,y2,color='#41374f')=>{c.beginPath();c.strokeStyle=color;c.lineWidth=1;c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();};
     const rect=(x,y,w,h,color=panel)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
     text('VOTE/TRACK · 2026 MMA',48,40,14,lime,600);
     text('최신 관측 '+model.sourceAt+' KST',952,40,9,muted,400,'right',590);
@@ -76,7 +76,7 @@
       row.values.forEach((value,j)=>{
         const y=top+59+j*48;
         text('● '+value.name,66,y,12,value.color,500,'left',205);
-        rect(292,y-11,445,9,'#303929');
+        rect(292,y-11,445,9,'#453d51');
         if(value.delta!=null)rect(292,y-11,445*Math.abs(value.delta)/model.max,9,value.delta<0?warning:value.color);
         text(value.label,934,y,15,value.delta==null?muted:value.delta<0?warning:ink,500,'right',190);
         if(value.coverage)text(value.coverage,292,y+18,9,muted,400,'left',630);
