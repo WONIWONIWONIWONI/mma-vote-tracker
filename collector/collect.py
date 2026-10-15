@@ -73,7 +73,15 @@ def publish():
     subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
     if subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode:
         subprocess.run(['git','commit','-m','data: record MMA TOP4 observation'],cwd=ROOT,check=True)
-        subprocess.run(['git','push'],cwd=ROOT,check=True)
+        for attempt in range(3):
+            push = subprocess.run(['git','push'],cwd=ROOT)
+            if push.returncode == 0:
+                return
+            if attempt == 2:
+                raise subprocess.CalledProcessError(push.returncode,['git','push'])
+            print('Push rejected; syncing with origin/main and retrying',flush=True)
+            subprocess.run(['git','fetch','origin','main'],cwd=ROOT,check=True)
+            subprocess.run(['git','rebase','origin/main'],cwd=ROOT,check=True)
 
 if __name__=='__main__':
     if '--loop' not in sys.argv:
