@@ -5,8 +5,8 @@
   'use strict';
 
   /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = '#ff789a';    // 표차 확대 (빨강)
-  var DOWN_COLOR = '#4fc8e0';  // 표차 축소 (파랑)
+  var UP_COLOR = '#ff789a';    // 격차 확대 (빨강)
+  var DOWN_COLOR = '#4fc8e0';  // 격차 축소 (파랑)
   var FLAT_COLOR = '#a58e9c';  // 변화 없음
   var RAW = 'https://raw.githubusercontent.com/WONIWONIWONIWONI/mma-vote-tracker/main/';
   var HISTORY_URLS = [RAW + 'dist/data/history.json', './data/history.json', RAW + 'data/history.json'];
@@ -163,11 +163,24 @@
     if (!(elapsed > 0)) return null;
     var aRate = (last.a - first.a) / elapsed, bRate = (last.b - first.b) / elapsed;
     var gap0 = first.a - first.b, gap = last.a - last.b, gapChange = gap - gap0;
-    var gapRate = gapChange / elapsed, trend = regressionSlope(rows, 'gap');
-    var eta = NaN;
-    if (isFinite(trend) && trend < -0.01 && gap > 0) eta = gap / -trend;
-    return { last:last, first:first, rows:rows, elapsed:elapsed, aRate:aRate, bRate:bRate, gap:gap, gapChange:gapChange, gapRate:gapRate, trend:trend, eta:eta };
+    var gapRate=gapChange/elapsed;
+    var model=MMAAnalytics.fit(rows.map(function(p){return {t:p.t,v:p.a-p.b};}),minutes);
+    var corrected=rows.some(function(p,i){return i&&(p.a<rows[i-1].a||p.b<rows[i-1].b);});
+    if(corrected)model=null;
+    var trend=model?model.slope:NaN, crossing=MMAAnalytics.crossing(gap,model);
+    return {last:last,first:first,rows:rows,elapsed:elapsed,aRate:aRate,bRate:bRate,gap:gap,gapChange:gapChange,gapRate:gapRate,trend:trend,eta:crossing.minutes,model:model,crossing:crossing,distance:MMAAnalytics.distanceChange(gap0,gap)};
   }
+  function paceLabels(d){
+    var c=d.crossing,label=c.kind==='tied'?'현재 동률':c.kind==='uncertain'?'자료 부족·추세 불안정':c.kind==='flat'?'격차 보합':c.kind==='away'?'현재 추세상 역전 없음':c.kind==='distant'?'먼 미래 · 추정 보류':etaText(c.minutes)+' 후 '+(c.kind==='overtake'?'리센느 역전 예상':'상대 팀 역전 예상');
+    var trendLabel=!isFinite(d.trend)?'회귀 보류':Math.abs(d.trend)<0.01?'격차 보합':d.gap===0?'동률 이후 분기':d.gap*d.trend<0?'격차 축소 추세':'격차 확대 추세';
+    return {eta:label,trendLabel:trendLabel};
+  }
+  function distanceLabel(before,after){
+    var d=MMAAnalytics.distanceChange(before,after);
+    return d.kind==='crossed'?(after>0?'리센느가 역전':'상대 팀이 역전'):d.kind==='closing'?'격차 축소':d.kind==='widening'?'격차 확대':'격차 보합';
+  }
+  function gapColor(before,after){var d=MMAAnalytics.distanceChange(before,after);return d.kind==='crossed'?'#b997ff':d.kind==='closing'?DOWN_COLOR:d.kind==='widening'?UP_COLOR:FLAT_COLOR;}
+
   function rateText(v) {
     if (!isFinite(v)) return '—';
     var sign = v > 0 ? '+' : v < 0 ? '−' : '±';
@@ -189,13 +202,11 @@
       btns[i].className = on ? 'selected' : ''; btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     if (!d) { el.paceBody.innerHTML = '<div class="pc-empty">계산할 기록이 아직 부족해요.</div>'; return; }
-    var closing = isFinite(d.trend) && d.trend < -0.01;
-    var trendLabel = closing ? '격차 축소 추세' : (d.trend > 0.01 ? '격차 확대 추세' : '격차 보합');
-    var eta = closing ? etaText(d.eta) + ' 후 역전 페이스' : '역전 페이스 아님';
+    var labels=paceLabels(d),trendLabel=labels.trendLabel,eta=labels.eta;
     el.paceBody.innerHTML =
       '<div class="pc-team"><span>' + esc(d.last.an) + '</span><strong>' + rateText(d.aRate) + '</strong><small>최근 ' + Math.round(d.elapsed) + '분 평균</small></div>' +
       '<div class="pc-team"><span>' + esc(d.last.bn) + '</span><strong>' + rateText(d.bRate) + '</strong><small>최근 ' + Math.round(d.elapsed) + '분 평균</small></div>' +
-      '<div class="pc-metric"><span>표차 변화</span><strong class="' + (d.gapChange < 0 ? 'down' : d.gapChange > 0 ? 'up' : '') + '">' + signed(d.gapChange) + '표</strong><small>' + rateText(d.gapRate) + '</small></div>' +
+      '<div class="pc-metric"><span>'+distanceLabel(d.first.a-d.first.b,d.gap)+' · 부호 표차 변화</span><strong class="' + (d.distance.delta < 0 ? 'down' : d.distance.delta > 0 ? 'up' : '') + '">' + signed(d.gapChange) + '표</strong><small>' + rateText(d.gapRate) + '</small></div>' +
       '<div class="pc-metric pc-eta"><span>현재 추세가 지속된다면</span><strong>' + eta + '</strong><small>' + trendLabel + ' · 회귀 ' + rateText(d.trend) + '</small></div>';
   }
 
@@ -236,7 +247,7 @@
     vis.forEach(function (c, i) {
       var cx = m.l + slot * (i + 0.5);
       var bw = Math.min(4, Math.max(0.6, slot * 0.38));
-      var col = c.c > c.o ? UP_COLOR : c.c < c.o ? DOWN_COLOR : FLAT_COLOR, op = c.gapped ? 0.5 : 1;
+      var col = gapColor(c.o,c.c), op = c.gapped ? 0.5 : 1;
       var yo = Y(c.o), yc = Y(c.c);
       s.push('<line x1="' + f1(cx) + '" x2="' + f1(cx) + '" y1="' + f1(Y(c.h)) + '" y2="' + f1(Y(c.l)) + '" stroke="' + col + '" stroke-width="' + (slot < 7 ? 0.65 : slot < 12 ? 0.85 : 1) + '" opacity="' + op + '"/>');
       s.push('<rect x="' + f1(cx - bw / 2) + '" y="' + f1(Math.min(yo, yc)) + '" width="' + f1(bw) + '" height="' + f1(Math.max(1.5, Math.abs(yo - yc))) + '" fill="' + col + '" opacity="' + op + '"/>');
@@ -287,14 +298,14 @@
     if (!c) { el.tip.hidden = true; return; }
     var size = FRAMES[state.tf].min * 60000, last = state.candles[state.candles.length - 1] === c;
     var title = state.tf === '5' ? md(c.t) + ' ' + hm(c.t) + ' 집계' : md(c.t) + ' ' + hm(c.t) + '–' + hm(c.t + size) + ' · ' + FRAMES[state.tf].label;
-    var d = c.c - c.o, col = d > 0 ? UP_COLOR : d < 0 ? DOWN_COLOR : FLAT_COLOR;
+    var d = c.c - c.o, col = gapColor(c.o,c.c);
     function row(l, val) { return '<p><span>' + l + '</span><b>' + val + '</b></p>'; }
     function row2(l1, v1, l2, v2) { return '<p><span>' + l1 + ' <b>' + v1 + '</b></span><span>' + l2 + ' <b>' + v2 + '</b></span></p>'; }
     var narrow = el.wrap.clientWidth < 520;
     var h = '<strong>' + esc(title) + '</strong>' +
       (narrow ? row2('시가', num(c.o), '종가', num(c.c)) + row2('고가', num(c.h), '저가', num(c.l))
               : row('시가', num(c.o)) + row('고가', num(c.h)) + row('저가', num(c.l)) + row('종가', num(c.c))) +
-      '<p><span>표차 변화</span><b style="color:' + col + '">' + signed(d) + '</b></p>' +
+      '<p><span>'+distanceLabel(c.o,c.c)+' · 부호 변화</span><b style="color:' + col + '">' + signed(d) + '</b></p>' +
       '<p><span>' + esc(c.lead) + '</span><b>' + num(c.a) + '</b></p><p><span>' + esc(c.second) + '</span><b>' + num(c.b) + '</b></p>' +
       '<div class="cd-dim">관측 ' + c.n + '회';
     if (c.gapped) h += ' · 직전 관측과 ' + c.gapMin + '분 간격';
@@ -334,13 +345,11 @@
     var paceLabel = state.paceMin === 30 ? '30분' : state.paceMin === 180 ? '3시간' : '1시간';
     var cards = '';
     if (pd) {
-      var closing = isFinite(pd.trend) && pd.trend < -0.01;
-      var eta = closing ? etaText(pd.eta) + ' 후 역전 페이스' : '역전 페이스 아님';
-      var trendLabel = closing ? '격차 축소 추세' : (pd.trend > 0.01 ? '격차 확대 추세' : '격차 보합');
+      var labels=paceLabels(pd),eta=labels.eta,trendLabel=labels.trendLabel;
       var items = [
         [pd.last.an, rateText(pd.aRate), '최근 ' + Math.round(pd.elapsed) + '분 평균', '#f2f4ee'],
         [pd.last.bn, rateText(pd.bRate), '최근 ' + Math.round(pd.elapsed) + '분 평균', '#f2f4ee'],
-        ['표차 변화', signed(pd.gapChange) + '표', rateText(pd.gapRate), pd.gapChange < 0 ? DOWN_COLOR : pd.gapChange > 0 ? UP_COLOR : '#f2f4ee'],
+        ['표차 변화', signed(pd.gapChange) + '표', rateText(pd.gapRate), gapColor(pd.first.a-pd.first.b,pd.gap)],
         ['현재 추세가 지속된다면', eta, trendLabel + ' · 회귀 ' + rateText(pd.trend), '#f2f4ee']
       ];
       items.forEach(function (it, i) {
@@ -359,7 +368,7 @@
       cards +
       '<text x="28" y="207" font-size="10" fill="#9aa093"' + font + '>표차 캔들 · ' + md(a.t) + ' ' + hm(a.t) + ' ~ ' + md(b.t) + ' ' + hm(b.t) + '</text>' +
       '<g transform="translate(0,' + HDR + ')">' + chartInner(W, H, v, -1) + '</g>' +
-      '<text x="28" y="' + (H + HDR + 21) + '" font-size="9" fill="#7d8478"' + font + '><tspan fill="' + UP_COLOR + '">■</tspan> 표차 확대  <tspan fill="' + DOWN_COLOR + '">■</tspan> 표차 축소  · 표차 = 리센느 − 선택한 상대 팀 · 데이터 출처 Melon</text>' +
+      '<text x="28" y="' + (H + HDR + 21) + '" font-size="9" fill="#7d8478"' + font + '><tspan fill="' + UP_COLOR + '">■</tspan> 격차 확대  <tspan fill="' + DOWN_COLOR + '">■</tspan> 격차 축소  · 표차 = 리센느 − 선택한 상대 팀 · 데이터 출처 Melon</text>' +
       '</svg>';
     var img = new Image();
     img.onload = function () {
@@ -488,11 +497,11 @@
       '<button type="button" class="quiet-button panel-image-button" id="cd-image" aria-label="표차 캔들차트 PNG 저장" title="표차 캔들차트 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>' +
       '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div>' +
       '<label class="cd-pair-control" for="gap-pair"><span>상대 팀 (순위순)</span><select id="gap-pair" class="control-select"><option value="">상대 팀 기록 대기</option></select></label></div>' +
-      '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="30">30분</button><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="180">3시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">예상 역전시간은 선택 구간의 표차 추세를 선형회귀로 단순 연장한 참고치입니다. 실제 결과를 예측하거나 보장하지 않습니다.</p></div>' +
-      '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>표차 확대</span><span><i style="background:' + DOWN_COLOR + '"></i>표차 축소</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
+      '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="30">30분</button><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="180">3시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">리센느−상대 팀의 부호 표차를 가중 선형회귀합니다. 음수에서 상승하면 리센느의 추격, 양수에서 하락하면 상대 팀의 추격입니다. 6개·15분 미만, 긴 공백·득표 정정·낮은 적합도는 보류하며, 먼 미래(최대 6시간)는 수치로 단정하지 않습니다.</p></div>' +
+      '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>격차 확대</span><span><i style="background:' + DOWN_COLOR + '"></i>격차 축소</span><span><i style="background:#b997ff"></i>역전</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
       '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="리센느와 선택한 상대 팀의 표차 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +
       '<div class="cd-nav"><button class="quiet-button" id="cd-prev" type="button">◀ 이전</button><button class="quiet-button" id="cd-next" type="button">다음 ▶</button><button class="quiet-button" id="cd-latest" type="button">최신</button></div>' +
-      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축 조절. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
+      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 색상은 절대 격차 기준: 분홍=확대, 청록=축소, 보라=역전입니다. 음수에서 0에 가까워지면 격차 축소입니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축 조절. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
     syncGapOptions();
     document.getElementById('gap-pair').addEventListener('change',function(){state.map={};addSnaps(Object.values(snapshots));state.offset=0;rebuild();render();});
     el.pace = root.querySelector('#pc-summary'); el.paceTf = root.querySelector('#pc-tf'); el.paceBody = root.querySelector('#pc-body');

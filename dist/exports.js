@@ -47,11 +47,18 @@
     const y=value=>bottom-(value-model.ymin)/(model.ymax-model.ymin)*(bottom-top);
     model.series.forEach((series,i)=>text('● '+series.name,48+(i%3)*300,903+Math.floor(i/3)*16,10,series.color,500,'left',370));
     for(const tick of model.ticks){line(left,y(tick.value),right,y(tick.value));text(tick.label,left-14,y(tick.value)+4,10,muted,400,'right',90);}
+    c.save();c.beginPath();c.rect(left,top,right-left,bottom-top);c.clip();
     for(const series of model.series){
-      c.beginPath();c.strokeStyle=series.color;c.lineWidth=3;let active=false;
+      c.beginPath();c.strokeStyle=series.color;c.lineWidth=1.6;let active=false;
       for(const point of series.points){if(point.value==null)continue;if(active)c.lineTo(x(point.time),y(point.value));else c.moveTo(x(point.time),y(point.value));active=true;}c.stroke();
       series.points.forEach((point,i)=>{if(point.value==null||(series.points.length>100&&i!==series.points.length-1))return;c.beginPath();c.fillStyle=series.color;c.arc(x(point.time),y(point.value),series.points.length===1?5:3,0,Math.PI*2);c.fill();});
     }
+    if(model.forecasts?.length){
+      c.setLineDash([5,5]);
+      for(const f of model.forecasts){c.beginPath();c.strokeStyle=f.color;c.lineWidth=1.6;f.points.forEach((p,i)=>{if(i)c.lineTo(x(p.time),y(p.value));else c.moveTo(x(p.time),y(p.value));});c.stroke();}
+      c.strokeStyle=muted;c.beginPath();c.moveTo(x(model.lastTime),top);c.lineTo(x(model.lastTime),bottom);c.stroke();c.setLineDash([]);
+    }
+    c.restore();
     text(model.firstLabel,left,1313,10,muted);
     if(model.lastLabel!==model.firstLabel)text(model.lastLabel,right,1313,12,muted,400,'right');
     text(model.rangeNote,48,1345,10,lime);
@@ -67,24 +74,15 @@
     return canvas;
   }
   function hourly(model){
-    const rowHeight=86+48*(model.rows[0]?.values.length||4),height=173+model.rows.length*rowHeight+106;
-    const {canvas,text,rect}=surface(model,height);
-    model.rows.forEach((row,i)=>{
-      const top=166+i*rowHeight;
-      rect(48,top,904,rowHeight-10);
-      text(row.label,66,top+26,13,ink,500);
-      text(row.status,934,top+26,10,row.complete?lime:muted,400,'right');
-      row.values.forEach((value,j)=>{
-        const y=top+59+j*48;
-        text('● '+value.name,66,y,12,value.color,500,'left',205);
-        rect(292,y-11,445,9,'#453d51');
-        if(value.delta!=null)rect(292,y-11,445*Math.abs(value.delta)/model.max,9,value.delta<0?warning:value.color);
-        text(value.label,934,y,15,value.delta==null?muted:value.delta<0?warning:ink,500,'right',190);
-        if(value.coverage)text(value.coverage,292,y+18,9,muted,400,'left',630);
-      });
-    });
-    text('선택 날짜 전체 · 같은 눈금으로 비교 · 일부 구간은 실제 관측 시각 표시 · —는 비교 기록 부족',48,height-77,10,muted);
-    return canvas;
+    const height=260+model.rows.length*94;
+    const {canvas,text,rect,line}=surface(model,height);
+    const teams=model.rows[0]?.values||[],col=118;
+    text('시간 / 관측 최다',48,175,11,muted);
+    teams.forEach((t,i)=>text(t.name,260+i*col,175,10,t.color,500,'left',110));
+    model.rows.forEach((row,i)=>{const y=200+i*94,valid=row.values.filter(v=>v.delta!=null),same=new Set(valid.map(v=>v.from+':'+v.to)).size===1,max=Math.max(0,...valid.map(v=>v.delta)),winners=same&&max>0?valid.filter(v=>v.delta===max):[];
+      rect(48,y-10,904,84);text(row.label,58,y+10,12,ink,600,'left',190);text(winners.length?winners.map(v=>v.name).join(' · '):'구간 다름 / 기록 대기',58,y+30,10,lime,500,'left',190);text(row.status,58,y+48,9,muted);
+      row.values.forEach((v,j)=>{const win=winners.includes(v),x=260+j*col;text(v.label,x,y+15,13,win?lime:ink,win?700:400,'left',110);rect(x,y+27,Math.abs(v.delta??0)/Math.max(1,...valid.map(v=>Math.abs(v.delta)))*100,4,v.color);if(v.coverage)text(v.coverage,x,y+48,8,muted,400,'left',108);});
+    });return canvas;
   }
   const painters={trend,pace,hourly};
   root.MMAImages={render(model){const painter=painters[model.type];if(!painter)throw new Error('Unknown image panel.');return painter(model);}};
