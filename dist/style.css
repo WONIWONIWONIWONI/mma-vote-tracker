@@ -173,3 +173,6 @@
 @media(max-width:760px){.trend-tools{font-size:10px;gap:8px}.chart-legend{gap:6px}.team-toggle{font-size:10px}.hourly-scroll{padding:0 8px}.hourly-compact th:first-child{width:135px}.hourly-compact{min-width:740px}.chart-panel .range-selector button{padding:6px}.trend-help{font-size:10px}}
 
 #trend-center{min-width:140px;accent-color:#b997ff}#trend-chart{user-select:none;-webkit-user-select:none}.trend-tools button:disabled{opacity:.4}
+
+
+.axis-options{margin-top:12px;color:var(--muted);font-size:11px}.axis-options summary{cursor:pointer;width:max-content}.axis-options .trend-tools{margin-top:8px}.trend-tools select{max-width:190px}.trend-tools button{min-height:36px}

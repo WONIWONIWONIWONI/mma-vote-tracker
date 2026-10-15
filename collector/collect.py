@@ -69,23 +69,48 @@ def collect():
         return False
     return True
 
+def merge_history(remote, pending):
+    # JSON lines cannot be text-merged safely: merge actual observations by minute.
+    rows = {}
+    def stamp(value):
+        return datetime.datetime.fromisoformat(value.replace('Z', '+00:00'))
+    for row in remote['snapshots'] + pending['snapshots']:
+        observed = stamp(row['sourceAt'])
+        minute = int(observed.timestamp()) // 60
+        if minute not in rows or observed >= stamp(rows[minute]['sourceAt']):
+            rows[minute] = row
+    newest = max((remote, pending), key=lambda data: stamp(data.get('collector', {}).get('checkedAt') or data['snapshots'][-1]['sourceAt']))
+    return {**remote, **newest, 'snapshots': [rows[key] for key in sorted(rows)]}
+
 def publish():
-    for attempt in range(5):
-        subprocess.run(['git', 'add', 'dist/data'], cwd=ROOT, check=True)
-        if subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=ROOT).returncode:
-            return
-        subprocess.run(['git', 'commit', '-m', 'data: record MMA TOP6 observation'], cwd=ROOT, check=True)
-        push = subprocess.run(['git', 'push'], cwd=ROOT)
-        if push.returncode == 0:
-            return
-        if attempt == 4:
-            raise subprocess.CalledProcessError(push.returncode, ['git', 'push'])
-        print('Push rejected; refreshing the archive and retrying', flush=True)
-        subprocess.run(['git', 'fetch', 'origin', 'main'], cwd=ROOT, check=True)
-        subprocess.run(['git', 'reset', '--hard', 'origin/main'], cwd=ROOT, check=True)
-        collect()
+    subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
+    if subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode:
+        subprocess.run(['git','commit','-m','data: record MMA TOP6 observation'],cwd=ROOT,check=True)
+        for attempt in range(3):
+            push = subprocess.run(['git','push'],cwd=ROOT)
+            if push.returncode == 0:
+                return
+            if attempt == 2:
+                raise subprocess.CalledProcessError(push.returncode,['git','push'])
+            print('Push rejected; syncing with origin/main and retrying',flush=True)
+            pending = json.loads((DATA/'history.json').read_text())
+            subprocess.run(['git','fetch','origin','main'],cwd=ROOT,check=True)
+            rebase = subprocess.run(['git','rebase','origin/main'],cwd=ROOT)
+            if rebase.returncode:
+                conflicts = subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],cwd=ROOT,text=True).splitlines()
+                expected = {'dist/data/history.json','dist/data/latest.json','dist/data/seed.js'}
+                if not conflicts or not set(conflicts).issubset(expected):
+                    subprocess.run(['git','rebase','--abort'],cwd=ROOT,check=True)
+                    raise subprocess.CalledProcessError(rebase.returncode,['git','rebase','origin/main'])
+                remote = json.loads(subprocess.check_output(['git','show','origin/main:dist/data/history.json'],cwd=ROOT,text=True))
+                save(merge_history(remote,pending))
+                subprocess.run(['git','add','dist/data'],cwd=ROOT,check=True)
+                empty = subprocess.run(['git','diff','--cached','--quiet'],cwd=ROOT).returncode == 0
+                subprocess.run(['git','-c','core.editor=true','rebase','--skip' if empty else '--continue'],cwd=ROOT,check=True)
 
 if __name__ == '__main__':
     succeeded = collect()
-    publish()
+    if succeeded:
+        publish()
     sys.exit(0 if succeeded else 1)
+

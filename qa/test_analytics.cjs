@@ -12,3 +12,11 @@ console.log('Regression / both overtaking directions / signed distance / insuffi
 const fs=require('fs'),data=JSON.parse(fs.readFileSync('dist/data/history.json','utf8')).snapshots,last=data.at(-1),now=Date.parse(last.sourceAt);
 console.log('Latest team projection checks:');
 for(const t of last.top4){const p=data.filter(r=>Date.parse(r.sourceAt)>=now-3600000).map(r=>({t:Date.parse(r.sourceAt),v:r.top4.find(x=>x.id===t.id)?.votes}));const f=A.forecast(p);console.log(t.name,f?{rate:f.slope.toFixed(2),r2:f.r2.toFixed(3),span:f.span.toFixed(1)}:'withheld');}
+
+
+const longSource=Array.from({length:13},(_,i)=>({t:Date.UTC(2026,9,15,12,i*5),v:1000+i*50}));
+const extended=require('../dist/analytics.js').forecast(longSource,60,180);
+assert.equal(extended.horizon,180);
+assert.equal(extended.points.at(-1).time-extended.time,180*60000);
+assert.equal(extended.points.at(-1).value,extended.last+extended.slope*180);
+console.log('User-selected forecast horizon extends the same fitted trend to three hours.');
