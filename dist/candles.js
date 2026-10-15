@@ -1,16 +1,13 @@
 /* 표차 캔들차트 — dist/candles.js
  * 리센느를 기준으로 TOP6 다섯 팀과의 표차를 캔들(5분봉·1시간봉·6시간봉)로 보여줍니다.
- * 기존 app.js 는 건드리지 않고, 이 파일이 스스로 기록(history.json)을 읽어 그립니다. */
+ * app.js가 검증한 동일한 기록을 받아 모든 패널의 관측 시각을 맞춥니다. */
 (function () {
   'use strict';
 
   /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = '#ff789a';    // 격차 확대 (빨강)
-  var DOWN_COLOR = '#4fc8e0';  // 격차 축소 (파랑)
+  var UP_COLOR = '#ff789a';    // 부호 표차 상승 (빨강)
+  var DOWN_COLOR = '#4fc8e0';  // 부호 표차 하락 (파랑)
   var FLAT_COLOR = '#a58e9c';  // 변화 없음
-  var RAW = 'https://raw.githubusercontent.com/WONIWONIWONIWONI/mma-vote-tracker/main/';
-  var HISTORY_URLS = [RAW + 'dist/data/history.json', './data/history.json', RAW + 'data/history.json'];
-  var POLL_MS = 10000; // RESCENE-relative gap chart
   var FRAMES = {
     '5': { min: 5, label: '5분봉', show: 144 },
     '60': { min: 60, label: '1시간봉', show: 96 },
@@ -179,7 +176,7 @@
     var d=MMAAnalytics.distanceChange(before,after);
     return d.kind==='crossed'?(after>0?'리센느가 역전':'상대 팀이 역전'):d.kind==='closing'?'격차 축소':d.kind==='widening'?'격차 확대':'격차 보합';
   }
-  function gapColor(before,after){var d=MMAAnalytics.distanceChange(before,after);return d.kind==='crossed'?'#b997ff':d.kind==='closing'?DOWN_COLOR:d.kind==='widening'?UP_COLOR:FLAT_COLOR;}
+  function gapColor(before,after){return after>before?UP_COLOR:after<before?DOWN_COLOR:FLAT_COLOR;}
 
   function rateText(v) {
     if (!isFinite(v)) return '—';
@@ -206,7 +203,7 @@
     el.paceBody.innerHTML =
       '<div class="pc-team"><span>' + esc(d.last.an) + '</span><strong>' + rateText(d.aRate) + '</strong><small>최근 ' + Math.round(d.elapsed) + '분 평균</small></div>' +
       '<div class="pc-team"><span>' + esc(d.last.bn) + '</span><strong>' + rateText(d.bRate) + '</strong><small>최근 ' + Math.round(d.elapsed) + '분 평균</small></div>' +
-      '<div class="pc-metric"><span>'+distanceLabel(d.first.a-d.first.b,d.gap)+' · 부호 표차 변화</span><strong class="' + (d.distance.delta < 0 ? 'down' : d.distance.delta > 0 ? 'up' : '') + '">' + signed(d.gapChange) + '표</strong><small>' + rateText(d.gapRate) + '</small></div>' +
+      '<div class="pc-metric"><span>'+distanceLabel(d.first.a-d.first.b,d.gap)+' · 부호 표차 변화</span><strong class="' + (d.gapChange < 0 ? 'down' : d.gapChange > 0 ? 'up' : '') + '">' + signed(d.gapChange) + '표</strong><small>' + rateText(d.gapRate) + '</small></div>' +
       '<div class="pc-metric pc-eta"><span>현재 추세가 지속된다면</span><strong>' + eta + '</strong><small>' + trendLabel + ' · 회귀 ' + rateText(d.trend) + '</small></div>';
   }
 
@@ -368,7 +365,7 @@
       cards +
       '<text x="28" y="207" font-size="10" fill="#9aa093"' + font + '>표차 캔들 · ' + md(a.t) + ' ' + hm(a.t) + ' ~ ' + md(b.t) + ' ' + hm(b.t) + '</text>' +
       '<g transform="translate(0,' + HDR + ')">' + chartInner(W, H, v, -1) + '</g>' +
-      '<text x="28" y="' + (H + HDR + 21) + '" font-size="9" fill="#7d8478"' + font + '><tspan fill="' + UP_COLOR + '">■</tspan> 격차 확대  <tspan fill="' + DOWN_COLOR + '">■</tspan> 격차 축소  · 표차 = 리센느 − 선택한 상대 팀 · 데이터 출처 Melon</text>' +
+      '<text x="28" y="' + (H + HDR + 21) + '" font-size="9" fill="#7d8478"' + font + '><tspan fill="' + UP_COLOR + '">■</tspan> 표차 상승  <tspan fill="' + DOWN_COLOR + '">■</tspan> 표차 하락  · 표차 = 리센느 − 선택한 상대 팀 · 데이터 출처 Melon</text>' +
       '</svg>';
     var img = new Image();
     img.onload = function () {
@@ -414,40 +411,6 @@
     state.candles = buildCandles(state.points, FRAMES[state.tf].min);
     if (state.offset > 0 && before) state.offset += state.candles.length - before;
   }
-  function loadHistory(i) {
-    if (i >= HISTORY_URLS.length) return Promise.reject(new Error('history not found'));
-    var url = HISTORY_URLS[i];
-    return fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (j) { if (!j || !Array.isArray(j.snapshots)) throw new Error('bad format'); return { json: j, url: url }; })
-      .catch(function () { return loadHistory(i + 1); });
-  }
-  function loadFull() {
-    return loadHistory(0).then(function (res) {
-      state.base = res.url.replace(/history\.json$/, '');
-      state.lastFull = Date.now();
-      if (res.json.operation && res.json.operation.endsAt) state.endsAt = Date.parse(res.json.operation.endsAt);
-      addSnaps(res.json.snapshots);
-      rebuild(); render();
-    });
-  }
-  function poll() {
-    if (document.hidden || !state.base) return;
-    if (state.endsAt && Date.now() > state.endsAt + 600000) return;
-    fetch(state.base + 'latest.json?t=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (!j) return;
-        var arr = Array.isArray(j) ? j : (j.snapshots || j.latest || []);
-        if (!arr.length) return;
-        var lastKnown = state.points.length ? state.points[state.points.length - 1].t : 0;
-        var first = Math.min.apply(null, arr.map(function (s) { return Date.parse(s.sourceAt) || Infinity; }));
-        if (first > lastKnown + 7.5 * 60000 && Date.now() - state.lastFull > 600000) { return loadFull(); }
-        if (addSnaps(arr)) { rebuild(); render(); }
-      })
-      .catch(function () {});
-  }
-
   /* ===== 화면 뼈대 만들기 ===== */
   function injectStyle() {
     var st = document.createElement('style');
@@ -498,10 +461,10 @@
       '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div>' +
       '<label class="cd-pair-control" for="gap-pair"><span>상대 팀 (순위순)</span><select id="gap-pair" class="control-select"><option value="">상대 팀 기록 대기</option></select></label></div>' +
       '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="30">30분</button><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="180">3시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">리센느−상대 팀의 부호 표차를 가중 선형회귀합니다. 음수에서 상승하면 리센느의 추격, 양수에서 하락하면 상대 팀의 추격입니다. 6개·15분 미만, 긴 공백·득표 정정·낮은 적합도는 보류하며, 먼 미래(최대 6시간)는 수치로 단정하지 않습니다.</p></div>' +
-      '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>격차 확대</span><span><i style="background:' + DOWN_COLOR + '"></i>격차 축소</span><span><i style="background:#b997ff"></i>역전</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
+      '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>표차 상승</span><span><i style="background:' + DOWN_COLOR + '"></i>표차 하락</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
       '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="리센느와 선택한 상대 팀의 표차 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +
       '<div class="cd-nav"><button class="quiet-button" id="cd-prev" type="button">◀ 이전</button><button class="quiet-button" id="cd-next" type="button">다음 ▶</button><button class="quiet-button" id="cd-latest" type="button">최신</button></div>' +
-      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 색상은 절대 격차 기준: 분홍=확대, 청록=축소, 보라=역전입니다. 음수에서 0에 가까워지면 격차 축소입니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축 조절. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
+      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 색상은 표차 방향 기준: 빨강=상승, 파랑=하락입니다. 확대·축소 문구는 절대 격차 기준입니다. 음수에서 0에 가까워지면 격차 축소·빨강, 양수에서 멀어지면 격차 확대·빨강입니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축 조절. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
     syncGapOptions();
     document.getElementById('gap-pair').addEventListener('change',function(){state.map={};addSnaps(Object.values(snapshots));state.offset=0;rebuild();render();});
     el.pace = root.querySelector('#pc-summary'); el.paceTf = root.querySelector('#pc-tf'); el.paceBody = root.querySelector('#pc-body');
@@ -642,15 +605,12 @@
     if (!build()) return;
     bind();
     render();
-    loadFull().catch(function () {
-      el.svg.style.display = 'none';
-      var msg = document.createElement('div');
-      msg.className = 'cd-empty';
-      msg.textContent = '기록을 불러오지 못했어요. 잠시 후 새로고침해 주세요.';
-      el.wrap.appendChild(msg);
-    });
-    setInterval(poll, POLL_MS);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); });
+    function receive(data){
+      snapshots={};state.map={};
+      addSnaps(data.snapshots);rebuild();render();
+    }
+    receive(window.MMA_DATA||window.MMA_SEED);
+    window.addEventListener('mma:data',function(event){receive(event.detail);});
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
