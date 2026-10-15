@@ -55,7 +55,10 @@ def collect():
         request=urllib.request.Request(URL+'&t='+str(int(time.time())),headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.melon.com/mma/2026/vote/top10/'})
         with urllib.request.urlopen(request,timeout=40) as r: payload=json.load(r)
         snapshot=parse(payload,now())
-        data['snapshots'].append(snapshot)
+        if data['snapshots'] and data['snapshots'][-1]['sourceAt'][:16] == snapshot['sourceAt'][:16]:
+            data['snapshots'][-1]=snapshot
+        else:
+            data['snapshots'].append(snapshot)
         data['collector']={'state':'ok','checkedAt':stamp}
         save(data)
         print('Collected',snapshot['sourceAt'],snapshot['totalVotes'],flush=True)
@@ -79,4 +82,4 @@ if __name__=='__main__':
     while time.monotonic()<deadline:
         collect();publish()
         if now() >= ENDS_AT: break
-        time.sleep(300-time.time()%300)
+        time.sleep(10-time.time()%10)

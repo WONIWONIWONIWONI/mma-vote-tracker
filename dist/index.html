@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10120f">
+  <meta name="theme-color" content="#0b1020">
   <title>MMA TOP 4 — 투표 트래커</title>
   <meta name="description" content="2026 MMA 상위 4팀의 득표수, 점유율, 표차와 시간별 변화를 한눈에.">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
@@ -31,7 +31,7 @@
       <section class="overview-bar" aria-label="전체 투표 요약"><div class="total-block"><span class="small-label">전체 투표</span><strong id="total-votes">—</strong><span class="unit">표</span></div><div class="distribution"><div class="share-track" id="share-track"></div><div class="distribution-caption"><span>상위 4팀 합계 <b id="top-share">—</b></span><span>그 외 <b id="other-share">—</b></span></div></div><div class="sample-block"><span class="small-label">누적 기록</span><strong id="sample-count">—</strong><span class="unit">회</span></div></section>
       <section class="chart-panel panel has-image-button" aria-labelledby="trend-title"><button type="button" class="quiet-button panel-image-button" data-image="trend" aria-label="네 팀 득표 현황과 선택한 그래프 PNG 저장" title="네 팀 득표 현황과 선택한 그래프 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>
         <div class="panel-heading"><div><div class="section-kicker">THE TREND</div><h2 id="trend-title">시간에 따른 변화</h2></div><div class="range-selector" role="group" aria-label="표시 기간"><button data-range="1">1시간</button><button data-range="6">6시간</button><button data-range="24">24시간</button><button data-range="all" aria-pressed="true" class="selected">전체</button></div></div>
-        <div class="chart-controls"><div class="metric-selector" role="group" aria-label="그래프 지표"><button data-metric="votes" class="selected" aria-pressed="true">득표수</button><button data-metric="share">점유율</button><button data-metric="gap">표차</button></div><div class="chart-legend" id="chart-legend"></div></div>
+        <div id="trend-focus" class="range-selector trend-focus" role="group" aria-label="비교 범위"><button data-focus="lower" class="selected" aria-pressed="true">2~4위 확대</button><button data-focus="all" aria-pressed="false">전체 4팀</button></div><div class="chart-controls"><div class="metric-selector" role="group" aria-label="그래프 지표"><button data-metric="votes" class="selected" aria-pressed="true">득표수</button><button data-metric="share">점유율</button><button data-metric="gap">표차</button></div><div class="chart-legend" id="chart-legend"></div></div>
         <div class="chart-wrap"><div class="chart-meta"><span class="chart-unit" id="chart-unit">득표수 (표)</span><span class="chart-axis-note" id="chart-axis-note"></span></div><svg id="trend-chart" viewBox="0 0 1100 310" role="img" aria-label="상위 4팀의 득표 추이"></svg><div class="tooltip" id="tooltip" role="status" hidden></div></div>
         <div class="chart-bottom"><p id="chart-note"></p><span id="chart-window"></span></div>
       </section>
@@ -47,7 +47,7 @@
         <summary class="history-summary"><span><span class="section-kicker">THE RECORD</span><span class="history-title" id="history-title">집계 기록 <small id="history-count"></small></span></span><span class="history-toggle"><span id="history-toggle-label">펼치기</span><span class="history-chevron" aria-hidden="true">⌄</span></span></summary>
         <div class="history-content"><div class="history-toolbar"><p>최신 기록부터 표시합니다.</p><button class="quiet-button" id="csv-button"><span aria-hidden="true">↓</span> 전체 CSV</button></div><div class="table-scroll history-scroll" tabindex="0" aria-label="집계 기록 표 · 가로 세로 스크롤"><table class="history-table"><thead><tr><th scope="col">집계 시각 (KST)</th><th scope="col">1위 · 득표수</th><th scope="col">2위 · 득표수</th><th>3위 · 득표수</th><th>4위 · 득표수</th><th>1–2위 표차</th><th>2–3위 표차</th><th>3–4위 표차</th><th>1–3위 표차</th><th>1–4위 표차</th><th>2–4위 표차</th></tr></thead><tbody id="history-body"></tbody></table></div><button class="load-more" id="load-more" hidden>기록 12개 더 보기</button></div>
       </details>
-      <details class="method"><summary>수치와 그래프는 어떻게 읽나요?</summary><div><p>카드 득표율은 멜론에서 표시한 정수 비율이며, 그래프는 전체 후보의 표수를 합산한 총표수로 계산합니다. 시간은 원본 집계 시각이 아닌 조회에 성공한 관측 시각입니다.</p><p>현재 상위 4팀을 팀별로 추적합니다. 순위 간 표차는 각 시점의 순위를 비교하므로 팀이 바뀔 수 있습니다. 미관측 구간은 직선으로 연결하며 중간값은 실제 관측이 아닙니다. 시간대별 증가량은 실제 관측 사이의 차이만 계산합니다.</p><p>약 5분 간격으로 수집하며 GitHub Actions 실행 지연이 발생할 수 있습니다. 오류 시 마지막 정상 기록을 유지합니다. 과거 데이터는 소급 생성하지 않습니다.</p></div></details>
+      <details class="method"><summary>수치와 그래프는 어떻게 읽나요?</summary><div><p>카드 득표율은 멜론에서 표시한 정수 비율이며, 그래프는 전체 후보의 표수를 합산한 총표수로 계산합니다. 확대 보기는 현재 2~4위만 표시하고, 전체 4팀으로 전환하면 1위도 함께 볼 수 있습니다. 시간은 원본 집계 시각이 아닌 조회에 성공한 관측 시각입니다.</p><p>현재 상위 4팀을 팀별로 추적합니다. 순위 간 표차는 각 시점의 순위를 비교하므로 팀이 바뀔 수 있습니다. 미관측 구간은 직선으로 연결하며 중간값은 실제 관측이 아닙니다. 시간대별 증가량은 실제 관측 사이의 차이만 계산합니다.</p><p>10초 간격으로 조회하고 분당 최신 관측을 기록하며 GitHub Actions 실행 지연이 발생할 수 있습니다. 오류 시 마지막 정상 기록을 유지합니다. 과거 데이터는 소급 생성하지 않습니다.</p></div></details>
     </main>
     <footer><span class="footer-brand">VOTE/TRACK</span><p>팬이 만든 비공식 대시보드 · 데이터 출처 <a href="https://www.melon.com/mma/2026/vote/top10/" target="_blank" rel="noopener noreferrer">Melon ↗</a></p><span>모든 시각은 한국 시간 (KST)</span></footer>
   </div><div class="toast" role="status" id="toast" hidden></div>

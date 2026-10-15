@@ -1,7 +1,7 @@
 /* Draw standalone panel images locally, without screenshots or remote services. */
 ((root) => {
   'use strict';
-  const bg='#10120f',panel='#1b2117',muted='#a0ad92',ink='#edf0e8',lime='#c2ee64',warning='#edb184';
+  const bg='#0b1020',panel='#142238',muted='#a2b1ca',ink='#edf4ff',lime='#5ddddd',warning='#edb184';
   const font='"DM Sans", "Noto Sans KR", sans-serif';
   function surface(model,height){
     const width=1000;
@@ -17,7 +17,7 @@
       do{c.font=`${weight} ${size}px ${font}`;if(c.measureText(value).width<=maxWidth||size<=10)break;size--;}while(true);
       c.fillText(value,x,y);
     };
-    const line=(x1,y1,x2,y2,color='#35402b')=>{c.beginPath();c.strokeStyle=color;c.lineWidth=1;c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();};
+    const line=(x1,y1,x2,y2,color='#2a3a55')=>{c.beginPath();c.strokeStyle=color;c.lineWidth=1;c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();};
     const rect=(x,y,w,h,color=panel)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
     text('VOTE/TRACK · 2026 MMA',48,40,14,lime,600);
     text('최신 관측 '+model.sourceAt+' KST',952,40,9,muted,400,'right',590);
