@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const nf = new Intl.NumberFormat('ko-KR');
   const palette = ['#ff789a', '#b997ff', '#4fc8e0', '#ffc06c', '#83d9b5', '#9cbcff'];
-  const colors = {'994944':'#ff789a','3709231':'#b997ff','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
+  const colors = {'994944':'#ff789a','3709231':'#e6ff54','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
   const gapDefs = [[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(([a,b],i)=>({id:`gap${a}${b}`,a,b,name:`${a+1}–${b+1}위`,color:palette[i]}));
   function rankGap(s,g){return s.top4[g.a].votes-s.top4[g.b].votes;}
   const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,timeZoom:1,timeCenter:50,forecast:true,range:'1',historyLimit:12,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
