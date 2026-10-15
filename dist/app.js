@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const nf = new Intl.NumberFormat('ko-KR');
   const palette = ['#ff789a', '#b997ff', '#4fc8e0', '#ffc06c', '#83d9b5', '#9cbcff'];
-  const colors = {'994944':'#ff789a','3709231':'#b997ff','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
+  const colors = {'994944':'#ff789a','3709231':'#e6ff54','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
   const gapDefs = [[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(([a,b],i)=>({id:`gap${a}${b}`,a,b,name:`${a+1}–${b+1}위`,color:palette[i]}));
   function rankGap(s,g){return s.top4[g.a].votes-s.top4[g.b].votes;}
   const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,timeZoom:1,timeCenter:50,timeEnd:null,yView:null,forecastMinutes:30,forecast:true,range:'24',historyLimit:12,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
@@ -50,7 +50,7 @@
     $('status-label').textContent=stopped?'수집 종료':state.loadFailed?'직접 조회 실패':direct?'멜론 직접 조회':'보관 기록';
     $('source-time').textContent=kst(last.sourceAt);
     $('collected-time').textContent=`${age<1?'1분 미만':age+'분'} 전 관측`;
-    let note=stopped?'수집 기간이 끝났습니다. 마지막 기록을 표시합니다.':state.loadFailed?'멜론 직접 조회에 실패해 마지막 확인값을 표시합니다. 새로고침으로 다시 시도하세요.':'접속·새로고침 시 멜론 직접 조회 · 자동 조회 없음 · 추이용 이력은 별도로 수집합니다.';
+    let note=stopped?'수집 기간이 끝났습니다. 마지막 기록을 표시합니다.':state.loadFailed?'멜론 직접 조회에 실패해 마지막 확인값을 표시합니다. 새로고침으로 다시 시도하세요.':'접속·새로고침 시 멜론 직접 조회 · 자동 조회 없음 · 추이용 서버 기록은 약 5분 간격입니다.';
     if(state.archiveFailed)note+=' 과거 기록 동기화가 지연되어 기존 기록을 유지합니다.';
     const archiveLast=state.archive?.snapshots.at(-1),archiveAge=archiveLast?Math.floor((Date.now()-Date.parse(archiveLast.sourceAt))/60000):0;
     if(archiveLast&&archiveAge>=2&&!stopped)note+=` 추이용 공용 이력은 ${kst(archiveLast.sourceAt,'time')}까지입니다 (${archiveAge}분 전).`;

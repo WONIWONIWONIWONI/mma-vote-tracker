@@ -5,7 +5,7 @@
   'use strict';
 
   /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = '#ff789a';    // 부호 표차 상승 (빨강)
+  var UP_COLOR = '#ff4757';    // 부호 표차 상승 (빨강)
   var DOWN_COLOR = '#4fc8e0';  // 부호 표차 하락 (파랑)
   var FLAT_COLOR = '#a58e9c';  // 변화 없음
   var FRAMES = {
