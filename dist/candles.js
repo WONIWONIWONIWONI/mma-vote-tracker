@@ -5,7 +5,7 @@
   'use strict';
 
   /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = '#ff4757';    // 부호 표차 상승 (빨강)
+  var UP_COLOR = '#ff789a';    // 부호 표차 상승 (빨강)
   var DOWN_COLOR = '#4fc8e0';  // 부호 표차 하락 (파랑)
   var FLAT_COLOR = '#a58e9c';  // 변화 없음
   var FRAMES = {
@@ -101,8 +101,8 @@
   /* ===== 화면에 보일 범위 계산 ===== */
   function margins(W) { return { l: W < 520 ? 44 : 62, r: 8, t: 14, b: 40 }; }
   function zoomLimits(W) {
-    var max = Math.max(20, state.candles.length || 500);
-    var min = W < 520 ? 12 : 16;
+    var max = Math.max(1, state.candles.length);
+    var min = Math.min(max, W < 520 ? 8 : 12);
     return { min: min, max: max };
   }
   function computeView(W) {
@@ -117,28 +117,22 @@
     var end = all.length - state.offset, start = Math.max(0, end - n);
     return { m: m, plotW: plotW, n: n, start: start, end: end, vis: all.slice(start, end), maxOff: maxOff };
   }
-  function chartRatio(clientX) {
-    if (!state.view) return 0.5;
-    var rect = el.svg.getBoundingClientRect();
-    var width = Math.max(1, rect.width);
-    var x = (clientX - rect.left) * (state.view.W / width);
-    return Math.max(0, Math.min(1, (x - state.view.m.l) / Math.max(1, state.view.plotW)));
-  }
-
-  function setZoom(nextN, anchorRatio) {
+  function setZoom(nextN, anchorRatio, reference) {
     if (!state.view || !state.candles.length) return;
     var W = state.view.W || Math.max(300, Math.floor(el.wrap.clientWidth) || 600);
-    var lim = zoomLimits(W), oldN = state.view.n || state.view.vis.length || 1;
+    var lim = zoomLimits(W), base = reference || state.view, oldN = base.n || base.vis.length || 1;
     nextN = Math.round(Math.max(lim.min, Math.min(lim.max, nextN)));
-    if (nextN === oldN) return;
     anchorRatio = Math.max(0, Math.min(1, anchorRatio == null ? 0.5 : anchorRatio));
-    var oldStart = state.view.start;
-    var anchorIndex = oldStart + anchorRatio * Math.max(0, oldN - 1);
-    var newStart = Math.round(anchorIndex - anchorRatio * Math.max(0, nextN - 1));
+    var anchorIndex = base.start + anchorRatio * oldN;
+    var newStart = Math.round(anchorIndex - anchorRatio * nextN);
     newStart = Math.max(0, Math.min(Math.max(0, state.candles.length - nextN), newStart));
     state.zoom[state.tf] = nextN;
     state.offset = Math.max(0, state.candles.length - (newStart + nextN));
     state.hover = -1; el.tip.hidden = true; render();
+  }
+  function plotRatio(clientX) {
+    var r = el.svg.getBoundingClientRect(), v = state.view;
+    return Math.max(0, Math.min(1, ((clientX-r.left)*v.W/r.width-v.m.l)/v.plotW));
   }
   function panCandles(delta) {
     if (!state.view || !delta) return;
@@ -218,7 +212,7 @@
   /* ===== 그래프 그리기 (SVG 조각 문자열) ===== */
   function chartInner(W, H, v, hover) {
     var m = v.m, ph = H - m.t - m.b, vis = v.vis, s = [];
-    var slot = Math.min(14, v.plotW / Math.max(vis.length, 1));
+    var slot = v.plotW / Math.max(vis.length, 1);
     var lo = Infinity, hi = -Infinity;
     vis.forEach(function (c) { if (c.l < lo) lo = c.l; if (c.h > hi) hi = c.h; });
     if (!vis.length) { lo = 0; hi = 10; }
@@ -251,7 +245,7 @@
 
     vis.forEach(function (c, i) {
       var cx = m.l + slot * (i + 0.5);
-      var bw = Math.min(4, Math.max(0.6, slot * 0.38));
+      var bw = Math.min(10, Math.max(0.6, slot * 0.38));
       var col = gapColor(c.o,c.c), op = c.gapped ? 0.5 : 1;
       var yo = Y(c.o), yc = Y(c.c);
       s.push('<line x1="' + f1(cx) + '" x2="' + f1(cx) + '" y1="' + f1(Y(c.h)) + '" y2="' + f1(Y(c.l)) + '" stroke="' + col + '" stroke-width="' + (slot < 7 ? 0.65 : slot < 12 ? 0.85 : 1) + '" opacity="' + op + '"/>');
@@ -273,11 +267,12 @@
     var W = Math.max(300, Math.floor(el.wrap.clientWidth) || 600), H = W < 520 ? 290 : 340;
     var v = computeView(W);
     state.view = v; v.W = W; v.H = H;
+    el.svg.dataset.start = v.start; el.svg.dataset.count = v.n;
+    el.svg.dataset.total = state.candles.length;
     el.svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     el.svg.setAttribute('width', W);
     el.svg.setAttribute('height', H);
     el.svg.innerHTML = chartInner(W, H, v, state.hover);
-    el.svg.style.cursor = v.maxOff > 0 ? 'grab' : 'default';
 
     var vis = v.vis;
     if (vis.length) {
@@ -289,6 +284,9 @@
     el.prev.disabled = state.offset >= v.maxOff;
     el.next.disabled = state.offset <= 0;
     el.latest.disabled = state.offset <= 0;
+    var limits = zoomLimits(W);
+    root.querySelector('#cd-zoom-in').disabled = v.n <= limits.min;
+    root.querySelector('#cd-zoom-out').disabled = v.n >= limits.max;
     var btns = el.tf.querySelectorAll('button');
     for (var i = 0; i < btns.length; i++) {
       var on = btns[i].getAttribute('data-tf') === state.tf;
@@ -437,7 +435,7 @@
       '.cd-wrap{position:relative;margin-top:16px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}' +
       '.cd-unit{display:block;font-size:10px;color:var(--muted);padding:3px 0 2px;margin-bottom:10px}' +
       '.cd-wrap svg{display:block;width:100%;height:auto;overflow:visible;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:grab}' +
-      '.cd-nav{display:flex;gap:8px;margin:12px 0 14px}' +
+      '.cd-nav{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 14px}' +
       '.cd-nav button:disabled{opacity:.35;cursor:default}' +
       '.cd-bottom{display:flex;justify-content:space-between;gap:15px;border-top:1px solid var(--line);padding-top:12px;font-size:10px;color:var(--muted);line-height:1.6}' +
       '.cd-bottom p{margin:0}.cd-bottom>span{flex-shrink:0;font-variant-numeric:tabular-nums}' +
@@ -472,8 +470,8 @@
       '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="30">30분</button><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="180">3시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">리센느−상대 팀의 부호 표차를 가중 선형회귀합니다. 음수에서 상승하면 리센느의 추격, 양수에서 하락하면 상대 팀의 추격입니다. 6개·15분 미만, 긴 공백·득표 정정·낮은 적합도는 보류하며, 먼 미래(최대 6시간)는 수치로 단정하지 않습니다.</p></div>' +
       '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="360">6시간</button></div></div><div class="cd-legend"><span><i style="background:' + UP_COLOR + '"></i>표차 상승</span><span><i style="background:' + DOWN_COLOR + '"></i>표차 하락</span><span><i style="background:' + FLAT_COLOR + ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
       '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="리센느와 선택한 상대 팀의 표차 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +
-      '<div class="cd-nav"><button class="quiet-button" id="cd-prev" type="button">◀ 이전</button><button class="quiet-button" id="cd-next" type="button">다음 ▶</button><button class="quiet-button" id="cd-latest" type="button">최신</button></div>' +
-      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 색상은 표차 방향 기준: 빨강=상승, 파랑=하락입니다. 확대·축소 문구는 절대 격차 기준입니다. 음수에서 0에 가까워지면 격차 축소·빨강, 양수에서 멀어지면 격차 확대·빨강입니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 휠로 좌우 이동, Ctrl+휠로 시간축 조절. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
+      '<div class="cd-nav"><button class="quiet-button" id="cd-prev" type="button">◀ 이전</button><button class="quiet-button" id="cd-next" type="button">다음 ▶</button><button class="quiet-button" id="cd-latest" type="button">최신</button><button class="quiet-button" id="cd-zoom-in" type="button">＋ 확대</button><button class="quiet-button" id="cd-zoom-out" type="button">− 축소</button><button class="quiet-button" id="cd-reset" type="button">전체 보기</button></div>' +
+      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 색상은 표차 방향 기준: 빨강=상승, 파랑=하락입니다. 확대·축소 문구는 절대 격차 기준입니다. 음수에서 0에 가까워지면 격차 축소·빨강, 양수에서 멀어지면 격차 확대·빨강입니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 마우스 드래그·휠로 좌우 이동, Ctrl+휠로 커서 주변 확대. 버튼으로도 확대·축소·전체 보기 가능. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
     syncGapOptions();
     document.getElementById('gap-pair').addEventListener('change',function(){state.map={};addSnaps(Object.values(snapshots));state.offset=0;rebuild();render();});
     el.pace = root.querySelector('#pc-summary'); el.paceTf = root.querySelector('#pc-tf'); el.paceBody = root.querySelector('#pc-body');
@@ -497,13 +495,30 @@
     el.prev.addEventListener('click', function () { page(1); });
     el.next.addEventListener('click', function () { page(-1); });
     el.latest.addEventListener('click', function () { state.offset = 0; render(); });
+    root.querySelector('#cd-zoom-in').addEventListener('click', function () { setZoom(state.view.n/1.5,0.5); });
+    root.querySelector('#cd-zoom-out').addEventListener('click', function () { setZoom(state.view.n*1.5,0.5); });
+    root.querySelector('#cd-reset').addEventListener('click', function () { state.zoom[state.tf]=state.candles.length;state.offset=0;hideTip();render(); });
+
+    // Capture on the stable SVG, so replacing its paths cannot cancel the drag.
+    var mouseDrag = null;
+    el.svg.addEventListener('pointerdown',function(e){
+      if(e.pointerType==='touch'||e.button!==0||!state.view)return;
+      mouseDrag={id:e.pointerId,x:e.clientX,offset:state.offset,slot:state.view.slot*el.svg.getBoundingClientRect().width/state.view.W};
+      el.svg.setPointerCapture(e.pointerId);el.svg.style.cursor='grabbing';hideTip();e.preventDefault();
+    });
+    el.svg.addEventListener('pointermove',function(e){
+      if(!mouseDrag||e.pointerId!==mouseDrag.id)return;
+      state.offset=Math.max(0,Math.min(state.view.maxOff,mouseDrag.offset+Math.round((e.clientX-mouseDrag.x)/mouseDrag.slot)));
+      state.hover=-1;el.tip.hidden=true;render();
+    });
+    function endMouseDrag(e){if(mouseDrag&&mouseDrag.id===e.pointerId){mouseDrag=null;el.svg.style.cursor='grab';}}
+    ['pointerup','pointercancel','lostpointercapture'].forEach(function(name){el.svg.addEventListener(name,endMouseDrag);});
 
     // PC: 휠=시간축 이동, Ctrl+휠=X축 시간 밀도 압축/확장.
     var wheelCarry = 0;
     el.svg.addEventListener('wheel', function (e) {
       if (!state.view || !state.view.vis.length) return;
-      var rect = el.svg.getBoundingClientRect();
-      var anchor = chartRatio(e.clientX);
+      var anchor = plotRatio(e.clientX);
 
       if (e.ctrlKey) {
         e.preventDefault();
@@ -526,7 +541,7 @@
     // 모바일은 native Touch Events 하나로만 처리합니다.
     // iOS Safari에서 페이지 핀치가 시작되기 전에 cd-wrap 단계에서 preventDefault합니다.
     var tMode = null, tStartX = 0, tStartY = 0, tLastX = 0, tLastY = 0, tCarry = 0;
-    var tPinchDist = 0, tPinchN = 0, tPinchAnchor = 0.5;
+    var tPinchDist = 0, tPinchN = 0, tPinchAnchor = 0.5, tPinchView = null;
     function tDist(a, b) {
       var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
       return Math.sqrt(dx * dx + dy * dy);
@@ -538,9 +553,9 @@
         tMode = 'pinch';
         tPinchDist = tDist(e.touches[0], e.touches[1]);
         tPinchN = state.view ? state.view.n : (state.zoom[state.tf] || FRAMES[state.tf].show);
-        var rr = el.svg.getBoundingClientRect();
+        tPinchView = state.view;
         var mid = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        tPinchAnchor = chartRatio(mid);
+        tPinchAnchor = plotRatio(mid);
         hideTip();
         return;
       }
@@ -558,9 +573,11 @@
           tMode = 'pinch';
           tPinchDist = tDist(e.touches[0], e.touches[1]);
           tPinchN = state.view ? state.view.n : (state.zoom[state.tf] || FRAMES[state.tf].show);
+          tPinchView = state.view;
+          tPinchAnchor = plotRatio((e.touches[0].clientX+e.touches[1].clientX)/2);
         }
         var d = tDist(e.touches[0], e.touches[1]);
-        if (tPinchDist > 0 && tPinchN > 0) setZoom(tPinchN * (tPinchDist / Math.max(16, d)), tPinchAnchor);
+        if (tPinchDist > 0 && tPinchN > 0) setZoom(tPinchN * (tPinchDist / Math.max(16, d)), tPinchAnchor, tPinchView);
         return;
       }
       if (e.touches.length !== 1 || !state.view) return;
@@ -600,42 +617,9 @@
     el.wrap.addEventListener('selectstart', function (e) { e.preventDefault(); });
     el.wrap.addEventListener('contextmenu', function (e) { if (state.touch) e.preventDefault(); });
 
-    // 마우스 드래그로 시간축을 이동하고, 드래그가 아니면 기존 툴팁을 표시합니다.
-    var mouseDrag = null;
-    el.svg.addEventListener('pointerdown', function (e) {
-      if (e.pointerType !== 'mouse' || e.button !== 0 || !state.view || state.view.maxOff <= 0) {
-        if (e.pointerType !== 'touch') onPointer(e);
-        return;
-      }
-      mouseDrag = { id: e.pointerId, startX: e.clientX, lastX: e.clientX, moved: false, carry: 0 };
-      el.svg.setPointerCapture(e.pointerId);
-    });
-    el.svg.addEventListener('pointermove', function (e) {
-      if (mouseDrag && e.pointerId === mouseDrag.id) {
-        var dx = e.clientX - mouseDrag.lastX;
-        if (!mouseDrag.moved && Math.abs(e.clientX - mouseDrag.startX) > 4) {
-          mouseDrag.moved = true; hideTip(); el.svg.style.cursor = 'grabbing';
-        }
-        if (mouseDrag.moved) {
-          mouseDrag.carry += dx;
-          var slot = Math.max(1.2, state.view && state.view.slot || 4);
-          var move = Math.trunc(mouseDrag.carry / slot);
-          if (move) { mouseDrag.carry -= move * slot; panCandles(move); }
-        } else onPointer(e);
-        mouseDrag.lastX = e.clientX;
-        return;
-      }
-      if (e.pointerType !== 'touch') onPointer(e);
-    });
-    function endMouseDrag(e) {
-      if (!mouseDrag || e.pointerId !== mouseDrag.id) return;
-      mouseDrag = null;
-      el.svg.style.cursor = state.view && state.view.maxOff > 0 ? 'grab' : 'default';
-    }
-    el.svg.addEventListener('pointerup', endMouseDrag);
-    el.svg.addEventListener('pointercancel', endMouseDrag);
-    el.svg.addEventListener('lostpointercapture', endMouseDrag);
-    el.svg.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch' && !mouseDrag) hideTip(); });
+    // 마우스 hover/tooltip은 기존 Pointer Events 유지.
+    el.svg.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch'&&!mouseDrag) onPointer(e); });
+    el.svg.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch') hideTip(); });
     document.addEventListener('pointerdown', function (e) { if (!el.svg.contains(e.target) && !el.tip.hidden) hideTip(); });
     root.querySelector('#cd-image').addEventListener('click', exportPng);
     var timer;
@@ -656,3 +640,4 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+
