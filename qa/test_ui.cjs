@@ -45,7 +45,7 @@ async function setup(browser,mobile=false){
  await page.clock.fastForward(65000);
  assert.equal(liveCalls,liveBefore,'no automatic Melon polling');assert.equal(archiveCalls,archivesBefore,'no automatic archive polling');
  const colors=await page.locator('.leader').evaluateAll(rows=>rows.map(e=>e.style.getPropertyValue('--color')));
- assert.equal(new Set(colors).size,6,'all six teams have distinct colors');assert.equal(colors[1],'#b997ff');
+ assert.equal(new Set(colors).size,6,'all six teams have distinct colors');assert.equal(colors[1],'#e6ff54');
  await page.locator('#trend-chart').scrollIntoViewIfNeeded();await page.locator('#trend-forecast').uncheck();await page.locator('#trend-zoom').selectOption('8');
  async function focused(){const s=await page.evaluate(()=>window.MMA_DATA.snapshots.at(-1));const metric=await page.locator('[data-metric].selected').getAttribute('data-metric');const t=s.top4.find(t=>t.id===ids[1]);const v=metric==='share'?t.votes/s.totalVotes*100:t.votes;const bounds=await page.locator('#trend-chart').evaluate(e=>[+e.dataset.ymin,+e.dataset.ymax]);assert.ok(v>=bounds[0]&&v<=bounds[1],`focus includes Rescene: ${v} in ${bounds}`);return bounds;}
  const bounds=await focused();
@@ -63,6 +63,7 @@ async function setup(browser,mobile=false){
  if(mobile){const r=await page.locator('#trend-chart').boundingBox(),cdp=await context.newCDPSession(page);const old=await focusedBounds(page);const x=r.x+r.width*.55,y=r.y+r.height*.5;
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y+50}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});assert.notEqual((await focusedBounds(page))[0],old[0],'touch pans the vertical viewport');
  }
+ console.log('Candle zoom before',await page.locator('#cd-svg').evaluate(e=>({start:e.dataset.start,count:e.dataset.count,total:e.dataset.total,zoomIn:document.querySelector('#cd-zoom-in').disabled})));
  await page.locator('#cd-zoom-in').click();await page.locator('#cd-zoom-in').click();await page.locator('#cd-svg').scrollIntoViewIfNeeded();
  const view=()=>page.locator('#cd-svg').evaluate(e=>({start:+e.dataset.start,n:+e.dataset.count,total:+e.dataset.total,W:e.viewBox.baseVal.width}));
  const before=await view();assert.ok(before.n<before.total);
@@ -90,10 +91,10 @@ async function setup(browser,mobile=false){
  await page.waitForFunction(()=>document.getElementById('notice-text').textContent.includes('직접 조회에 실패'));assert.ok(rawCalls>0,'rate limited API falls back to raw');
  if(!mobile){
   await page.locator('#gap-pair').selectOption(ids[0]);
-  for(const [first,last,label,color] of [[-100,-50,'격차 축소','#ff789a'],[100,150,'격차 확대','#ff789a'],[-100,-150,'격차 확대','#4fc8e0'],[100,50,'격차 축소','#4fc8e0']]){
+  for(const [first,last,label,color] of [[-100,-50,'격차 축소','#ff4757'],[100,150,'격차 확대','#ff4757'],[-100,-150,'격차 확대','#4fc8e0'],[100,50,'격차 축소','#4fc8e0']]){
    const rows=Array.from({length:7},(_,i)=>{const s=snapshot(714+i),gap=first+(last-first)*i/6;s.top4[1].votes=100000+i*10;s.top4[0].votes=s.top4[1].votes-gap;s.top4.sort((a,b)=>b.votes-a.votes);s.totalVotes=s.top4.reduce((n,t)=>n+t.votes,0);s.top4.forEach((t,i)=>{t.rank=i+1;t.reportedShare=Math.round(t.votes/s.totalVotes*100);});return s;});
    await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),{...history,snapshots:rows});
-   const metric=page.locator('.pc-metric').first();assert.ok((await metric.textContent()).includes(label));assert.equal(await metric.locator('strong').evaluate(e=>getComputedStyle(e).color),color==='#ff789a'?'rgb(255, 120, 154)':'rgb(79, 200, 224)');
+   const metric=page.locator('.pc-metric').first();assert.ok((await metric.textContent()).includes(label));assert.equal(await metric.locator('strong').evaluate(e=>getComputedStyle(e).color),color==='#ff4757'?'rgb(255, 120, 154)':'rgb(79, 200, 224)');
   }
  }
  assert.deepEqual(errors,[]);fs.mkdirSync('qa-output',{recursive:true});await page.screenshot({path:`qa-output/${mobile?'mobile':'desktop'}.png`,fullPage:true});
