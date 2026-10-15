@@ -6,14 +6,15 @@
   <meta name="theme-color" content="#100e19">
   <title>MMA TOP 6 — 투표 트래커</title>
   <meta name="description" content="2026 MMA 상위 6팀의 득표수, 점유율, 추이를 한눈에.">
-  <link rel="icon" href="./favicon.svg?v=20261015-mma-plum" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=20261015-mma-top6">
+  <link rel="icon" href="./favicon.svg?v=20261015-evening1" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css?v=20261015-evening1">
   <script src="./data/seed.js"></script>
-  <script src="./hourly.js?v=20261015-top6-hourly" defer></script>
-  <script src="./axis.js?v=20261007-adaptive-axis" defer></script>
-  <script src="./exports.js?v=20261015-mma-top6" defer></script>
-  <script src="./app.js?v=20261015-mma-top6" defer></script>
-  <script src="./candles.js?v=20261015-mma-rescene-gap" defer></script>
+  <script src="./hourly.js?v=20261015-evening1" defer></script>
+  <script src="./axis.js?v=20261015-evening1" defer></script>
+  <script src="./analytics.js?v=20261015-evening1" defer></script>
+  <script src="./exports.js?v=20261015-evening1" defer></script>
+  <script src="./app.js?v=20261015-evening1" defer></script>
+  <script src="./candles.js?v=20261015-evening1" defer></script>
 </head>
 <body>
   <div class="site-shell">
@@ -30,8 +31,8 @@
       <section class="leaders" id="leaders" aria-label="현재 상위 6팀"></section>
       <section class="overview-bar" aria-label="전체 투표 요약"><div class="total-block"><span class="small-label">전체 투표</span><strong id="total-votes">—</strong><span class="unit">표</span></div><div class="distribution"><div class="share-track" id="share-track"></div><div class="distribution-caption"><span>상위 6팀 합계 <b id="top-share">—</b></span><span>그 외 <b id="other-share">—</b></span></div></div><div class="sample-block"><span class="small-label">누적 기록</span><strong id="sample-count">—</strong><span class="unit">회</span></div></section>
       <section class="chart-panel panel has-image-button" aria-labelledby="trend-title"><button type="button" class="quiet-button panel-image-button" data-image="trend" aria-label="여섯 팀 득표 현황과 선택한 그래프 PNG 저장" title="여섯 팀 득표 현황과 선택한 그래프 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>
-        <div class="panel-heading"><div><div class="section-kicker">THE TREND</div><h2 id="trend-title">시간에 따른 변화</h2></div><div class="range-selector" role="group" aria-label="표시 기간"><button data-range="1">1시간</button><button data-range="6">6시간</button><button data-range="24">24시간</button><button data-range="all" aria-pressed="true" class="selected">전체</button></div></div>
-        <div id="trend-focus" class="range-selector trend-focus" role="group" aria-label="비교 범위"><button data-focus="lower" class="selected" aria-pressed="true">2~6위 확대</button><button data-focus="all" aria-pressed="false">전체 6팀</button></div><div class="chart-controls"><div class="metric-selector" role="group" aria-label="그래프 지표"><button data-metric="votes" class="selected" aria-pressed="true">득표수</button><button data-metric="share">점유율</button></div><div class="chart-legend" id="chart-legend"></div></div>
+        <div class="panel-heading"><div><div class="section-kicker">THE TREND</div><h2 id="trend-title">시간에 따른 변화</h2></div><div class="range-selector" role="group" aria-label="표시 기간"><button data-range="0.25">15분</button><button data-range="0.5">30분</button><button data-range="1" aria-pressed="true" class="selected">1시간</button><button data-range="6">6시간</button><button data-range="24">24시간</button><button data-range="all">전체</button></div></div>
+        <div class="trend-tools"><button id="trend-reset" class="quiet-button">모든 팀 · 확대 초기화</button><label>세로 확대 <select id="trend-zoom"><option value="1">1배</option><option value="2">2배</option><option value="4">4배</option><option value="8">8배</option></select></label><label>확대 위치 <input id="trend-center" type="range" min="0" max="100" value="50" disabled></label><label><input id="trend-forecast" type="checkbox" checked> 미래 30분 이내 점선</label></div><p class="trend-help">팀 이름을 눌러 표시/숨김 · 기간을 줄이거나 세로 확대 후 위치를 움직이면 가까운 선을 자세히 볼 수 있어요.</p><div class="chart-controls"><div class="metric-selector" role="group" aria-label="그래프 지표"><button data-metric="votes" class="selected" aria-pressed="true">득표수</button><button data-metric="share">점유율</button></div><div class="chart-legend" id="chart-legend"></div></div>
         <div class="chart-wrap"><div class="chart-meta"><span class="chart-unit" id="chart-unit">득표수 (표)</span><span class="chart-axis-note" id="chart-axis-note"></span></div><svg id="trend-chart" viewBox="0 0 1100 310" role="img" aria-label="상위 6팀의 득표 추이"></svg><div class="tooltip" id="tooltip" role="status" hidden></div></div>
         <div class="chart-bottom"><p id="chart-note"></p><span id="chart-window"></span></div>
       </section>
@@ -39,7 +40,7 @@
         <section class="panel activity-panel has-image-button" aria-labelledby="recent-title"><button type="button" class="quiet-button panel-image-button" data-image="pace" aria-label="직전 관측 대비 움직임 PNG 저장" title="직전 관측 대비 움직임 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button><div class="panel-heading compact"><div><div class="section-kicker">THE PACE</div><h2 id="recent-title">직전 관측 대비 움직임</h2></div><span class="panel-tag" id="pace-tag">기록 대기</span></div><div class="table-scroll"><table><thead><tr><th scope="col">아티스트</th><th scope="col">표수 변화</th><th scope="col">점유율 변화</th></tr></thead><tbody id="pace-body"></tbody></table></div><p class="panel-footnote" id="pace-note"></p></section>
       <section class="panel hourly-panel has-image-button" aria-labelledby="hourly-title"><button type="button" class="quiet-button panel-image-button" data-image="hourly" aria-label="선택 날짜의 전체 시간대별 증가량 PNG 저장" title="선택 날짜의 전체 시간대별 증가량 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>
         <div class="panel-heading compact"><div><div class="section-kicker">BY THE HOUR</div><h2 id="hourly-title">시간대별 득표 증가량</h2><p class="hourly-intro">한 시간 동안 여섯 팀의 득표 증가를 비교해요.</p></div><label class="hourly-date-label">날짜 선택<select id="hourly-date" class="control-select" aria-label="시간대별 증가량 날짜"></select></label></div>
-        <div class="hourly-scroll" tabindex="0" aria-label="시간대별 득표 증가량 · 세로 스크롤"><ol id="hourly-list" class="hourly-list"></ol></div>
+        <div class="hourly-scroll" tabindex="0" aria-label="시간대별 득표 증가량 · 세로 스크롤"><div id="hourly-list"></div></div>
         <button class="load-more" id="hourly-more" hidden>이날 전체 시간 보기</button>
         <p class="panel-footnote" id="hourly-note"></p>
       </section>
@@ -48,7 +49,7 @@
         <div class="history-content"><div class="history-toolbar"><p>최신 기록부터 표시합니다.</p><button class="quiet-button" id="csv-button"><span aria-hidden="true">↓</span> 전체 CSV</button></div><div class="table-scroll history-scroll" tabindex="0" aria-label="집계 기록 표 · 가로 세로 스크롤"><table class="history-table"><thead><tr><th scope="col">집계 시각 (KST)</th><th scope="col">1위 · 득표수</th><th scope="col">2위 · 득표수</th><th>3위 · 득표수</th><th>4위 · 득표수</th><th>5위 · 득표수</th><th>6위 · 득표수</th><th>1–2위 표차</th><th>2–3위 표차</th><th>3–4위 표차</th><th>1–3위 표차</th><th>1–4위 표차</th><th>2–4위 표차</th></tr></thead><tbody id="history-body"></tbody></table></div><button class="load-more" id="load-more" hidden>기록 12개 더 보기</button></div>
       </details>
       <details class="method"><summary>수치와 그래프는 어떻게 읽나요?</summary><div><p>카드 득표율은 멜론에서 표시한 정수 비율이며, 그래프는 전체 후보의 표수를 합산한 총표수로 계산합니다. 확대 보기는 현재 2~6위를 표시하고, 전체 6팀으로 전환하면 1위도 함께 볼 수 있습니다. 시간은 원본 집계 시각이 아닌 조회에 성공한 관측 시각입니다.</p><p>현재 상위 6팀을 팀별로 추적합니다. 표차 흐름 분석은 리센느와 나머지 다섯 팀을 비교하며 상대 순위순으로 선택할 수 있습니다. 미관측 구간은 직선으로 연결하며 중간값은 실제 관측이 아닙니다. 시간대별 증가량은 실제 관측 사이의 차이만 계산합니다.</p><p>10초 간격으로 조회하고 분당 최신 관측을 기록하며 GitHub Actions 실행 지연이 발생할 수 있습니다. 오류 시 마지막 정상 기록을 유지합니다. 과거 데이터는 소급 생성하지 않습니다.</p></div></details>
-    </main>
+    <details class="method"><summary>예측 점선은 어떻게 계산하나요?</summary><div><p>최근 60분의 실제 시각과 수치에 가중 선형회귀를 적용합니다. 최근 관측에 더 큰 비중(30분 반감기)을 두고, 마지막 실제 값에서 추정 기울기를 연장합니다. 학습 구간 절반 또는 30분 중 짧은 범위만 표시합니다. 점선은 조건부 추정이며 실제 관측이나 확정 결과가 아닙니다.</p><p>6개 이상·15분 이상 관측이 필요하며, 10분 초과 공백 또는 낮은 적합도(R²&lt;0.3)에서는 예측을 보류합니다. 득표수가 감소한 정정 구간도 보류합니다. 하루치 자료로 시간대별 반복 패턴을 가정하지 않습니다. 역전시간은 선택한 구간의 가중 회귀로 추정하며 6시간 또는 관측 기간의 3배를 넘으면 먼 미래로 구분합니다.</p></div></details></main>
     <footer><span class="footer-brand">VOTE/TRACK</span><p>팬이 만든 비공식 대시보드 · 데이터 출처 <a href="https://www.melon.com/mma/2026/vote/top10/" target="_blank" rel="noopener noreferrer">Melon ↗</a></p><span>모든 시각은 한국 시간 (KST)</span></footer>
   </div><div class="toast" role="status" id="toast" hidden></div>
 </body>
