@@ -20,6 +20,16 @@
       });
       out.push({start,end,date:dayKey(start),ongoing,from,to,complete,partial:!valid||from!==start||(!ongoing&&to!==end),total:valid?b.totalVotes-a.totalVotes:null,values});
     }
+    // Campaign begins on Oct 15. Reconstruct only if every subsequent day is covered.
+    const first=out[0],last=rows.at(-1),lastTime=Date.parse(last.sourceAt),later=out.slice(1).filter(d=>d.start<=lastTime);
+    if(first.date==='2026-10-15'&&later.length&&later.every((d,i)=>d.from===d.start&&(d.to===d.end||(i===later.length-1&&d.to===lastTime)))&&later.at(-1).to===Date.parse(last.sourceAt)){
+      first.total=last.totalVotes-later.reduce((sum,d)=>sum+d.total,0);
+      first.values=teams.map(team=>{
+        const current=last.top4.find(t=>String(t.id)===String(team.id)),parts=later.map(d=>d.values.find(v=>v.id===team.id)?.delta);
+        return {id:team.id,name:team.name,delta:current&&parts.every(Number.isFinite)?current.votes-parts.reduce((a,b)=>a+b,0):null};
+      });
+      first.from=first.start;first.to=first.end;first.partial=false;first.complete=true;first.reconstructed=true;
+    }
     return out.reverse();
   }
   const api={build,startOf,dayKey};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MMADaily=api;
