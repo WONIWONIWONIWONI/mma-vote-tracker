@@ -60,6 +60,18 @@
   }
   function renderCards(){const last=latest();$('leaders').innerHTML=last.top4.map((t,i)=>`<article class="leader ${i===0?'first':''}" style="--color:${colorOf(t)}"><div class="leader-top"><span class="rank-badge"><b>${String(i+1).padStart(2,'0')}</b> RANK</span>${i===0?'<span class="mini-label">현재 선두</span>':''}</div><h2 class="artist" title="${escapeHTML(t.name)}"><i class="artist-dot"></i><span class="artist-name">${escapeHTML(t.name)}</span></h2><div class="count-row"><span class="vote-total"><strong class="vote-value">${fmt(t.votes)}</strong><span class="unit">표</span></span><span class="share-value">${displayShare(t,last)}<span>%</span></span></div><div class="leader-bottom"><span>전체 투표 중 점유율</span><b>${i===0?`2위와 ${fmt(t.votes-last.top4[1].votes)}표 차이`:`${i}위와 ${fmt(last.top4[i-1].votes-t.votes)}표 차이`}</b></div></article>`).join('');$('total-votes').textContent=fmt(last.totalVotes);$('sample-count').textContent=fmt(state.data.snapshots.length);const sum=last.top4.reduce((s,t)=>s+t.votes,0);$('top-share').textContent=(sum/last.totalVotes*100).toFixed(1)+'%';$('other-share').textContent=((last.totalVotes-sum)/last.totalVotes*100).toFixed(1)+'%';$('share-track').innerHTML=last.top4.map(t=>`<i style="width:${share(t,last)}%;background:${colorOf(t)}" title="${escapeHTML(t.name)} ${displayShare(t,last)}%"></i>`).join('')+`<i style="width:${100-sum/last.totalVotes*100}%;background:#453d51" title="그 외"></i>`;}
   function renderPace(){const last=latest(),prev=previousObservation();$('pace-tag').textContent=prev?`${fmt((Date.parse(last.sourceAt)-Date.parse(prev.sourceAt))/60000)}분 간격`:'기록 대기';$('pace-body').innerHTML=last.top4.map(t=>{const p=prev?.top4.find(x=>x.id===t.id);const delta=p?t.votes-p.votes:null,pp=p?share(t,last)-share(p,prev):null;return `<tr><td><span class="table-artist" style="--color:${colorOf(t)}"><i></i>${escapeHTML(t.name)}</span></td><td class="${delta==null?'no-value':delta>=0?'positive':'negative'}">${delta==null?'—':change(delta)+'표'}</td><td class="${pp==null?'no-value':pp>=0?'positive':'negative'}">${pp==null?'—':change(pp,2)+'%p'}</td></tr>`;}).join('');$('pace-note').textContent=prev?`${kst(prev.sourceAt,'short')} → ${kst(last.sourceAt,'short')} · 직전 관측 대비 변화입니다. 직전 관측에서 상위 6위 밖인 팀은 비교 값이 없습니다.`:'관측 기록이 두 개 이상이면 직전 관측 대비 변화를 표시합니다. 아직 없는 값은 —로 표시합니다.';}
+  function renderDaily(){
+    const now=Math.min(Date.now(),operationEnd()-1),teams=latest().top4,dailyRows=[...new Map([...(state.archive?.snapshots||[]),...state.data.snapshots].map(row=>[row.sourceAt,row])).values()],days=MMADaily.build(dailyRows,teams,now),today=days[0];
+    if(!today){$('daily-summary').textContent='오늘 관측을 기다리고 있습니다.';$('daily-teams').innerHTML='';return;}
+    const number=v=>v==null?'—':change(v)+'표',range=d=>d.from==null?'관측 대기':`${kst(d.from,'short')} → ${kst(d.to,'short')}`;
+    $('daily-title').textContent=`${today.date.replaceAll('-','.')} 하루 누적 득표 증가량`;
+    $('daily-summary').innerHTML=`<span class="panel-tag">${today.ongoing?'집계 중':'마감'}${today.partial?' · 일부 구간':''}</span><span>전체 후보 합계 <strong>${number(today.total)}</strong></span><small>${range(today)} KST</small>`;
+    const ranked=today.values.slice().sort((a,b)=>(b.delta??-Infinity)-(a.delta??-Infinity)),max=Math.max(0,...ranked.map(v=>v.delta??0));
+    $('daily-teams').innerHTML=ranked.map(v=>`<div class="daily-team ${v.delta===max&&max>0?'daily-winner':''}" style="--color:${colorOf(v)}"><span class="daily-name"><i></i>${escapeHTML(v.name)}${v.delta===max&&max>0?' <b>최다 증가</b>':''}</span><strong>${number(v.delta)}</strong><div class="daily-bar"><i style="width:${max?Math.max(0,v.delta??0)/max*100:0}%"></i></div></div>`).join('');
+    $('daily-note').textContent='한국 시간 00:00 누적표수와 현재값의 차이입니다. 접속·새로고침 때 갱신하며 자정에 다음 날짜로 전환합니다. 첫날·00시 관측 누락은 실제 관측 구간만 계산해 ‘일부 구간’으로 표시합니다. —는 해당 팀의 기준 관측이 없는 경우이며, 득표 정정은 음수로 표시합니다.';
+    $('daily-head').innerHTML='<tr><th scope="col">날짜 / 상태</th><th scope="col">전체 후보</th>'+teams.map(t=>`<th scope="col" style="color:${colorOf(t)}">${escapeHTML(t.name)}</th>`).join('')+'</tr>';
+    $('daily-body').innerHTML=days.slice(1).map(d=>{const peak=Math.max(0,...d.values.map(v=>v.delta??0));return `<tr><th scope="row">${d.date}<small>마감${d.partial?' · 일부 구간':''}</small><small>${range(d)}</small></th><td>${number(d.total)}</td>${d.values.map(v=>`<td class="${v.delta===peak&&peak>0?'daily-best':''}">${number(v.delta)}${v.delta===peak&&peak>0?' ★':''}</td>`).join('')}</tr>`;}).join('')||`<tr><td colspan="${teams.length+2}">아직 마감한 날짜가 없습니다.</td></tr>`;
+  }
   function renderHistory(){
     const all=[...state.data.snapshots].reverse();
     $('history-count').textContent=`${fmt(all.length)}회 관측`;
@@ -176,7 +188,7 @@
   }
   function showTooltip(s,series,el,g){const tt=$('tooltip');tt.innerHTML=`<strong>${kst(s.sourceAt)} KST</strong>`+series.map(line=>{const v=getValue(s,line);return `<p><span><i style="background:${line.color}"></i>${escapeHTML(line.name)}</span><b>${v==null?'—':state.metric==='share'?v.toFixed(2)+'%':fmt(v)+'표'}</b></p>`;}).join('');tt.hidden=false;const wrap=$('trend-chart').getBoundingClientRect();const p=g.x(Date.parse(s.sourceAt))/g.W*wrap.width;tt.style.left=Math.max(0,Math.min(wrap.width-tt.offsetWidth,p+12))+'px';tt.style.top='38px';}
   function hideTooltip(){$('tooltip').hidden=true;}
-  function render(){status();renderCards();renderPace();renderHistory();renderChart();renderHourly();window.MMA_DATA=state.data;window.dispatchEvent(new CustomEvent('mma:data',{detail:state.data}));}
+  function render(){renderDaily();status();renderCards();renderPace();renderHistory();renderChart();renderHourly();window.MMA_DATA=state.data;window.dispatchEvent(new CustomEvent('mma:data',{detail:state.data}));}
   function mergeRecent(current,recent){
     const rows=new Map(current.snapshots.map(s=>[Math.floor(Date.parse(s.sourceAt)/60000),s]));
     recent.snapshots.forEach(s=>rows.set(Math.floor(Date.parse(s.sourceAt)/60000),s));
@@ -291,6 +303,7 @@
   document.querySelectorAll('[data-range]').forEach(button=>button.addEventListener('click',()=>{state.range=button.dataset.range;state.timeZoom=1;state.timeEnd=null;state.yView=null;document.querySelectorAll('[data-range]').forEach(b=>{b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));});state.yView=null;hideTooltip();renderChart();}));
   $('hourly-date').addEventListener('change',event=>{state.hourlyDate=event.target.value;state.hourlyLimit=6;renderHourly();});
   $('hourly-more').addEventListener('click',()=>{state.hourlyLimit=24;renderHourly();});
+  $('daily-refresh').addEventListener('click',()=>refresh(true));
   $('refresh-button').addEventListener('click',()=>refresh(true));$('csv-button').addEventListener('click',exportCSV);$('copy-button').addEventListener('click',copySummary);$('load-more').addEventListener('click',()=>{state.historyLimit+=12;renderHistory();});$('history-details').addEventListener('toggle',()=>{$('history-toggle-label').textContent=$('history-details').open?'접기':'펼치기';});let resizeTimer;addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderChart();renderHourly();},120);});
   $('chart-legend').addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(!b)return;const id=b.dataset.team;if(state.hiddenTeams.has(id))state.hiddenTeams.delete(id);else if(getSeries().length>1)state.hiddenTeams.add(id);state.zoom=1;state.yView=null;hideTooltip();renderChart();});
   function setChartZoom(nextX,nextY,anchor={x:.5,y:.5}){
@@ -343,6 +356,6 @@
   $('trend-forecast').addEventListener('change',e=>{state.forecast=e.target.checked;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
   $('trend-forecast-minutes').addEventListener('change',e=>{state.forecastMinutes=+e.target.value;state.timeEnd=null;state.timeZoom=1;state.yView=null;hideTooltip();renderChart();});
   $('trend-reset').addEventListener('click',()=>{state.hiddenTeams.clear();state.zoom=1;state.timeZoom=1;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
-  state.data=normalize(state.data);state.archive=state.data;render();if(location.protocol!=='file:')refresh();setInterval(status,30000);
+  state.data=normalize(state.data);state.archive=state.data;render();if(location.protocol!=='file:')refresh();setInterval(()=>{status();renderDaily();},30000);
 })();
 
