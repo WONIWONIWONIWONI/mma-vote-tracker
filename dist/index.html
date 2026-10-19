@@ -6,17 +6,19 @@
   <meta name="theme-color" content="#100e19">
   <title>MMA TOP 6 — 투표 트래커</title>
   <meta name="description" content="2026 MMA 상위 6팀의 득표수, 점유율, 추이를 한눈에.">
-  <link rel="icon" href="./favicon.svg?v=20261018-periods1" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=20261018-periods1">
+  <link rel="icon" href="./favicon.svg?v=20261020-gap1" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css?v=20261020-gap1">
   <script src="./data/seed.js"></script>
-  <script src="./daily.js?v=20261018-periods1" defer></script>
-  <script src="./hourly.js?v=20261018-periods1" defer></script>
-  <script src="./axis.js?v=20261018-periods1" defer></script>
-  <script src="./analytics.js?v=20261018-periods1" defer></script>
-  <script src="./exports.js?v=20261018-periods1" defer></script>
-  <script src="./data.js?v=20261018-periods1" defer></script>
-  <script src="./app.js?v=20261018-periods1" defer></script>
-  <script src="./candles.js?v=20261018-periods1" defer></script>
+  <script src="./daily.js?v=20261020-gap1" defer></script>
+  <script src="./hourly.js?v=20261020-gap1" defer></script>
+  <script src="./axis.js?v=20261020-gap1" defer></script>
+  <script src="./analytics.js?v=20261020-gap1" defer></script>
+  <script src="./exports.js?v=20261020-gap1" defer></script>
+  <script src="./data.js?v=20261020-gap1" defer></script>
+  <script src="./app.js?v=20261020-gap1" defer></script>
+  <script src="./gap-model.js?v=20261020-gap1" defer></script>
+  <script src="./candles.js?v=20261020-gap1" defer></script>
+  <script src="./gap-forecast-ui.js?v=20261020-gap1" defer></script>
 </head>
 <body>
   <div class="site-shell">
@@ -34,7 +36,7 @@
       <section class="overview-bar" aria-label="전체 투표 요약"><div class="total-block"><span class="small-label">전체 투표</span><strong id="total-votes">—</strong><span class="unit">표</span></div><div class="distribution"><div class="share-track" id="share-track"></div><div class="distribution-caption"><span>상위 6팀 합계 <b id="top-share">—</b></span><span>그 외 <b id="other-share">—</b></span></div></div><div class="sample-block"><span class="small-label">누적 기록</span><strong id="sample-count">—</strong><span class="unit">회</span></div></section>
       <section class="chart-panel panel has-image-button" aria-labelledby="trend-title"><button type="button" class="quiet-button panel-image-button" data-image="trend" aria-label="여섯 팀 득표 현황과 선택한 그래프 PNG 저장" title="여섯 팀 득표 현황과 선택한 그래프 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>
         <div class="panel-heading"><div><div class="section-kicker">THE TREND</div><h2 id="trend-title">시간에 따른 변화</h2></div><div class="range-selector" role="group" aria-label="표시 기간"><button data-range="0.25">15분</button><button data-range="0.5">30분</button><button data-range="1">1시간</button><button data-range="6">6시간</button><button data-range="24" aria-pressed="true" class="selected">24시간</button><button data-range="all">전체</button></div></div>
-        <div class="trend-tools"><button id="trend-reset" class="quiet-button">최신으로</button><label>기준 팀 <select id="trend-focus"><option value="3709231">리센느</option><option value="994944">임영웅</option><option value="3574243">NCT WISH</option><option value="3207401">PLAVE</option><option value="672375">방탄소년단</option><option value="3478478">RIIZE</option></select></label><label><input id="trend-forecast" type="checkbox" checked> 예측선</label><label>예측 기간 <select id="trend-forecast-minutes"><option value="30">30분</option><option value="60">1시간</option><option value="180">3시간</option><option value="360">6시간</option><option value="720">12시간</option><option value="1440">24시간</option></select></label></div><p class="trend-help">그래프를 잡고 원하는 방향으로 끌어보세요. 확대하지 않아도 이전 시간으로 이동합니다. 모바일은 두 손가락을 벌리거나 오므려 확대·축소합니다. PC는 Ctrl+마우스 휠로 확대·축소하며, 일반 휠은 페이지를 스크롤합니다. Ctrl+휠은 마우스 위치를 중심으로 작동합니다. 예측선은 현재 추세를 연장한 조건부 추정입니다.</p><div class="chart-controls"><div class="metric-selector" role="group" aria-label="그래프 지표"><button data-metric="votes" class="selected" aria-pressed="true">득표수</button><button data-metric="share">점유율</button></div><div class="chart-legend" id="chart-legend"></div></div>
+        <div class="trend-tools"><button id="trend-reset" class="quiet-button">최신으로</button><label>기준 팀 <select id="trend-focus"><option value="3709231">리센느</option><option value="994944">임영웅</option><option value="3574243">NCT WISH</option><option value="3207401">PLAVE</option><option value="672375">방탄소년단</option><option value="3478478">RIIZE</option></select></label><label><input id="trend-forecast" type="checkbox" checked> 예측선</label><label>예측 기간 <select id="trend-forecast-minutes"><option value="30">30분</option><option value="60">1시간</option><option value="180">3시간</option><option value="360">6시간</option><option value="720">12시간</option><option value="1440">24시간</option></select></label></div><p class="trend-help">기본 표시: 리센느·임영웅. 다른 팀은 아래 이름을 눌러 표시할 수 있습니다. 그래프를 잡고 원하는 방향으로 끌어보세요. 확대하지 않아도 이전 시간으로 이동합니다. 모바일은 두 손가락을 벌리거나 오므려 확대·축소합니다. PC는 Ctrl+마우스 휠로 확대·축소하며, 일반 휠은 페이지를 스크롤합니다. Ctrl+휠은 마우스 위치를 중심으로 작동합니다. 예측선은 현재 추세를 연장한 조건부 추정입니다.</p><div class="chart-controls"><div class="metric-selector" role="group" aria-label="그래프 지표"><button data-metric="votes" class="selected" aria-pressed="true">득표수</button><button data-metric="share">점유율</button></div><div class="chart-legend" id="chart-legend"></div></div>
         <div class="chart-wrap"><div class="chart-meta"><span class="chart-unit" id="chart-unit">득표수 (표)</span><span class="chart-axis-note" id="chart-axis-note"></span></div><svg id="trend-chart" viewBox="0 0 1100 310" role="img" aria-label="상위 6팀의 득표 추이"></svg><div class="tooltip" id="tooltip" role="status" hidden></div></div>
         <div class="chart-bottom"><p id="chart-note"></p><span id="chart-window"></span></div>
       </section>
