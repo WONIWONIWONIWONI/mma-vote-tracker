@@ -125,9 +125,15 @@ async function setup(browser,mobile=false){
  await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),actual);
  await page.locator('#gf-chart path[stroke-dasharray]').waitFor({state:'attached'});assert.ok(await page.locator('#gf-chart path[stroke-dasharray]').count()>0,'24h pair projection renders');
  assert.ok((await page.locator('.gf-model').textContent()).includes('사용 모델'),'model selection is visible');
+ await page.locator('.gf-now').waitFor();
+ const now=await page.locator('.gf-now-values>div').evaluateAll(nodes=>nodes.map(n=>+n.dataset.value));
+ assert.equal(now[2],now[0]-now[1],'current delta compares the same observation time');
+ assert.equal(await page.locator('.gf-now-markers circle').count(),2,'actual and predicted current points are always marked');
+ const expectedNow=await page.evaluate(()=>{const a=MMAGapModel.points(window.MMA_DATA.snapshots).at(-1);return a.g;});assert.equal(now[0],expectedNow,'current actual is the latest observation');
  const replay=await page.locator('#gf-origin option').evaluateAll(opts=>opts.find(o=>o.value.startsWith('replay:'))?.value);
  assert.ok(replay,'past-only replay is offered');await page.locator('#gf-origin').selectOption(replay);
  assert.ok((await page.locator('.gf-stamp').textContent()).includes('과거 시점 재현'));
+ assert.equal(await page.locator('.gf-now,.gf-now-markers').count(),0,'past replay has no current-only annotations');
  assert.ok((await page.locator('.gf-accuracy').textContent()).includes('평균 절대 오차'));
  await page.locator('#gf-detail summary').click();await page.locator('#gf-fine tbody tr').last().waitFor({state:'attached'});assert.equal(await page.locator('#gf-fine tbody tr').count(),288);
  assert.ok(await page.locator('.gap-future').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'forecast panel fits mobile/desktop');
