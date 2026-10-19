@@ -305,6 +305,7 @@
   $('hourly-date').addEventListener('change',event=>{state.hourlyDate=event.target.value;state.hourlyLimit=6;renderHourly();});
   $('hourly-more').addEventListener('click',()=>{state.hourlyLimit=24;renderHourly();});
   $('daily-date').addEventListener('change',e=>{state.dailyDate=e.target.value===MMADaily.dayKey(Math.min(Date.now(),operationEnd()-1))?null:e.target.value;renderDaily();});
+  window.addEventListener('mma:forecast-due',()=>refresh());
   $('refresh-button').addEventListener('click',()=>refresh(true));$('csv-button').addEventListener('click',exportCSV);$('copy-button').addEventListener('click',copySummary);$('load-more').addEventListener('click',()=>{state.historyLimit+=12;renderHistory();});$('history-details').addEventListener('toggle',()=>{$('history-toggle-label').textContent=$('history-details').open?'접기':'펼치기';});let resizeTimer;addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{renderChart();renderHourly();},120);});
   $('chart-legend').addEventListener('click',e=>{const b=e.target.closest('[data-team]');if(!b)return;const id=b.dataset.team;if(state.hiddenTeams.has(id))state.hiddenTeams.delete(id);else if(getSeries().length>1)state.hiddenTeams.add(id);state.zoom=1;state.yView=null;hideTooltip();renderChart();});
   function setChartZoom(nextX,nextY,anchor={x:.5,y:.5}){

@@ -12,3 +12,12 @@ const wave=Array.from({length:4*288+1},(_,i)=>{const t=start+i*300000,g=-10000+5
 console.log('Gap model: 5-minute horizon, time-of-day shape, first-day exclusion, past-only replay, exact error evaluation and missing observations passed.');
 const data=JSON.parse(fs.readFileSync('dist/data/history.json'));const live=M.forecast(data.snapshots);assert.ok(live);console.log({observations:live.observations,days:[live.minDays,live.maxDays],gap:live.gap,next24h:live.path.at(-1).g});
 const past=M.forecast(data.snapshots,live.origin-24*H);if(past){const c=M.compare(past,data.snapshots);console.log('24h past-only replay',{mae:Math.round(c.mae),n:c.samples.length});}
+const midnight=Date.parse('2026-10-20T00:00:00+09:00'),noon=midnight+12*H;
+assert.equal(M.scheduledCutoff(midnight+2.5*H),midnight);
+assert.equal(M.scheduledCutoff(noon-1),midnight);
+assert.equal(M.scheduledCutoff(noon),noon);
+assert.equal(M.scheduledCutoff(midnight+24*H),midnight+24*H);
+const fixed=M.scheduled(data.snapshots,midnight);assert.ok(fixed);assert.equal(fixed.cutoff,midnight);assert.ok(fixed.trainingTo<=midnight);assert.equal(fixed.nextUpdate,noon);
+assert.deepEqual(M.scheduled([...data.snapshots,{...data.snapshots.at(-1),sourceAt:new Date(noon+H).toISOString()}],midnight),fixed,'later observations cannot change the midnight forecast');
+assert.equal(M.scheduled(rows,start+10*24*H),null,'wait for the cutoff archive rather than pretend stale observations are current');
+console.log('Twice-daily KST cutoffs, fixed past-only training, next update and pending data passed.');

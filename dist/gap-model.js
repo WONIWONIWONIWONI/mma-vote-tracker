@@ -26,5 +26,14 @@ function forecast(snapshots,asOf=Infinity){
 }
 function predicted(model,t){if(t<model.origin||t>model.path.at(-1).t)return null;const x=(t-model.origin)/(5*MIN),i=Math.floor(x),a=model.path[i],b=model.path[Math.min(i+1,288)];return Math.round(a.g+(b.g-a.g)*(x-i));}
 function compare(model,snapshots){const actual=points(snapshots).filter(p=>p.t>model.origin&&p.t<=model.path.at(-1).t);const samples=actual.map(p=>({t:p.t,actual:p.g,predicted:predicted(model,p.t),error:p.g-predicted(model,p.t)}));return {samples,mae:samples.length?samples.reduce((s,p)=>s+Math.abs(p.error),0)/samples.length:null,last:samples.at(-1)||null};}
-const api={forecast,points,predicted,compare,START,VERSION};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MMAGapModel=api;
+function scheduledCutoff(t=Date.now()){return Math.floor((t+9*HOUR)/(12*HOUR))*12*HOUR-9*HOUR;}
+function scheduled(snapshots,cutoff){
+ if(!Number.isFinite(cutoff))return null;
+ const lastTime=Math.max(...snapshots.map(s=>Date.parse(s.sourceAt)).filter(Number.isFinite));
+ if(lastTime<cutoff)return null;
+ const m=forecast(snapshots,cutoff);
+ if(!m||cutoff-m.origin>5*MIN)return null;
+ return {...m,cutoff,nextUpdate:cutoff+12*HOUR};
+}
+const api={forecast,points,predicted,compare,scheduledCutoff,scheduled,START,VERSION};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MMAGapModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

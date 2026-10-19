@@ -120,6 +120,7 @@ async function setup(browser,mobile=false){
  const final=actual.snapshots.at(-1),source=actual.snapshots.filter(r=>Date.parse(r.sourceAt)>=Date.parse(final.sourceAt)-3600000),team=final.top4[0];
  const forecast=await page.evaluate(({source,id})=>MMAAnalytics.forecast(source.map(r=>({t:Date.parse(r.sourceAt),v:r.top4.find(t=>t.id===id)?.votes})),60,30),{source,id:team.id});
  assert.ok(forecast,'real archived gap does not suppress all projections');
+ await page.clock.setFixedTime(new Date(actual.snapshots.at(-1).sourceAt));
  await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),actual);
  assert.ok(await page.locator('#gf-chart path[stroke-dasharray]').count()>0,'24h pair projection renders');
  const replay=await page.locator('#gf-origin option').evaluateAll(opts=>opts.find(o=>o.value.startsWith('replay:'))?.value);
