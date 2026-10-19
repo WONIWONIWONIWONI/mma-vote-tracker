@@ -126,7 +126,7 @@ async function setup(browser,mobile=false){
  assert.ok(replay,'past-only replay is offered');await page.locator('#gf-origin').selectOption(replay);
  assert.ok((await page.locator('.gf-stamp').textContent()).includes('과거 시점 재현'));
  assert.ok((await page.locator('.gf-accuracy').textContent()).includes('평균 절대 오차'));
- await page.locator('#gf-detail summary').click();assert.equal(await page.locator('#gf-fine tbody tr').count(),288);
+ await page.locator('#gf-detail summary').click();await page.locator('#gf-fine tbody tr').last().waitFor({state:'attached'});assert.equal(await page.locator('#gf-fine tbody tr').count(),288);
  assert.ok(await page.locator('.gap-future').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'forecast panel fits mobile/desktop');
  assert.deepEqual(errors,[]);fs.mkdirSync('qa-output',{recursive:true});await page.screenshot({path:`qa-output/${mobile?'mobile':'desktop'}.png`,fullPage:true});
  console.log(`${mobile?'Mobile':'Desktop'}: direct refresh, slow archive, no polling, colors, Ctrl-only desktop zoom, mobile hourly cards, hand drag, pinch anchor, fallback and signed gap colors passed.`);
