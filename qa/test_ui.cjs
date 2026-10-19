@@ -17,6 +17,7 @@ async function setup(browser,mobile=false){
  const gate=new Promise(resolve=>releaseArchive=resolve),errors=[];
  page.on('pageerror',error=>errors.push(error.message));
  await page.route('**/*',async route=>{const u=new URL(route.request().url());
+  if(u.pathname.endsWith('/gap-forecasts.json'))return route.fulfill({headers:{'Access-Control-Allow-Origin':'*'},json:JSON.parse(fs.readFileSync(path.join(root,'data/gap-forecasts.json')))});
   if(u.hostname==='local.test'){
    if(u.pathname==='/data/seed.js')return route.fulfill({body:'window.MMA_SEED='+JSON.stringify(seed),contentType:'text/javascript'});
    return route.fulfill({path:path.join(root,u.pathname==='/'?'index.html':u.pathname)});
@@ -122,7 +123,8 @@ async function setup(browser,mobile=false){
  assert.ok(forecast,'real archived gap does not suppress all projections');
  await page.clock.setFixedTime(new Date(actual.snapshots.at(-1).sourceAt));
  await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),actual);
- assert.ok(await page.locator('#gf-chart path[stroke-dasharray]').count()>0,'24h pair projection renders');
+ await page.locator('#gf-chart path[stroke-dasharray]').waitFor({state:'attached'});assert.ok(await page.locator('#gf-chart path[stroke-dasharray]').count()>0,'24h pair projection renders');
+ assert.ok((await page.locator('.gf-model').textContent()).includes('사용 모델'),'model selection is visible');
  const replay=await page.locator('#gf-origin option').evaluateAll(opts=>opts.find(o=>o.value.startsWith('replay:'))?.value);
  assert.ok(replay,'past-only replay is offered');await page.locator('#gf-origin').selectOption(replay);
  assert.ok((await page.locator('.gf-stamp').textContent()).includes('과거 시점 재현'));

@@ -19,15 +19,17 @@ class PublishTests(unittest.TestCase):
             def write(repo,rows):
                 data={'schemaVersion':2,'snapshots':rows,'collector':{'state':'ok','checkedAt':rows[-1]['sourceAt']}}
                 with patch.object(collect,'DATA',repo/'dist/data'):collect.save(data)
-            write(a,[base]);git(a,'add','.');git(a,'commit','-m','seed');git(a,'push','-u','origin','main')
+            write(a,[base]);(a/'dist/data/gap-forecasts.json').write_text(json.dumps({'schemaVersion':1,'records':[{'cutoff':1,'modelId':'preserved'}]}));git(a,'add','.');git(a,'commit','-m','seed');git(a,'push','-u','origin','main')
             b=root/'b';git(root,'clone',str(remote),str(b));configure(b)
-            write(a,[base,row('41:50',200)]);git(a,'add','.');git(a,'commit','-m','remote observation');git(a,'push')
-            write(b,[base,row('41:30',210)]);git(b,'add','.');git(b,'commit','-m','first unpublished point')
+            write(a,[base,row('41:50',200)]);(a/'dist/data/gap-forecasts.json').write_text(json.dumps({'schemaVersion':1,'records':[{'cutoff':1,'modelId':'preserved'},{'cutoff':2,'modelId':'published'}]}));git(a,'add','.');git(a,'commit','-m','remote observation');git(a,'push')
+            write(b,[base,row('41:30',210)]);(b/'dist/data/gap-forecasts.json').write_text(json.dumps({'schemaVersion':1,'records':[{'cutoff':1,'modelId':'preserved'},{'cutoff':2,'modelId':'conflicting-refit'},{'cutoff':3,'modelId':'next'}]}));git(b,'add','.');git(b,'commit','-m','first unpublished point')
             write(b,[base,row('41:30',210),row('42:00',220)])
             with patch.object(collect,'ROOT',b),patch.object(collect,'DATA',b/'dist/data'):collect.publish()
             result=json.loads(git(b,'show','origin/main:dist/data/history.json'))
             self.assertEqual([r['totalVotes'] for r in result['snapshots']],[100,200,220])
             self.assertEqual(result['historyCount'],3)
+            forecasts=json.loads(git(b,'show','origin/main:dist/data/gap-forecasts.json'))
+            self.assertEqual([r['modelId'] for r in forecasts['records']],['preserved','published','next'])
             # A local sample older than the remote sample must become a clean skipped commit.
             git(a,'pull','--rebase')
             current=result['snapshots'];write(a,current+[row('43:50',240)])
