@@ -47,6 +47,10 @@ async function setup(browser,mobile=false){
  const colors=await page.locator('.leader').evaluateAll(rows=>rows.map(e=>e.style.getPropertyValue('--color')));
  assert.equal(new Set(colors).size,6,'all six teams have distinct colors');assert.equal(colors[1],'#e6ff54');
  assert.equal(await page.locator('[data-range].selected').getAttribute('data-range'),'24');
+ assert.equal(await page.locator('#chart-legend [aria-pressed="true"]').count(),2,'two lead teams visible by default');
+ assert.equal(await page.locator('[data-team="3574243"]').getAttribute('aria-pressed'),'false');
+ await page.locator('[data-team="3574243"]').click();assert.equal(await page.locator('[data-team="3574243"]').getAttribute('aria-pressed'),'true');
+ await page.locator('[data-team="3574243"]').click();
  await page.locator('[data-range="1"]').click();await page.locator('#trend-forecast').uncheck();await page.locator('#trend-chart').scrollIntoViewIfNeeded();
  const bounds=()=>page.locator('#trend-chart').evaluate(e=>({xmin:+e.dataset.xmin,xmax:+e.dataset.xmax,ymin:+e.dataset.ymin,ymax:+e.dataset.ymax,zoomX:+e.dataset.zoomX,zoomY:+e.dataset.zoomY}));
  async function drag(dx,dy){await page.locator('#trend-chart').scrollIntoViewIfNeeded();const b=await page.locator('#trend-chart').boundingBox(),x=b.x+b.width*.55,y=b.y+b.height*.5;
@@ -116,6 +120,14 @@ async function setup(browser,mobile=false){
  const final=actual.snapshots.at(-1),source=actual.snapshots.filter(r=>Date.parse(r.sourceAt)>=Date.parse(final.sourceAt)-3600000),team=final.top4[0];
  const forecast=await page.evaluate(({source,id})=>MMAAnalytics.forecast(source.map(r=>({t:Date.parse(r.sourceAt),v:r.top4.find(t=>t.id===id)?.votes})),60,30),{source,id:team.id});
  assert.ok(forecast,'real archived gap does not suppress all projections');
+ await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),actual);
+ assert.ok(await page.locator('#gf-chart path[stroke-dasharray]').count()>0,'24h pair projection renders');
+ const replay=await page.locator('#gf-origin option').evaluateAll(opts=>opts.find(o=>o.value.startsWith('replay:'))?.value);
+ assert.ok(replay,'past-only replay is offered');await page.locator('#gf-origin').selectOption(replay);
+ assert.ok((await page.locator('.gf-stamp').textContent()).includes('과거 시점 재현'));
+ assert.ok((await page.locator('.gf-accuracy').textContent()).includes('평균 절대 오차'));
+ await page.locator('#gf-detail summary').click();assert.equal(await page.locator('#gf-fine tbody tr').count(),288);
+ assert.ok(await page.locator('.gap-future').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'forecast panel fits mobile/desktop');
  assert.deepEqual(errors,[]);fs.mkdirSync('qa-output',{recursive:true});await page.screenshot({path:`qa-output/${mobile?'mobile':'desktop'}.png`,fullPage:true});
  console.log(`${mobile?'Mobile':'Desktop'}: direct refresh, slow archive, no polling, colors, Ctrl-only desktop zoom, mobile hourly cards, hand drag, pinch anchor, fallback and signed gap colors passed.`);
  await context.close();

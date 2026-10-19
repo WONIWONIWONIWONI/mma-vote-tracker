@@ -7,7 +7,7 @@
   const colors = {'994944':'#ff789a','3709231':'#e6ff54','3574243':'#4fc8e0','3207401':'#ffc06c','672375':'#83d9b5','3478478':'#9cbcff'};
   const gapDefs = [[0,1],[1,2],[2,3],[0,2],[0,3],[1,3]].map(([a,b],i)=>({id:`gap${a}${b}`,a,b,name:`${a+1}–${b+1}위`,color:palette[i]}));
   function rankGap(s,g){return s.top4[g.a].votes-s.top4[g.b].votes;}
-  const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(),zoom:1,center:50,timeZoom:1,timeCenter:50,timeEnd:null,yView:null,forecastMinutes:30,forecast:true,range:'24',historyLimit:12,dailyDate:null,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
+  const state = {data:window.MMA_SEED,metric:'votes',hiddenTeams:new Set(['3574243','3207401','672375','3478478']),zoom:1,center:50,timeZoom:1,timeCenter:50,timeEnd:null,yView:null,forecastMinutes:30,forecast:true,range:'24',historyLimit:12,dailyDate:null,hourlyDate:null,hourlyLimit:6,fetching:false,loadFailed:false,historyLoaded:false,lastCheckedAt:0,archive:null,localObservations:[],directOK:false,archiveFailed:false};
   const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => nf.format(n);
   const share = (team,snap) => 100*team.votes/snap.totalVotes;
@@ -356,7 +356,7 @@
   },{passive:false});
   $('trend-forecast').addEventListener('change',e=>{state.forecast=e.target.checked;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
   $('trend-forecast-minutes').addEventListener('change',e=>{state.forecastMinutes=+e.target.value;state.timeEnd=null;state.timeZoom=1;state.yView=null;hideTooltip();renderChart();});
-  $('trend-reset').addEventListener('click',()=>{state.hiddenTeams.clear();state.zoom=1;state.timeZoom=1;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
+  $('trend-reset').addEventListener('click',()=>{state.zoom=1;state.timeZoom=1;state.timeEnd=null;state.yView=null;hideTooltip();renderChart();});
   state.data=normalize(state.data);state.archive=state.data;render();if(location.protocol!=='file:')refresh();setInterval(()=>{status();renderDaily();},30000);
 })();
 

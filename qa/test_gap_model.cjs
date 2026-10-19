@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),M=require('../dist/gap-model.js'),fs=require('node:fs');
+const H=3600000,start=M.START;
+function snapshot(t,g){return {sourceAt:new Date(t).toISOString(),top4:[{id:'3709231',votes:100000+(t-start)/60000*100+g},{id:'994944',votes:100000+(t-start)/60000*100}]};}
+const rows=Array.from({length:4*288+1},(_,i)=>snapshot(start+i*300000,-10000+i*10));
+assert.equal(M.forecast(rows,start+12*H),null,'insufficient time');
+const asOf=start+2*24*H,model=M.forecast(rows,asOf);assert.ok(model);assert.equal(model.path.length,289);assert.equal(model.origin,asOf);assert.equal(model.path.at(-1).t,asOf+24*H);assert.equal(model.path.at(-1).g,model.gap+2880,'constant 2 votes/min is recovered');
+const poisoned=rows.map(r=>Date.parse(r.sourceAt)>asOf?snapshot(Date.parse(r.sourceAt),1e7):r);assert.deepEqual(M.forecast(poisoned,asOf),model,'future data cannot leak into training');
+const firstDay=snapshot(start-300000,9e8);assert.deepEqual(M.forecast([firstDay,...rows],asOf),model,'first day excluded');
+const cmp=M.compare(model,rows);assert.equal(cmp.mae,0);assert.equal(cmp.samples.length,288);assert.equal(M.predicted(model,asOf+150000),model.gap+5);
+const gapped=rows.filter((r,i)=>i%24<2);assert.equal(M.forecast(gapped,asOf),null,'large gaps cannot become training increments');
+const wave=Array.from({length:4*288+1},(_,i)=>{const t=start+i*300000,g=-10000+500*Math.sin(i/288*2*Math.PI);return snapshot(t,g);});const seasonal=M.forecast(wave,start+3*24*H);assert.ok(seasonal.path.some((p,i)=>i&&p.g>seasonal.path[i-1].g));assert.ok(seasonal.path.some((p,i)=>i&&p.g<seasonal.path[i-1].g),'time-of-day pattern changes direction');
+console.log('Gap model: 5-minute horizon, time-of-day shape, first-day exclusion, past-only replay, exact error evaluation and missing observations passed.');
+const data=JSON.parse(fs.readFileSync('dist/data/history.json'));const live=M.forecast(data.snapshots);assert.ok(live);console.log({observations:live.observations,days:[live.minDays,live.maxDays],gap:live.gap,next24h:live.path.at(-1).g});
+const past=M.forecast(data.snapshots,live.origin-24*H);if(past){const c=M.compare(past,data.snapshots);console.log('24h past-only replay',{mae:Math.round(c.mae),n:c.samples.length});}
