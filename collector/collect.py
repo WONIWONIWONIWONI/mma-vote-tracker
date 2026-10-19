@@ -62,6 +62,10 @@ def collect():
             data['snapshots'].append(snapshot)
         data['collector']={'state':'ok','checkedAt':stamp}
         save(data)
+        try:
+            subprocess.run(['node',str(ROOT/'collector/forecast.cjs')],cwd=ROOT,check=True,timeout=20)
+        except (OSError,subprocess.SubprocessError) as error:
+            print('Forecast update pending; collection retained:',type(error).__name__,flush=True)
         print('Collected',snapshot['sourceAt'],snapshot['totalVotes'],flush=True)
     except Exception as error:
         data['collector']={'state':'error','checkedAt':stamp,'message':str(error)[:300]}
@@ -83,6 +87,18 @@ def merge_history(remote, pending):
     newest = max((remote, pending), key=lambda data: stamp(data.get('collector', {}).get('checkedAt') or data['snapshots'][-1]['sourceAt']))
     return {**remote, **newest, 'snapshots': [rows[key] for key in sorted(rows)]}
 
+def merge_forecast_ledgers(remote, pending):
+    # Already-published forecasts win: never refit a historical record during rebase.
+    records = {row['cutoff']: row for row in pending.get('records', [])}
+    records.update({row['cutoff']: row for row in remote.get('records', [])})
+    return {'schemaVersion': 1, 'records': [records[key] for key in sorted(records)]}
+
+def write_forecast_ledger(ledger):
+    target=DATA/'gap-forecasts.json'
+    temp=target.with_suffix('.tmp')
+    temp.write_text(json.dumps(ledger,ensure_ascii=False,separators=(',',':')))
+    temp.replace(target)
+
 def git_run(args, **kwargs):
     return subprocess.run(args,cwd=ROOT,timeout=30,**kwargs)
 
@@ -101,18 +117,22 @@ def publish():
                 raise subprocess.CalledProcessError(push.returncode,['git','push'])
             print('Push rejected; syncing with origin/main and retrying',flush=True)
             pending = json.loads((DATA/'history.json').read_text())
+            pending_forecasts=json.loads((DATA/'gap-forecasts.json').read_text()) if (DATA/'gap-forecasts.json').exists() else {'records': []}
             git_run(['git','fetch','origin','main'],check=True)
             rebase = git_run(['git','rebase','origin/main'])
             for resolution in range(100):
                 if rebase.returncode == 0:
                     break
                 conflicts = git_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
-                expected = {'dist/data/history.json','dist/data/latest.json','dist/data/seed.js'}
+                expected = {'dist/data/history.json','dist/data/latest.json','dist/data/seed.js','dist/data/gap-forecasts.json'}
                 if not conflicts or not set(conflicts).issubset(expected):
                     git_run(['git','rebase','--abort'],check=True)
                     raise subprocess.CalledProcessError(rebase.returncode,['git','rebase','origin/main'])
                 remote = json.loads(git_output(['git','show','origin/main:dist/data/history.json'],text=True))
                 save(merge_history(remote,pending))
+                if 'dist/data/gap-forecasts.json' in conflicts:
+                    remote_forecasts=json.loads(git_output(['git','show','origin/main:dist/data/gap-forecasts.json'],text=True))
+                    write_forecast_ledger(merge_forecast_ledgers(remote_forecasts,pending_forecasts))
                 git_run(['git','add','dist/data'],check=True)
                 empty = git_run(['git','diff','--cached','--quiet']).returncode == 0
                 rebase = git_run(['git','-c','core.editor=true','rebase','--skip' if empty else '--continue'])
