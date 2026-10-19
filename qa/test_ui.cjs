@@ -129,7 +129,7 @@ async function setup(browser,mobile=false){
  const now=await page.locator('.gf-now-values>div').evaluateAll(nodes=>nodes.map(n=>+n.dataset.value));
  assert.equal(now[2],now[0]-now[1],'current delta compares the same observation time');
  assert.equal(await page.locator('.gf-now-markers circle').count(),2,'actual and predicted current points are always marked');
- const expectedNow=await page.evaluate(()=>{const a=MMAGapModel.points(window.MMA_DATA.snapshots).at(-1);return a.g;});assert.equal(now[0],expectedNow,'current actual is the latest observation');
+ const expectedNow=await page.evaluate(snapshots=>MMAGapModel.points(snapshots).at(-1).g,actual.snapshots);assert.equal(now[0],expectedNow,'current actual is the latest observation');
  const replay=await page.locator('#gf-origin option').evaluateAll(opts=>opts.find(o=>o.value.startsWith('replay:'))?.value);
  assert.ok(replay,'past-only replay is offered');await page.locator('#gf-origin').selectOption(replay);
  assert.ok((await page.locator('.gf-stamp').textContent()).includes('과거 시점 재현'));
