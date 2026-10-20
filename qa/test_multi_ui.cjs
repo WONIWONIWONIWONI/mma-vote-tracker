@@ -124,7 +124,8 @@ async function check(browser, mobile) {
     "false",
   );
   assert.ok(await page.locator("#daily .best").count());
-  await page.clock.runFor(901000);
+  // Cross the 15-minute freshness limit and the next one-minute display tick.
+  await page.clock.runFor(961000);
   assert.equal(reads, 2, "no hidden automatic source polling");
   assert.ok(
     (await page.locator("#sources").innerText()).includes("오래된 관측"),
