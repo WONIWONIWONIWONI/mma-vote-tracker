@@ -126,6 +126,10 @@ async function check(browser, mobile) {
   assert.ok(await page.locator("#daily .best").count());
   await page.clock.runFor(901000);
   assert.equal(reads, 2, "no hidden automatic source polling");
+  assert.ok(
+    (await page.locator("#sources").innerText()).includes("오래된 관측"),
+    "freshness ages without polling",
+  );
   failB = true;
   await page.locator("#refresh").click();
   await page.waitForFunction(

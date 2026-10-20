@@ -66,7 +66,12 @@
     render();
   }
   function render() {
-    current = M.aggregate(C, latest());
+    const ended = Date.now() >= Date.parse(C.endsAt);
+    current = M.aggregate(
+      C,
+      latest(),
+      Math.min(Date.now(), Date.parse(C.endsAt)),
+    );
     $("sources").innerHTML = current.sources
       .map((entry, i) => {
         const source = C.sources[i],
@@ -80,11 +85,13 @@
         return `<article class="source" style="--source:${color(source, i)}"><h2>${escape(source.label)}</h2><strong>${format(entry.snapshot?.totalVotes)}<small> 표</small></strong><small>${status}${failures[source.id] ? " · 최신 조회 실패" : ""}<br>${entry.snapshot ? date(entry.snapshot.observedAt) + " 관측" : "공개 집계 연결 대기"}</small></article>`;
       })
       .join("");
-    $("status").textContent = loading
-      ? "투표처별 최신 수치를 조회하고 있습니다."
-      : Object.values(failures).some(Boolean)
-        ? "일부 최신 조회에 실패했습니다. 마지막 정상 관측 시각을 확인해 주세요."
-        : "접속·새로고침 때 최신 조회 · 자동 조회 없음";
+    $("status").textContent = ended
+      ? "투표 기간이 끝났습니다. 마지막 확인값을 표시합니다."
+      : loading
+        ? "투표처별 최신 수치를 조회하고 있습니다."
+        : Object.values(failures).some(Boolean)
+          ? "일부 최신 조회에 실패했습니다. 마지막 정상 관측 시각을 확인해 주세요."
+          : "접속·새로고침 때 최신 조회 · 자동 조회 없음";
     $("coverage").textContent = current.complete
       ? `합산 관측 ${date(current.from)} ~ ${date(current.to)} · 각 투표처의 공개 표수 단순 합계`
       : current.reason === "time-skew"
@@ -407,6 +414,13 @@
   window.addEventListener("resize", () => {
     clearTimeout(resize);
     resize = setTimeout(chart, 120);
+  });
+  // Re-evaluate freshness and calendar boundaries without requesting the sources.
+  setInterval(() => {
+    if (!document.hidden) render();
+  }, 60000);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) render();
   });
   render();
   refresh();
