@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-only",
+  "title": "다중 투표처 검증용",
+  "timezone": "Asia/Seoul",
+  "startsOn": "2026-10-16",
+  "endsAt": "2026-10-29T15:10:00+00:00",
+  "repository": "example/new-vote-tracker",
+  "branch": "main",
+  "aggregation": {"mode": "sum-votes", "maxSkewSeconds": 120, "staleAfterSeconds": 900},
+  "candidates": [
+    {"id": "a", "name": "팀 A", "color": "#65d9ca"},
+    {"id": "b", "name": "팀 B", "color": "#ba9bff"}
+  ],
+  "sources": [
+    {"id": "melon", "label": "멜론", "url": "https://melon.example/vote", "endpoint": "https://melon.example/counts", "adapter": "melon-top10", "candidateIds": {"a": "101", "b": "102"}},
+    {"id": "berriz", "label": "베리즈", "url": "https://berriz.example/vote", "endpoint": "https://berriz.example/counts", "adapter": "mapped-json", "fullRoster": true, "candidateIds": {"a": "201", "b": "202"}, "fields": {"rows": "results", "id": "id", "name": "name", "votes": "votes", "total": "total"}}
+  ]
+}

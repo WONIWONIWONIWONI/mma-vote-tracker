@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>투표 트래커</title>
+    <link rel="stylesheet" href="./multi.css" />
+    <script src="./config.js" defer></script>
+    <script src="./http.js" defer></script>
+    <script src="./sources.js" defer></script>
+    <script src="./multi-source.js" defer></script>
+    <script src="./axis.js" defer></script>
+    <script src="./daily.js" defer></script>
+    <script src="./multi-app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <a class="brand" href="./">VOTE<span>/</span>TRACK</a>
+        <nav id="official" aria-label="공식 투표처"></nav>
+      </header>
+      <section class="hero">
+        <div>
+          <p class="kicker">VOTES, TOGETHER</p>
+          <h1 id="title">투표 현황</h1>
+          <p>각 투표처의 흐름과 합계를 한눈에.</p>
+        </div>
+        <button id="refresh">새로고침</button>
+      </section>
+      <div id="status" role="status"></div>
+      <section
+        id="sources"
+        class="sources"
+        aria-label="투표처별 최신 상태"
+      ></section>
+      <div class="tabs" id="tabs" role="group" aria-label="집계 기준"></div>
+      <section class="panel">
+        <div class="heading">
+          <h2 id="ranking-title">합산 순위</h2>
+          <span id="total"></span>
+        </div>
+        <p id="coverage" class="note"></p>
+        <div class="scroll"><table id="ranking"></table></div>
+      </section>
+      <section class="panel">
+        <div class="heading">
+          <h2>시간에 따른 변화</h2>
+          <div class="tools">
+            <button id="zoom-in" aria-label="추이 확대">＋</button
+            ><button id="zoom-out" aria-label="추이 축소">−</button
+            ><button id="reset">전체 기간</button>
+          </div>
+        </div>
+        <div id="legend" class="legend"></div>
+        <svg
+          id="trend"
+          role="img"
+          aria-label="선택한 집계 기준의 득표 추이"
+        ></svg>
+        <p id="chart-range" class="note"></p>
+        <p class="note">
+          드래그 이동 · Ctrl+휠 / 두 손가락 확대 · 합산할 수 없는 구간은
+          연결하지 않습니다.
+        </p>
+      </section>
+      <section class="panel">
+        <div class="heading">
+          <h2>하루 누적 증가량</h2>
+          <label
+            >날짜
+            <select id="day" aria-label="하루 증가량 날짜"></select
+          ></label>
+        </div>
+        <div id="daily" class="daily"></div>
+        <p id="daily-note" class="note"></p>
+      </section>
+      <footer>
+        <p>비공식 투표 트래커 · 한국 시간(KST)</p>
+        <p>
+          합계는 공개 표수의 단순 합입니다. 투표처별 비율을 더하지 않으며 공식
+          최종 점수와 다를 수 있습니다.
+        </p>
+        <p>
+          접속·새로고침 때 조회합니다. 투표처의 공개 집계·실제 관측만
+          사용합니다.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

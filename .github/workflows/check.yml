@@ -1,0 +1,31 @@
+name: Check tracker changes
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check calculations, configuration and collectors
+        run: npm test
+      - name: Install pinned browser test tools
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node node_modules/playwright/cli.js install chromium --with-deps
+      - name: Check current and generated desktop/mobile sites
+        run: npm run test:ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tracker-review-screenshots
+          path: qa-output
+          retention-days: 3
