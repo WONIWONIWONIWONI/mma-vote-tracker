@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['dist/**', 'qa/**', '.github/workflows/publish.yml']
+    paths: ['dist/**', 'qa/**', 'scripts/**', 'templates/**', 'tracker.config.json', 'package*.json', 'collector/**', '.github/workflows/publish.yml']
 permissions:
   contents: read
   pages: write
@@ -19,16 +19,17 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Check calculations and collection parser
-        run: |
-          for test in qa/test_{analytics,axis,data,hourly,daily,gap_model,gap_selector,gap_history}.cjs; do node "$test"; done
-          python -m unittest discover -s collector
+        run: npm test
       - name: Install browser test dependency
         run: |
-          npm install --no-save --package-lock=false playwright@1.56.1
+          npm ci --ignore-scripts --no-audit --no-fund
           node node_modules/playwright/cli.js install chromium --with-deps
       - name: Check desktop and mobile interactions
-        run: node qa/test_ui.cjs
+        run: npm run test:ui
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

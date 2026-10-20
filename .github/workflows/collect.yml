@@ -8,7 +8,7 @@ on:
         default: 'manual'
   push:
     branches: [main]
-    paths: ['collector/**', '.github/workflows/collect.yml']
+    paths: ['collector/**', 'tracker.config.json', 'dist/config.js', 'dist/gap-model.js', 'dist/gap-selector.js', 'dist/gap-candidates.js', '.github/workflows/collect.yml']
   schedule:
     - cron: '13,43 * * * *'
 permissions:

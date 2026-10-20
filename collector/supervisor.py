@@ -78,4 +78,5 @@ if __name__=='__main__':
     api=Actions.from_environment()
     if api is None:
         raise SystemExit('GitHub Actions credentials are required')
-    print(api.recover('2026-10-29T15:10:00+00:00'))
+    from collect import ENDS_AT
+    print(api.recover(ENDS_AT))

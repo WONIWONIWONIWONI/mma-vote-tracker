@@ -3,8 +3,10 @@ import json, urllib.request, datetime, pathlib, time, sys, subprocess
 from supervisor import Actions
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / 'dist/data'
-ENDS_AT = '2026-10-29T15:10:00+00:00' # official deadline + final observation window
-URL = 'https://m2.melon.com/m6/mma/2026/vote/top10.json?lang=ko'
+CONFIG = json.loads((ROOT / 'tracker.config.json').read_text())
+ENDS_AT = CONFIG['endsAt']
+URL = CONFIG['sources'][0]['endpoint']
+TOP_N = CONFIG['topN']
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
@@ -14,8 +16,8 @@ def parse(payload, stamp):
     if response.get('status') != 'ok':
         raise ValueError('Melon returned a non-ok status')
     rows = response['nominees']
-    if len(rows) < 6:
-        raise ValueError('Fewer than six nominees')
+    if len(rows) < TOP_N:
+        raise ValueError('Too few nominees')
     teams, ids = [], set()
     for row in rows:
         identity = str(row['content']['id'])
@@ -33,7 +35,7 @@ def parse(payload, stamp):
         raise ValueError('Percentage inconsistent with vote total')
     teams.sort(key=lambda t:-t['votes']) # source order breaks equal-vote ties
     for i,t in enumerate(teams):t['rank']=i+1
-    return dict(sourceAt=stamp,collectedAt=stamp,origin='melon_public_api',totalVotes=total,top4=teams[:6])
+    return dict(sourceAt=stamp,collectedAt=stamp,origin='melon_public_api',totalVotes=total,top4=teams[:TOP_N])
 
 def save(data):
     DATA.mkdir(parents=True,exist_ok=True)
@@ -53,7 +55,7 @@ def collect():
     if stamp >= ENDS_AT:
         data['collector']={'state':'stopped','checkedAt':stamp};save(data);return True
     try:
-        request=urllib.request.Request(URL+'&t='+str(int(time.time())),headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.melon.com/mma/2026/vote/top10/'})
+        request=urllib.request.Request(URL+'&t='+str(int(time.time())),headers={'User-Agent':'Mozilla/5.0','Referer':CONFIG['sources'][0]['url']})
         with urllib.request.urlopen(request,timeout=20) as r: payload=json.load(r)
         snapshot=parse(payload,now())
         if data['snapshots'] and data['snapshots'][-1]['sourceAt'][:16] == snapshot['sourceAt'][:16]:
@@ -140,7 +142,7 @@ def publish():
                 git_run(['git','rebase','--abort'],check=True)
                 raise RuntimeError('Too many pending data rebases')
 
-def run_loop(duration=2*3600, interval=300, supervisor=None, max_extension=2*3600):
+def run_loop(duration=2*3600, interval=CONFIG['collectionIntervalSeconds'], supervisor=None, max_extension=2*3600):
     """Queue/verify a successor; keep collecting if a handoff cannot yet be confirmed."""
     if duration <= 0 or interval < 60:
         raise ValueError('Invalid collector duration or interval')
