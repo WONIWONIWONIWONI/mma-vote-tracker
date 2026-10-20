@@ -1,7 +1,7 @@
 /* Time-of-day gap model v1. Every input is restricted to the forecast origin. */
 (function(root){
 'use strict';
-const MIN=60000,HOUR=60*MIN,DAY=24*HOUR,START=Date.parse('2026-10-16T00:00:00+09:00'),VERSION='slot30-v1';
+const MIN=60000,HOUR=60*MIN,DAY=24*HOUR,START=Date.parse('2026-10-16T00:00:00+09:00'),VERSION='slot30-v1',HORIZON=12*HOUR,STEPS=144;
 function points(snapshots,asOf=Infinity){
  const map=new Map();for(const s of snapshots){const t=Date.parse(s.sourceAt);if(t<START||t>asOf||!Number.isFinite(t))continue;const a=s.top4.find(t=>String(t.id)==='3709231'),b=s.top4.find(t=>String(t.id)==='994944');if(a&&b)map.set(t,{t,a:a.votes,b:b.votes,g:a.votes-b.votes});}return [...map.values()].sort((a,b)=>a.t-b.t);
 }
@@ -20,20 +20,29 @@ function forecast(snapshots,asOf=Infinity,options={}){
  const recent=intervals.filter(v=>v.t>=last.t-3*HOUR);let weight=0,residual=0;
  for(const v of recent){weight+=v.dt;residual+=(v.rate-profile[slot(v.t-1)].rate)*v.dt;}
  const rates=profile.map(v=>v.rate),mean=rates.reduce((a,b)=>a+b)/N,sd=Math.sqrt(rates.reduce((a,b)=>a+(b-mean)**2,0)/N),drift=Math.max(-Math.max(5,sd),Math.min(Math.max(5,sd),weight?residual/weight:0));
- let g=last.g;const path=[{t:last.t,g:Math.round(g)}];
- for(let i=1;i<=288;i++){const t=last.t+i*5*MIN,mid=t-2.5*MIN;g+=5*(profile[slot(mid)].rate+(options.driftWeight??0.25)*drift*Math.exp(-(mid-last.t)/(6*HOUR)));path.push({t,g:Math.round(g)});}
- return {version:VERSION,origin:last.t,gap:last.g,path,trainingFrom:rows[0].t,trainingTo:last.t,observations:rows.length,coverage,minDays:Math.min(...profile.map(p=>p.days)),maxDays:Math.max(...profile.map(p=>p.days))};
+ const origin=options.origin??last.t;if(origin<last.t||origin-last.t>5*MIN)return null;
+ const rate=t=>profile[slot(t)].rate+(options.driftWeight??0.25)*drift*Math.exp(-(t-last.t)/(6*HOUR));
+ let g=last.g+(origin-last.t)/MIN*rate((origin+last.t)/2);const path=[{t:origin,g:Math.round(g)}];
+ for(let i=1;i<=STEPS;i++){const t=origin+i*5*MIN;g+=5*rate(t-2.5*MIN);path.push({t,g:Math.round(g)});}
+ return {version:VERSION,origin,gap:path[0].g,path,horizonHours:12,trainingFrom:rows[0].t,trainingTo:last.t,observations:rows.length,coverage,minDays:Math.min(...profile.map(p=>p.days)),maxDays:Math.max(...profile.map(p=>p.days))};
 }
-function predicted(model,t){if(t<model.origin||t>model.path.at(-1).t)return null;const x=(t-model.origin)/(5*MIN),i=Math.floor(x),a=model.path[i],b=model.path[Math.min(i+1,288)];return Math.round(a.g+(b.g-a.g)*(x-i));}
-function compare(model,snapshots){const actual=points(snapshots).filter(p=>p.t>model.origin&&p.t<=model.path.at(-1).t);const samples=actual.map(p=>({t:p.t,actual:p.g,predicted:predicted(model,p.t),error:p.g-predicted(model,p.t)}));return {samples,mae:samples.length?samples.reduce((s,p)=>s+Math.abs(p.error),0)/samples.length:null,last:samples.at(-1)||null};}
+function predicted(model,t){if(t<model.origin||t>model.path.at(-1).t)return null;const x=(t-model.origin)/(5*MIN),i=Math.floor(x),a=model.path[i],b=model.path[Math.min(i+1,model.path.length-1)];return Math.round(a.g+(b.g-a.g)*(x-i));}
+// Adapt immutable legacy 24h paths to the exact 00/12 -> +12h window.
+function window12(model){
+ const origin=model.cutoff??model.origin,end=origin+HORIZON;
+ if(predicted(model,origin)==null||predicted(model,end)==null)return null;
+ const path=Array.from({length:STEPS+1},(_,i)=>{const t=origin+i*5*MIN;return {t,g:predicted(model,t)};});
+ return {...model,origin,gap:path[0].g,path,horizonHours:12};
+}
+function compare(model,snapshots){const view=window12(model);if(!view)return {samples:[],mae:null,last:null};const actual=points(snapshots).filter(p=>p.t>view.origin&&p.t<=view.path.at(-1).t);const samples=actual.map(p=>({t:p.t,actual:p.g,predicted:predicted(view,p.t),error:p.g-predicted(view,p.t)}));return {samples,mae:samples.length?samples.reduce((s,p)=>s+Math.abs(p.error),0)/samples.length:null,last:samples.at(-1)||null};}
 function scheduledCutoff(t=Date.now()){return Math.floor((t+9*HOUR)/(12*HOUR))*12*HOUR-9*HOUR;}
 function scheduled(snapshots,cutoff){
  if(!Number.isFinite(cutoff))return null;
  const lastTime=Math.max(...snapshots.map(s=>Date.parse(s.sourceAt)).filter(Number.isFinite));
  if(lastTime<cutoff)return null;
- const m=forecast(snapshots,cutoff);
+ const m=forecast(snapshots,cutoff,{origin:cutoff});
  if(!m||cutoff-m.origin>5*MIN)return null;
  return {...m,cutoff,nextUpdate:cutoff+12*HOUR};
 }
-const api={forecast,points,predicted,compare,scheduledCutoff,scheduled,START,VERSION};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MMAGapModel=api;
+const api={forecast,points,predicted,compare,scheduledCutoff,scheduled,window12,HORIZON,STEPS,START,VERSION};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MMAGapModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
