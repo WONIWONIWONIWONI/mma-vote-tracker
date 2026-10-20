@@ -32,7 +32,8 @@
     history = [],
     windowRange = null,
     chosenDate = null,
-    loading = false;
+    loading = false,
+    archiveTask = null;
   const hidden = new Set(),
     failures = {},
     sourceColors = ["#65d9ca", "#ba9bff", "#ffc07c", "#90bbff"];
@@ -256,17 +257,21 @@
     loading = true;
     $("refresh").disabled = true;
     render();
-    const archive = TrackerHTTP.record(
-      "multi-history.json",
-      (value) => {
-        if (value.schemaVersion !== 1 || !Array.isArray(value.records))
-          throw new Error("Invalid archive");
-        return value;
-      },
-      true,
-    )
-      .then((value) => update(value.records))
-      .catch(() => {});
+    if (!archiveTask)
+      archiveTask = TrackerHTTP.record(
+        "multi-history.json",
+        (value) => {
+          if (value.schemaVersion !== 1 || !Array.isArray(value.records))
+            throw new Error("Invalid archive");
+          return value;
+        },
+        true,
+      )
+        .then((value) => update(value.records))
+        .catch(() => {})
+        .finally(() => {
+          archiveTask = null;
+        });
     const live =
       Date.now() >= Date.parse(C.endsAt)
         ? []
@@ -295,7 +300,7 @@
     loading = false;
     $("refresh").disabled = false;
     render();
-    await archive;
+    if (archiveTask) await archiveTask;
   }
   $("tabs").onclick = (e) => {
     const button = e.target.closest("[data-view]");

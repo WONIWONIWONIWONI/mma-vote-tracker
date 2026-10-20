@@ -2137,45 +2137,47 @@ footer a {
   color: #e6d4f5;
 }
 
+/* Compact live comparison outside the plotting area. */
 .gf-now {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #151321;
-  margin: 16px 0 8px;
-  padding: 14px 16px;
+  background: transparent;
+  margin: 10px 0 4px;
+  padding: 9px 12px;
 }
 .gf-now > p {
-  font-size: 11px;
-  margin: 0 0 14px;
+  font-size: 10px;
+  margin: 0 0 7px;
   color: #e5dced;
 }
 .gf-now > p span {
   margin-left: 12px;
   color: var(--muted);
+  font-size: 10px;
 }
 .gf-now-values {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .gf-now-values > div + div {
   border-left: 1px solid var(--line);
-  padding-left: 16px;
+  padding-left: 12px;
 }
 .gf-now-values span {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
 }
 .gf-now-values strong {
   display: block;
   font-variant-numeric: tabular-nums;
-  font-size: 25px;
-  margin-top: 6px;
+  font-size: 18px;
+  margin-top: 3px;
   white-space: nowrap;
 }
 .gf-now-values small {
-  font-size: 11px;
+  font-size: 10px;
   margin-left: 4px;
 }
 .gf-now-actual strong {
@@ -2187,62 +2189,7 @@ footer a {
 .gf-now-error strong {
   color: #f4e9fa;
 }
-@media (max-width: 650px) {
-  .gf-now {
-    padding: 12px;
-  }
-  .gf-now > p span {
-    display: block;
-    margin: 5px 0 0;
-  }
-  .gf-now-values {
-    gap: 8px;
-  }
-  .gf-now-values > div + div {
-    padding-left: 8px;
-  }
-  .gf-now-values span {
-    font-size: 9px;
-  }
-  .gf-now-values strong {
-    font-size: clamp(14px, 3.7vw, 22px);
-  }
-  .gf-now-values small {
-    font-size: 9px;
-    margin-left: 2px;
-  }
-}
 
-/* Compact live comparison outside the plotting area. */
-.gf-now {
-  padding: 9px 12px;
-  margin: 10px 0 4px;
-  background: transparent;
-  border-color: var(--line);
-}
-.gf-now > p {
-  font-size: 10px;
-  margin: 0 0 7px;
-}
-.gf-now-values {
-  gap: 10px;
-}
-.gf-now-values span {
-  font-size: 10px;
-}
-.gf-now-values strong {
-  font-size: 18px;
-  margin-top: 3px;
-}
-.gf-now-values > div + div {
-  padding-left: 12px;
-}
-.gf-now-values small {
-  font-size: 10px;
-}
-.gf-now > p span {
-  font-size: 10px;
-}
 #gf-chart text {
   font-family: inherit;
 }
@@ -2286,6 +2233,9 @@ footer a {
   margin: 5px 0;
 }
 @media (max-width: 650px) {
+  .gf-now-values small {
+    margin-left: 2px;
+  }
   .gf-now-values strong {
     font-size: 16px;
   }
