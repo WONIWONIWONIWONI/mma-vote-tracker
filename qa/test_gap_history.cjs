@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),M=require('../dist/gap-model'),G=require('../dist/gap-history');
+const H=3600000,t=M.START+24*H;
+const record=(cutoff,g=100)=>({version:M.VERSION,cutoff,origin:cutoff,gap:g,path:Array.from({length:145},(_,i)=>({t:cutoff+i*300000,g:g+i}))});
+const a=record(t),b=record(t+12*H,999),c=record(t+24*H),input=[c,b,a];
+const before=JSON.stringify(input),initial=G.build(input,t+23*H);assert.equal(initial.models.length,1);assert.equal(initial.end,t+12*H);
+const completed=G.build(input,t+24*H);assert.equal(completed.models.length,2);assert.equal(completed.segments.length,1);assert.equal(completed.start,t);assert.equal(completed.end,t+24*H);assert.equal(completed.segments[0][144].g,244);assert.equal(completed.segments[0][145].g,999,'new baseline is connected without changing the old endpoint');
+assert.equal(JSON.stringify(input),before,'archived predictions are never refit or mutated');assert.equal(G.build([a,c],t+36*H).segments.length,2,'unpublished gaps are not invented');
+const snapshots=Array.from({length:433},(_,i)=>({sourceAt:new Date(t+i*300000).toISOString(),top4:[{id:'3709231',votes:20000+i},{id:'994944',votes:10000}]}));
+const cmp=G.compare(completed,snapshots);assert.equal(cmp.samples.length,288);assert.ok(cmp.samples.every(s=>s.t>t&&s.t<=t+24*H));assert.equal(new Set(cmp.samples.map(s=>s.t)).size,288,'issue boundaries do not double-count observations');
+assert.deepEqual(G.clamp([t-4*H,t+8*H],t,t+24*H),[t,t+12*H]);assert.deepEqual(G.clamp([t+20*H,t+32*H],t,t+24*H),[t+12*H,t+24*H]);
+console.log('Public forecast history: completed-only rollover, immutable connected paths, gaps, fair error comparison and viewport bounds passed.');

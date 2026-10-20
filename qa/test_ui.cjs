@@ -131,19 +131,37 @@ async function setup(browser,mobile=false){
  assert.equal(await page.locator('.gf-now-markers circle').count(),2,'actual and predicted current points are always marked');
  const gapBounds=await page.locator('#gf-chart').evaluate(el=>[+el.dataset.start,+el.dataset.end]);
  assert.equal(gapBounds[1]-gapBounds[0],43200000,'chart spans exactly 12 scheduled hours');assert.equal((gapBounds[0]+9*3600000)%43200000,0,'chart starts at KST midnight/noon');
- assert.ok((await page.locator('.gf-axis-start').textContent()).includes('예측 시작'));assert.ok((await page.locator('.gf-axis-end').textContent()).includes('예측 끝'));
+ assert.ok((await page.locator('.gf-axis-start').textContent()).includes('시작'));assert.ok((await page.locator('.gf-axis-end').textContent()).includes('끝'));
  assert.equal(await page.locator('.gf-current-time line[stroke-dasharray]').count(),1,'current clock time has a vertical dotted guide');
  const ticks=await page.locator('.gf-y-tick text').allTextContents();assert.ok(ticks.length>=4&&ticks.every(t=>t.trim()),'every horizontal grid line has a left numeric label');
 
  const expectedNow=await page.evaluate(snapshots=>MMAGapModel.points(snapshots).at(-1).g,actual.snapshots);assert.equal(now[0],expectedNow,'current actual is the latest observation');
- const replay=await page.locator('#gf-origin option').evaluateAll(opts=>opts.find(o=>o.value.startsWith('replay:'))?.value);
- assert.ok(replay,'past-only replay is offered');await page.locator('#gf-origin').selectOption(replay);
- assert.ok((await page.locator('.gf-stamp').textContent()).includes('과거 시점 재현'));
- assert.equal(await page.locator('.gf-now,.gf-now-markers,.gf-current-time').count(),0,'past replay has no current-only annotations');
- assert.ok((await page.locator('.gf-accuracy').textContent()).includes('평균 절대 오차'));
- assert.ok((await page.locator('.gf-accuracy').textContent()).includes('12시간'));
+ assert.deepEqual(await page.locator('#gf-origin option').evaluateAll(opts=>opts.map(o=>o.textContent)),['현재 12시간 예측','과거 예측']);
+ assert.equal(await page.locator('.gf-now-markers text,.gf-now-markers rect').count(),0,'live numbers no longer cover the plotted paths');
+ assert.equal(await page.locator('.gf-current-time text').getAttribute('font-size'),'10','clock label matches axis text size');
  await page.locator('#gf-detail summary').click();await page.locator('#gf-fine tbody tr').last().waitFor({state:'attached'});assert.equal(await page.locator('#gf-fine tbody tr').count(),144);
- assert.equal(await page.locator('#gf-fine tbody tr').last().getAttribute('data-time'),await page.locator('#gf-chart').getAttribute('data-end'),'past detail comparison ends at the exact 12h boundary');
+ await page.locator('#gf-origin').selectOption('history');
+ assert.equal(await page.locator('.gf-now,.gf-now-markers,.gf-current-time').count(),0,'history has no live-only annotations');
+ assert.ok((await page.locator('.gf-accuracy').textContent()).includes('평균 절대 오차'));
+ await page.locator('#gf-history-detail summary').click();
+ const historicalCount=await page.locator('#gf-history-detail tbody tr').count();assert.ok(historicalCount>=1);
+ const historyBounds=()=>page.locator('#gf-chart').evaluate(el=>[+el.dataset.start,+el.dataset.end]);
+ const whole=await historyBounds();assert.ok(whole[1]<=+gapBounds[0],'current unfinished issue is excluded');
+ await page.locator('#gf-zoom-in').click();const zoomedHistory=await historyBounds();assert.ok(zoomedHistory[1]-zoomedHistory[0]<whole[1]-whole[0]);
+ await page.locator('#gf-chart').scrollIntoViewIfNeeded();
+ const hb=await page.locator('#gf-chart').boundingBox(),hx=hb.x+hb.width*.55,hy=hb.y+hb.height*.5;
+ if(!mobile){
+  await page.mouse.move(hx,hy);await page.mouse.down();await page.mouse.move(hx+45,hy,{steps:5});await page.mouse.up();assert.ok((await historyBounds())[0]<zoomedHistory[0],'history supports mouse dragging');
+  const old=await historyBounds();await page.keyboard.down('Control');await page.mouse.wheel(0,-100);await page.keyboard.up('Control');await page.waitForFunction(span=>{const e=document.getElementById('gf-chart');return +e.dataset.end- +e.dataset.start<span;},old[1]-old[0]);
+ }else{
+  const cdp=await context.newCDPSession(page),old=await historyBounds();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:hx-25,y:hy},{x:hx+25,y:hy}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:hx-45,y:hy},{x:hx+45,y:hy}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});const pinched=await historyBounds();assert.ok(pinched[1]-pinched[0]<old[1]-old[0],'history supports mobile pinch');
+ }
+ await page.locator('#gf-reset').click();assert.deepEqual(await historyBounds(),whole);
+ // The completed current issue is appended at the next 00/12 boundary.
+ await page.clock.setFixedTime(new Date(gapBounds[1]));await page.evaluate(data=>window.dispatchEvent(new CustomEvent('mma:data',{detail:data})),actual);
+ assert.equal(await page.locator('#gf-origin').inputValue(),'history','rollover preserves history selection');
+ assert.equal(await page.locator('#gf-history-detail tbody tr').count(),historicalCount+1,'completed live issue joins public history');
+ assert.equal((await historyBounds())[1],gapBounds[1]);
  assert.ok(await page.locator('.gap-future').evaluate(e=>e.scrollWidth<=e.clientWidth+1),'forecast panel fits mobile/desktop');
  assert.deepEqual(errors,[]);fs.mkdirSync('qa-output',{recursive:true});await page.screenshot({path:`qa-output/${mobile?'mobile':'desktop'}.png`,fullPage:true});
  console.log(`${mobile?'Mobile':'Desktop'}: direct refresh, slow archive, no polling, colors, Ctrl-only desktop zoom, mobile hourly cards, hand drag, pinch anchor, fallback and signed gap colors passed.`);
