@@ -102,27 +102,44 @@ const root = path.resolve(__dirname, "../dist"),
         assert.deepEqual(await page.locator(".share-actions button").allTextContents(), ["이미지 복사","PNG 다운로드","HTML 공유"]);
         assert.equal(await page.locator(".share-image-url,[data-file-share],[data-copy-share],[data-image]").count(),0);
         if (["trend", "candles", "forecast"].includes(key))
-          assert.ok(await page.locator('.share-native-preview table[height] td[bgcolor]').count() > 10, `${key} contains table chart geometry`);
+          assert.ok(await page.locator('.share-native-preview table[height] td[style*="background"]').count() > 10, `${key} contains table chart geometry`);
         if (key === "hourly") {
           assert.equal(await page.locator(".share-native-preview tbody tr").count(), (await page.evaluate(() => MMAShareModels.hourly())).rows.length);
         }
         const review = await browser.newPage({viewport:{width:mobile?390:1000,height:960}});
-        await review.setContent('<body style="margin:0;background:#10121b;">' + native + '</body>');
+        // Hostile board defaults: td metrics and bold text override inheritance.
+        await review.setContent('<style>td{color:#333;font-size:14px;line-height:22px;padding:8px}b,strong{color:#333}</style><body style="margin:0;background:#10121b;">' + native + '</body>');
         const before = key === "leaders" ? await review.locator("td[bgcolor]").evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]})) : null;
-        // Reproduce a board stripping advanced positioning/layout declarations.
+        // Strip legacy presentation attributes as well as advanced layout CSS.
         await review.evaluate(()=>{
+          for(const e of document.querySelectorAll("[bgcolor],[color]")){
+            if(e.matches("td[bgcolor]"))e.dataset.rankCard="true";
+            e.removeAttribute("bgcolor");e.removeAttribute("color");
+          }
           for(const e of document.querySelectorAll("[style]"))
             for(const p of ["position","top","left","right","bottom","inset","z-index","transform","transform-origin","clip-path","mask","display","float","overflow","overflow-x","overflow-y"])
               e.style.removeProperty(p);
         });
         if(key === "leaders") {
-          const after=await review.locator("td[bgcolor]").evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]}));
+          const after=await review.locator('td[data-rank-card="true"]').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]}));
           assert.deepEqual(after,before,"filtering positioning CSS preserves all card layout");
           assert.equal(after.length,6);
-          const voteColors=await review.locator('b[style*="font-size:32px"]').evaluateAll(es=>es.map(e=>getComputedStyle(e).color));
+          const voteColors=await review.locator('b').evaluateAll(es=>es.filter(e=>e.style.fontSize==="32px").map(e=>getComputedStyle(e).color));
           assert.deepEqual(voteColors,Array(6).fill("rgb(245, 246, 250)"),"rank votes remain readable on dark cards");
           assert.ok(mobile ? after[1][1]>after[0][1] : after[1][0]>after[0][0]);
           assert.ok(after[2][1]>after[0][1]);
+        }
+        if(key === "hourly") {
+          const colors=await review.locator("tbody b").evaluateAll(es=>es.map(e=>getComputedStyle(e).color));
+          assert.ok(colors.length>10 && colors.every(c=>c!=="rgb(51, 51, 51)" && c!=="rgb(0, 0, 0)"),"all hourly times and votes have explicit readable colors");
+        }
+        if(["trend","candles","forecast"].includes(key)) {
+          const runs=await review.locator("td").evaluateAll(es=>es.filter(e=>e.style.fontSize==="1px").map(e=>{
+            const c=getComputedStyle(e),r=e.getBoundingClientRect();return {bg:c.backgroundColor,width:r.width,height:r.height,text:e.textContent};
+          }));
+          const bright=runs.filter(r=>{const rgb=r.bg.match(/\d+/g)?.map(Number)||[0,0,0];return Math.max(...rgb)-Math.min(...rgb)>45 && Math.max(...rgb)>150;});
+          assert.ok(bright.length>10,`${key}: colored chart survives bgcolor stripping`);
+          assert.ok(bright.every(r=>r.width>0&&r.height>0&&r.height<=5&&r.text.length>0),`${key}: chart runs keep content, width and small height despite board td rules`);
         }
         await review.screenshot({path:`qa-output/native-${key}-${mobile ? "mobile" : "desktop"}.png`,fullPage:true});
         await review.close();

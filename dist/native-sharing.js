@@ -68,11 +68,13 @@
     const annotations=text.filter(t=>!ticks.includes(t)&&!labels.includes(t)).map(t=>t.text);
     const rowHeight=Math.max(2,Math.round(264/rows));
     const cells=grid.map(row=>{let html="";for(let x=0;x<columns;){let end=x+1;while(end<columns&&row[end]===row[x])end++;
-      html+=`<td${end-x>1?` colspan="${end-x}"`:""}${row[x]?` bgcolor="${row[x]}"`:""}></td>`;x=end;}
+      // Inline CSS survives boards that remove legacy bgcolor attributes. Give
+      // every run real content and its own metrics so board td rules cannot win.
+      html+=`<td${end-x>1?` colspan="${end-x}"`:""} style="background:${row[x]||"#191725"};padding:0;font-size:1px;line-height:1px;">\u200b</td>`;x=end;}
       return `<tr height="${rowHeight}" style="height:${rowHeight}px;">${html}</tr>`;
     }).join("");
     const columnsHTML=`<colgroup>${Array.from({length:columns},()=>`<col width="${(100/columns).toFixed(4)}%">`).join("")}</colgroup>`;
-    const plot=`<table width="100%" height="${rows*rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:0;line-height:0;">${columnsHTML}<tbody>${cells}</tbody></table>`;
+    const plot=`<table width="100%" height="${rows*rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:1px;line-height:1px;">${columnsHTML}<tbody>${cells}</tbody></table>`;
     const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
     const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center"')).join("")}</tr>`);
     return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="60"')}${cell(plot+bottom)}</tr>`)}</div>`;
@@ -122,5 +124,31 @@
     }).join("");
     return `<div style="padding:24px;background:#10121b;color:#f5f6fa;font:13px/1.6 system-ui,sans-serif;text-align:left;overflow-x:auto;"><p style="color:#f2aac2;margin:0;">VOTE/TRACK · ${esc(edition)}</p><p style="color:#a4adbf;font-size:10px;">최신 관측 ${esc(model.sourceAt)} KST</p><h2 style="color:#f5f6fa;font-size:24px;margin:18px 0;">${esc(model.title)}</h2><p style="color:#a4adbf;">${esc(model.subtitle)}</p><table style="width:100%;min-width:720px;table-layout:fixed;border-collapse:separate;border-spacing:0 8px;color:inherit;font:inherit;"><colgroup><col style="width:22%;">${teams.map(()=>'<col style="width:13%;">').join("")}</colgroup><thead><tr><th style="text-align:left;color:#a4adbf;">시간 / 관측 최다</th>${teams.map(t=>`<th style="text-align:left;font-size:11px;color:${color(t.color)};">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table><p style="color:#a4adbf;font-size:10px;">데이터 출처 Melon · 비공식 팬 대시보드 · 모든 시각 KST</p></div>`;
   }
-  window.MMANativeHTML={panel,hourly,leaders};
+  function finalize(html) {
+    const template=document.createElement("template");
+    template.innerHTML=html;
+    function readable(value) {
+      const hex=rgb(value), channels=hex.slice(1).match(/../g).map(v=>parseInt(v,16));
+      const light=channels.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});
+      const luminance=.2126*light[0]+.7152*light[1]+.0722*light[2];
+      // Neutral secondary text gets a consistent light tone. Keep bright team
+      // colors, while preventing dark theme-inherited text on dark panels.
+      if(Math.max(...channels)-Math.min(...channels)<45 && luminance<.62)return "#d0d8e8";
+      return luminance<.24 ? "#d0d8e8" : hex;
+    }
+    function visit(node,inherited="#f5f6fa") {
+      const specified=node.style.color||node.getAttribute("color");
+      const foreground=readable(specified && specified!=="inherit" ? specified : inherited);
+      if(node.hasAttribute("bgcolor") && !node.style.backgroundColor)
+        node.style.backgroundColor=node.getAttribute("bgcolor");
+      const graphCell=node.tagName==="TD" && node.style.fontSize==="1px";
+      const text=[...node.childNodes].some(n=>n.nodeType===Node.TEXT_NODE && n.textContent.trim());
+      if(!graphCell && (specified || text || ["B","STRONG","TH","TD"].includes(node.tagName)))
+        node.style.color=foreground;
+      for(const child of node.children)visit(child,foreground);
+    }
+    for(const node of template.content.children)visit(node);
+    return template.innerHTML;
+  }
+  window.MMANativeHTML={panel,hourly,leaders,finalize};
 })();
