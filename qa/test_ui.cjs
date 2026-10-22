@@ -139,6 +139,35 @@ async function setup(browser, mobile = false) {
   await page.clock.fastForward(65000);
   assert.equal(liveCalls, liveBefore, "no automatic Melon polling");
   assert.equal(archiveCalls, archivesBefore, "no automatic archive polling");
+  assert.equal(await page.locator(".leader:visible").count(), 2);
+  assert.equal(
+    await page.locator("#leaders-toggle").getAttribute("aria-expanded"),
+    "false",
+  );
+  await page.locator("#leaders-toggle").click();
+  assert.equal(await page.locator(".leader:visible").count(), 6);
+  assert.equal(
+    await page.locator("#leaders-toggle").getAttribute("aria-expanded"),
+    "true",
+  );
+  const cardBoxes = await page
+    .locator(".leader")
+    .evaluateAll((es) => es.map((e) => e.getBoundingClientRect().top));
+  assert.ok(
+    cardBoxes[2] > cardBoxes[1],
+    "lower ranks expand below the lead pair",
+  );
+  await page.locator("#refresh-button").click();
+  await page.waitForFunction(
+    () => !document.getElementById("refresh-button").disabled,
+  );
+  assert.equal(
+    await page.locator(".leader:visible").count(),
+    6,
+    "refresh preserves expansion",
+  );
+  await page.locator("#leaders-toggle").click();
+  assert.equal(await page.locator(".leader:visible").count(), 2);
   const colors = await page
     .locator(".leader")
     .evaluateAll((rows) =>
@@ -169,16 +198,14 @@ async function setup(browser, mobile = false) {
   await page.locator("#trend-forecast").uncheck();
   await page.locator("#trend-chart").scrollIntoViewIfNeeded();
   const bounds = () =>
-    page
-      .locator("#trend-chart")
-      .evaluate((e) => ({
-        xmin: +e.dataset.xmin,
-        xmax: +e.dataset.xmax,
-        ymin: +e.dataset.ymin,
-        ymax: +e.dataset.ymax,
-        zoomX: +e.dataset.zoomX,
-        zoomY: +e.dataset.zoomY,
-      }));
+    page.locator("#trend-chart").evaluate((e) => ({
+      xmin: +e.dataset.xmin,
+      xmax: +e.dataset.xmax,
+      ymin: +e.dataset.ymin,
+      ymax: +e.dataset.ymax,
+      zoomX: +e.dataset.zoomX,
+      zoomY: +e.dataset.zoomY,
+    }));
   async function drag(dx, dy) {
     await page.locator("#trend-chart").scrollIntoViewIfNeeded();
     const b = await page.locator("#trend-chart").boundingBox(),
@@ -339,14 +366,12 @@ async function setup(browser, mobile = false) {
   await page.locator("#cd-zoom-in").click();
   await page.locator("#cd-svg").scrollIntoViewIfNeeded();
   const view = () =>
-    page
-      .locator("#cd-svg")
-      .evaluate((e) => ({
-        start: +e.dataset.start,
-        n: +e.dataset.count,
-        total: +e.dataset.total,
-        W: e.viewBox.baseVal.width,
-      }));
+    page.locator("#cd-svg").evaluate((e) => ({
+      start: +e.dataset.start,
+      n: +e.dataset.count,
+      total: +e.dataset.total,
+      W: e.viewBox.baseVal.width,
+    }));
   const before = await view();
   assert.ok(before.n < before.total);
   async function noRightBlank() {
