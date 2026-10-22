@@ -59,7 +59,12 @@
         html=[...node.children].map(draw).join("");
         const id=/url\(["']?(?:[^#]*#)([^)"']+)/.exec(s.clipPath)?.[1];
         const clip=id && svg.querySelector(`[id="${CSS.escape(id)}"] rect`);
-        if(clip){const cr=clip.getBoundingClientRect();html=element(`position:absolute;inset:0;overflow:hidden;clip-path:inset(${px(cr.top-r.top)} ${px(r.right-cr.right)} ${px(r.bottom-cr.bottom)} ${px(cr.left-r.left)});`,html);}
+        if(clip){
+          // Geometry in defs has no rendered bounding box; use user-space coordinates.
+          const x=Number(clip.getAttribute("x")||0), y=Number(clip.getAttribute("y")||0);
+          const a=point(x,y), b=point(x+Number(clip.getAttribute("width")),y+Number(clip.getAttribute("height")));
+          html=element(`position:absolute;inset:0;overflow:hidden;clip-path:inset(${px(a.y)} ${px(r.width-b.x)} ${px(r.height-b.y)} ${px(a.x)});`,html);
+        }
       } else if(tag === "path") {
         if (!transparent(s.stroke)) {
           // Current charts contain M/L paths; keep each missing-data break separate.
