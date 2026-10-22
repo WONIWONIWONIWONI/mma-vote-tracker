@@ -1,17 +1,16 @@
-/* Native, static forum cards. Only allowlisted HTML with inline styles. */
+/* Share exactly the six requested panels as local, immutable PNG snapshots. */
 (() => {
+  "use strict";
   const panels = [
-    ["leaders", "#leaders", "현재 상위 6팀"],
-    ["overview", ".overview-bar", "전체 투표 요약"],
-    ["trend", ".chart-panel", "득표 추이"],
-    ["candles", "#candle-panel", "표차 흐름 분석"],
-    ["forecast", ".gap-future", "표차 예측"],
+    ["leaders", "#leaders", "상위 6팀 득표 현황"],
+    ["trend", ".chart-panel", "시간에 따른 변화"],
+    ["candles", "#candle-panel", "표차 캔들차트"],
+    ["forecast", ".gap-future", "12시간 표차 예측"],
     ["daily", ".daily-panel", "하루 누적 득표 증가량"],
     ["hourly", ".hourly-panel", "시간대별 득표 증가량"],
-    ["history", "#history-details", "최근 집계 기록"],
   ];
   const esc = (s) =>
-    String(s ?? "").replace(
+    String(s).replace(
       /[&<>"']/g,
       (c) =>
         ({
@@ -22,250 +21,228 @@
           "'": "&#39;",
         })[c],
     );
-  const $ = (s) => document.querySelector(s),
-    text = (s) => $(s)?.textContent.trim() || "—";
-  const num = (n) =>
-    n == null
-      ? "—"
-      : new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 }).format(n);
-  const kst = (t) =>
-    new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Asia/Seoul",
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(new Date(t));
-  const p = (s) =>
-    `<p style="margin:8px 0;color:#bfb6cb;font-size:12px;line-height:1.7;">${esc(s)}</p>`;
-  const box = (s) =>
-    `<div style="margin-top:10px;padding:14px;background:#211d2c;color:#f5f0f6;">${s}</div>`;
-  function table(headers, rows) {
-    const cell = (s, tag) =>
-      `<${tag} style="border:1px solid #4b405a;padding:8px;text-align:left;font-size:12px;word-break:break-word;color:#f5f0f6;">${esc(s)}</${tag}>`;
-    return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;"><tbody><tr>${headers.map((s) => cell(s, "th")).join("")}</tr>${rows.map((r) => `<tr>${r.map((s) => cell(s, "td")).join("")}</tr>`).join("")}</tbody></table>`;
-  }
-  function bar(name, value, width, color) {
-    return box(
-      `<p style="margin:0 0 8px;color:${esc(color)};font-weight:700;">${esc(name)}</p><p style="margin:0 0 10px;font-size:22px;font-weight:800;color:#ffffff;">${esc(value)}</p><div style="height:7px;background:#423749;"><div style="width:${Math.min(100, Math.max(0, width))}%;height:7px;background:${esc(color)};"></div></div>`,
-    );
-  }
-  // Rebuild trusted UI text with an explicit tag/attribute allowlist. Never copy handlers,
-  // ids, classes, form controls, external CSS, SVG or untrusted raw markup.
-  function native(node) {
-    if (!node) return "";
-    if (node.nodeType === Node.TEXT_NODE) return esc(node.textContent);
-    if (node.nodeType !== Node.ELEMENT_NODE || node.hidden) return "";
-    const tag = node.tagName.toLowerCase();
-    if (
-      [
-        "script",
-        "style",
-        "svg",
-        "canvas",
-        "button",
-        "input",
-        "select",
-        "img",
-      ].includes(tag)
-    )
-      return "";
-    const allowed = [
-      "table",
-      "thead",
-      "tbody",
-      "tr",
-      "th",
-      "td",
-      "p",
-      "b",
-      "strong",
-      "small",
-      "span",
-      "br",
-    ];
-    const out = allowed.includes(tag) ? tag : "div";
-    if (tag === "br") return "<br />";
-    const css = getComputedStyle(node);
-    let style = `color:${css.color};font-weight:${css.fontWeight};font-size:${Math.min(22, parseFloat(css.fontSize) || 13)}px;line-height:1.7;`;
-    if (out === "table")
-      style += "width:100%;border-collapse:collapse;table-layout:fixed;";
-    else if (["td", "th"].includes(out))
-      style += "border:1px solid #4b405a;padding:7px;word-break:break-word;";
-    else if (out === "div") style += "margin:6px 0;";
-    else if (out === "small") style += "display:block;";
-    return `<${out} style="${esc(style)}">${[...node.childNodes].map(native).join("")}</${out}>`;
-  }
-  function content(key) {
-    const last = window.MMA_DATA.snapshots.at(-1);
-    if (key === "leaders")
-      return last.top4
-        .map((t) =>
-          bar(
-            `${t.rank}위 · ${t.name}`,
-            num(t.votes) +
-              "표 · " +
-              num((100 * t.votes) / last.totalVotes) +
-              "%",
-            (100 * t.votes) / last.totalVotes,
-            TrackerConfig.teams.find((x) => String(x.id) === String(t.id))
-              ?.color || "#ff789a",
-          ),
-        )
-        .join("");
-    if (key === "overview")
-      return table(
-        ["항목", "값"],
-        [
-          ["전체 투표", num(last.totalVotes) + "표"],
-          ["상위 6팀 점유율", text("#top-share")],
-          ["그 외", text("#other-share")],
-          ["누적 기록", text("#sample-count") + "회"],
-        ],
-      );
-    if (key === "daily")
-      return (
-        p(text("#daily-title")) +
-        native($("#daily-summary")) +
-        [...document.querySelectorAll(".daily-team")]
-          .map((el) =>
-            bar(
-              el.querySelector(".daily-name").textContent,
-              el.querySelector("strong").textContent,
-              parseFloat(el.querySelector(".daily-bar i").style.width) || 0,
-              getComputedStyle(el).getPropertyValue("--color").trim(),
-            ),
-          )
-          .join("") +
-        p(text("#daily-note"))
-      );
-    if (key === "hourly") {
-      const m = MMAShareModels.hourly();
-      return (
-        p(m.subtitle) +
-        m.rows
-          .map((r) =>
-            box(
-              p(r.label + " · " + r.status) +
-                table(
-                  ["팀", "증가량", "관측 구간"],
-                  r.values.map((v) => [
-                    v.name,
-                    v.label,
-                    v.coverage || "1시간 전체",
-                  ]),
-                ),
-            ),
-          )
-          .join("") +
-        p(text("#hourly-note"))
-      );
-    }
-    if (key === "trend") {
-      const m = MMAShareModels.trend();
-      return (
-        p(m.subtitle + " · " + m.chartTitle) +
-        m.series
-          .map((s) => {
-            const points = s.points.filter(
-                (p) => p.time >= m.xmin && p.time <= m.xmax && p.value != null,
-              ),
-              a = points[0],
-              b = points.at(-1);
-            return box(
-              p(s.name) +
-                table(
-                  ["구간 내 처음 관측", "구간 내 마지막 관측", "변화량"],
-                  [
-                    [
-                      a ? kst(a.time) + " · " + num(a.value) : "—",
-                      b ? kst(b.time) + " · " + num(b.value) : "—",
-                      a && b ? num(b.value - a.value) : "—",
-                    ],
-                  ],
-                ),
-            );
-          })
-          .join("") +
-        p(
-          "선 그래프를 선택 구간 내 관측 요약으로 표시합니다. 점유율 변화 단위는 %p입니다. 중간 관측 공백은 보간하지 않습니다.",
-        ) +
-        p(m.note)
-      );
-    }
-    if (key === "candles") {
-      const candles = window.MMACandleShare(),
-        a = candles[0],
-        b = candles.at(-1);
-      return (
-        p(
-          "상대 팀: " +
-            $("#gap-pair").selectedOptions[0].textContent +
-            " · 분석 " +
-            text("#pc-tf .selected") +
-            " · 봉 간격 " +
-            text("#cd-tf .selected"),
-        ) +
-        native($("#pc-body")) +
-        p(text("#cd-range")) +
-        (a
-          ? table(
-              ["시작 표차", "최고 표차", "최저 표차", "마지막 표차"],
-              [
-                [
-                  num(a.o),
-                  num(Math.max(...candles.map((c) => c.h))),
-                  num(Math.min(...candles.map((c) => c.l))),
-                  num(b.c),
-                ],
-              ],
-            )
-          : p("관측 대기")) +
-        p(
-          "리센느 − 상대 팀, 단위: 표. 화면에 보이는 캔들 구간의 요약입니다. 개별 캔들과 관측 공백은 원본 차트에서 확인하세요.",
-        ) +
-        p(text(".pc-note"))
-      );
-    }
-    if (key === "forecast")
-      return (
-        p(text("#gap-future-title")) +
-        native($("#gf-content")) +
-        p("예측은 조건부 추정입니다. 그래프는 원본 링크에서 확인하세요.")
-      );
-    return (
-      p("최신 10회 관측 · 전체 기록은 원본에서 확인하세요.") +
-      table(
-        ["시각 (KST)", "팀별 득표"],
-        window.MMA_DATA.snapshots
-          .slice(-10)
-          .reverse()
-          .map((s) => [
-            kst(s.sourceAt),
-            s.top4.map((t) => t.name + " " + num(t.votes) + "표").join(" / "),
-          ]),
-      )
-    );
-  }
+  const exclude =
+    ".panel-share-controls,.panel-image-button,.cd-nav,.gf-method,.gf-accuracy,#gf-content > details,.daily-history,#daily-note,.trend-help,#tooltip,#cd-tip,#gf-hover";
+  let sequence = 0,
+    current = null,
+    busy = false;
   const dialog = document.createElement("dialog");
   dialog.className = "share-dialog";
   dialog.innerHTML =
-    '<h2>디시용 HTML 복사</h2><p>복사 시점의 수치와 선택 조건을 담은 HTML 카드입니다. 디시 PC 글쓰기에서 HTML 모드를 켜고 붙여넣으세요. 게시 후 자동 갱신되지는 않습니다. 선·캔들 그래프는 수치 요약으로 표시합니다.</p><div class="share-preview" aria-label="게시용 카드 미리보기"></div><textarea aria-label="게시용 HTML 소스" readonly></textarea><p class="share-status" role="status"></p><div><button class="quiet-button" data-copy-share>HTML 복사</button> <button class="quiet-button" data-close-share>닫기</button></div>';
+    '<h2>HTML 공유하기</h2><p>차트·선택 날짜·색상을 복사 순간의 정적 이미지로 담습니다. 게시글 안에서는 차트를 조작하거나 자동 갱신할 수 없습니다.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><p>내장 PNG를 지원하는 곳은 HTML을 그대로 붙여넣을 수 있습니다. 디시 등 게시판이 내장 이미지를 제거하면 아래에서 PNG를 저장해 사진으로 첨부하세요. 첨부한 이미지의 공개 URL을 알면 아래에 넣어 이미지 주소 방식의 HTML도 복사할 수 있습니다.</p><label>첨부 이미지의 공개 HTTPS 주소 (선택)<input class="share-image-url" type="url" placeholder="https://…" /></label><textarea aria-label="공유 HTML 소스" readonly></textarea><div class="share-actions"><button class="quiet-button" data-copy-share disabled>HTML 복사</button><button class="quiet-button" data-download-share disabled>PNG 저장</button><button class="quiet-button" data-file-share disabled>HTML 파일 저장</button><button class="quiet-button" data-close-share>닫기</button></div>';
   document.body.append(dialog);
-  dialog.querySelector("[data-close-share]").onclick = () => dialog.close();
-  dialog.querySelector("[data-copy-share]").onclick = async () => {
-    const input = dialog.querySelector("textarea");
+  const $ = (s) => dialog.querySelector(s);
+  const status = (s) => ($(".share-status").textContent = s);
+  function download(blob, name) {
+    const url = URL.createObjectURL(blob),
+      a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  function imageURL() {
+    const value = $(".share-image-url").value.trim();
+    if (!value) return current.png;
+    const url = new URL(value);
+    if (url.protocol !== "https:")
+      throw new Error("첨부 이미지 주소는 HTTPS 공개 주소여야 합니다.");
+    return url.href;
+  }
+  function markup() {
+    return `<div style="max-width:100%;margin:0 auto;overflow-x:auto;"><img src="${esc(imageURL())}" alt="${esc(current.title + " · " + current.stamp)}" width="${current.width}" style="display:block;max-width:100%;height:auto;border:0;" /><p style="font-size:12px;color:#777;">${esc(current.stamp)} · 복사 시점의 기록 · <a href="${esc(current.link)}">원본 트래커와 조작 가능한 차트</a></p></div>`;
+  }
+  function updateHTML() {
+    if (!current) return;
     try {
-      await navigator.clipboard.writeText(input.value);
-      dialog.querySelector(".share-status").textContent =
-        "복사했습니다. 디시 PC 글쓰기 HTML 모드에 붙여넣으세요.";
+      $("textarea").value = markup();
+      $("[data-copy-share]").disabled = false;
+      $("[data-file-share]").disabled = false;
+    } catch (e) {
+      $("textarea").value = "";
+      $("[data-copy-share]").disabled = true;
+      $("[data-file-share]").disabled = true;
+      status(e.message);
+    }
+  }
+  $(".share-image-url").addEventListener("input", updateHTML);
+  $("[data-close-share]").onclick = () => dialog.close();
+  $("[data-copy-share]").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(markup());
+      status(
+        "HTML을 복사했습니다. 내장 이미지를 차단하는 게시판에서는 PNG를 첨부해 주세요.",
+      );
     } catch {
-      input.focus();
-      input.select();
-      dialog.querySelector(".share-status").textContent =
-        "소스를 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.";
+      $("textarea").focus();
+      $("textarea").select();
+      status("소스를 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.");
     }
   };
+  $("[data-download-share]").onclick = async () => {
+    const response = await fetch(current.png);
+    download(await response.blob(), current.name + ".png");
+  };
+  $("[data-file-share]").onclick = () =>
+    download(
+      new Blob(
+        [
+          '<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' +
+            esc(current.title) +
+            '</title><body style="margin:0;background:#100e19;">' +
+            markup() +
+            "</body></html>",
+        ],
+        { type: "text/html;charset=utf-8" },
+      ),
+      current.name + ".html",
+    );
+
+  // Inline computed styles before removing context, including SVG chart styles.
+  // This freezes the actual plotted paths, zoom window and selected controls.
+  function freeze(source) {
+    const clone = source.cloneNode(false);
+    if (source.nodeType !== Node.ELEMENT_NODE) return clone;
+    const style = getComputedStyle(source);
+    for (const name of style)
+      clone.style.setProperty(name, style.getPropertyValue(name));
+    clone.style.animation = "none";
+    clone.style.transition = "none";
+    if (source.matches(".gap-future,#gf-content,.chart-panel"))
+      clone.style.height = "auto";
+    if (source instanceof HTMLSelectElement) {
+      for (const child of source.childNodes) clone.append(freeze(child));
+      [...clone.options].forEach((o, i) => {
+        o.selected = i === source.selectedIndex;
+        if (o.selected) o.setAttribute("selected", "");
+        else o.removeAttribute("selected");
+      });
+      return clone;
+    }
+    if (source instanceof HTMLInputElement) {
+      clone.setAttribute("value", source.value);
+      if (source.checked) clone.setAttribute("checked", "");
+    }
+    for (const child of source.childNodes) {
+      if (
+        child.nodeType === Node.ELEMENT_NODE &&
+        (child.matches(exclude) || child.hidden)
+      )
+        continue;
+      clone.append(freeze(child));
+    }
+    return clone;
+  }
+  function stagePanel(key, panel) {
+    const stage = document.createElement("div"),
+      width = Math.ceil(panel.getBoundingClientRect().width);
+    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#100e19" : "#191725"};color:#f5f0f6;box-sizing:border-box;pointer-events:none;z-index:-100;`;
+    stage.dataset.snapshotStage = key;
+    const append = (node) => {
+      const c = freeze(node);
+      if (node === panel) c.style.margin = "0";
+      c.style.maxWidth = "100%";
+      stage.append(c);
+      return c;
+    };
+    if (key === "leaders") {
+      // Show all six in the capture without changing the user's collapsed page.
+      // Compute hidden cards only after expanding an isolated DOM copy. Styles
+      // measured while display:none contain zero heights and would clip values.
+      const grid = panel.cloneNode(true);
+      grid.style.width = "100%";
+      grid.style.height = "auto";
+      grid.style.gridTemplateRows = "none";
+      grid.style.gridAutoRows = "auto";
+      for (const card of grid.querySelectorAll(".leader")) {
+        card.removeAttribute("hidden");
+        card.style.animation = "none";
+        card.style.transition = "none";
+        card.style.opacity = "1";
+        card.style.transform = "none";
+      }
+      stage.append(grid);
+    } else if (key === "candles") {
+      for (const selector of [".cd-controls", ".cd-wrap"])
+        append(panel.querySelector(selector));
+    } else if (key === "daily") {
+      for (const selector of [
+        ".daily-heading",
+        "#daily-summary",
+        "#daily-teams",
+      ])
+        append(panel.querySelector(selector));
+    } else append(panel);
+    // Avoid duplicate SVG clipping IDs, and keep references local to this capture.
+    const ids = new Map();
+    stage.querySelectorAll("[id]").forEach((n) => {
+      const old = n.id;
+      n.id = `capture-${sequence}-${old}`;
+      ids.set(old, n.id);
+    });
+    for (const node of stage.querySelectorAll("*"))
+      for (const attr of [...node.attributes]) {
+        if (attr.name.startsWith("on")) node.removeAttribute(attr.name);
+        else if (attr.value.includes("url(")) {
+          let value = attr.value;
+          for (const [old, id] of ids)
+            value = value.replace(
+              new RegExp("url\\([^)]*#" + old + "[\"\\']?\\)", "g"),
+              `url(#${id})`,
+            );
+          node.setAttribute(attr.name, value);
+        }
+      }
+    document.body.append(stage);
+    if (
+      key === "leaders" &&
+      [...stage.querySelectorAll(".leader")].some(
+        (card) => card.getBoundingClientRect().height < 100,
+      )
+    ) {
+      stage.remove();
+      throw new Error("Rank capture has clipped cards");
+    }
+    return stage;
+  }
+  async function capture(key, panel) {
+    if (key === "hourly") {
+      const model = window.MMAShareModels.hourly();
+      await document.fonts.ready;
+      const canvas = window.MMAImages.render(model);
+      const png = canvas.toDataURL("image/png");
+      canvas.width = 1;
+      canvas.height = 1;
+      return { png, width: 1000 };
+    }
+    const stage = stagePanel(key, panel);
+    try {
+      await document.fonts.ready;
+      const width = stage.offsetWidth,
+        height = stage.scrollHeight;
+      const png = await htmlToImage.toPng(stage, {
+        width,
+        height,
+        pixelRatio: Math.min(
+          2,
+          4096 / height,
+          Math.sqrt(8000000 / (width * height)),
+        ),
+        preferredFontFormat: "woff2",
+        style: {
+          position: "static",
+          left: "auto",
+          top: "auto",
+          zIndex: "auto",
+        },
+      });
+      return { png, width };
+    } finally {
+      stage.remove();
+    }
+  }
   for (const [key, selector, title] of panels) {
-    const panel = $(selector);
+    const panel = document.querySelector(selector);
     if (!panel) continue;
     if (!panel.id) panel.id = "share-" + key;
     const controls = document.createElement("div");
@@ -273,20 +250,60 @@
     const button = document.createElement("button");
     button.className = "quiet-button";
     button.type = "button";
-    button.textContent = "디시용 HTML";
+    button.textContent = "HTML 공유하기";
     button.dataset.sharePanel = key;
-    button.setAttribute("aria-label", title + " 디시용 HTML");
+    button.setAttribute("aria-label", title + " HTML 공유하기");
     controls.append(button);
-    if (["leaders", "overview"].includes(key)) panel.after(controls);
+    if (key === "leaders") panel.after(controls);
+    else if (key === "candles") panel.querySelector(".cd-wrap").after(controls);
     else panel.append(controls);
-    button.onclick = () => {
-      const link = new URL("#" + panel.id, location.href).href;
-      const html = `<div style="max-width:680px;margin:0 auto;padding:18px;background:#14111e;color:#f5f0f6;font-family:'Malgun Gothic',sans-serif;line-height:1.6;"><p style="color:#ff789a;font-size:12px;font-weight:800;">VOTE/TRACK · ${esc(TrackerConfig.edition)}</p><p style="font-size:24px;font-weight:800;color:#ffffff;">${esc(title)}</p>${p("관측 시각 " + kst(window.MMA_DATA.snapshots.at(-1).sourceAt) + " KST")}${content(key)}${p("Melon 공개 집계 · 비공식 팬 대시보드 · 공유 당시 기록")}<p><a href="${esc(link)}" style="color:#ff789a;font-weight:700;">최신 트래커와 그래프 열기 →</a></p></div>`;
-      dialog.querySelector("textarea").value = html;
-      dialog.querySelector(".share-preview").innerHTML = html;
-      dialog.querySelector(".share-status").textContent =
-        "미리보기를 확인한 뒤 HTML 복사를 누르세요.";
+    button.onclick = async () => {
+      if (busy) return;
+      busy = true;
+      sequence++;
+      current = null;
+      $("textarea").value = "";
+      $(".share-image-url").value = "";
+      $(".share-preview").replaceChildren();
+      for (const b of dialog.querySelectorAll(
+        ".share-actions button:not([data-close-share])",
+      ))
+        b.disabled = true;
+      status("선택한 패널과 차트를 이미지로 준비하고 있습니다…");
       dialog.showModal();
+      const stamp =
+        new Intl.DateTimeFormat("sv-SE", {
+          timeZone: "Asia/Seoul",
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(new Date(window.MMA_DATA.snapshots.at(-1).sourceAt)) + " KST";
+      const link = new URL("#" + panel.id, location.href).href;
+      try {
+        const result = await capture(key, panel);
+        current = {
+          ...result,
+          title,
+          stamp,
+          link,
+          name: `${TrackerConfig.id}-${key}-${Date.now()}`,
+        };
+        const img = document.createElement("img");
+        img.src = result.png;
+        img.alt = title;
+        img.style.cssText = "display:block;max-width:100%;height:auto;";
+        $(".share-preview").append(img);
+        updateHTML();
+        $("[data-download-share]").disabled = false;
+        $("[data-file-share]").disabled = false;
+        status(
+          "복사 시점의 차트와 디자인을 담았습니다. HTML 복사 또는 PNG 저장을 선택하세요.",
+        );
+      } catch (e) {
+        status("이미지를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        console.error("Panel snapshot failed", e);
+      } finally {
+        busy = false;
+      }
     };
   }
 })();

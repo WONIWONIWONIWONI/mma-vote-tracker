@@ -2311,3 +2311,40 @@ footer a {
   justify-content: center;
   margin: 12px 0 20px;
 }
+
+.leaders-toggle-row {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.share-dialog {
+  background: #10121b;
+  border-color: #30374a;
+  border-radius: 20px;
+}
+.share-dialog textarea {
+  background: #171c28;
+  border: 1px solid #30374a;
+  border-radius: 10px;
+}
+.share-preview {
+  border-radius: 14px;
+}
+
+.share-dialog .share-image-url {
+  display: block;
+  width: 100%;
+  margin: 8px 0 16px;
+  padding: 10px;
+  border: 1px solid #30374a;
+  border-radius: 8px;
+  background: #171c28;
+  color: #f5f6fa;
+}
+.share-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.share-preview {
+  background: #191725;
+}

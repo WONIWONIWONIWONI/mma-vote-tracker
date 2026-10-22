@@ -840,7 +840,7 @@
     var pd = paceData(state.paceMin);
     var W = 1000,
       H = 380,
-      HDR = 238,
+      HDR = 358,
       FTR = 32;
     var v = computeView(W);
     v.vis = v0.vis;
@@ -890,9 +890,9 @@
         ],
       ];
       items.forEach(function (it, i) {
-        var x = 28 + i * 238,
-          y = 92,
-          cw = 226,
+        var x = 28 + (i % 2) * 480,
+          y = 100 + Math.floor(i / 2) * 108,
+          cw = 464,
           ch = 92;
         cards +=
           '<rect x="' +
@@ -903,12 +903,12 @@
           cw +
           '" height="' +
           ch +
-          '" rx="7" fill="#151321" stroke="#41374f"/>' +
+          '" rx="14" fill="#1a1e2b" stroke="#30374a"/>' +
           '<text x="' +
           (x + 13) +
           '" y="' +
           (y + 22) +
-          '" font-size="10" fill="#929a8c"' +
+          '" font-size="12" fill="#a4adbf"' +
           font +
           ">" +
           esc(it[0]) +
@@ -917,7 +917,7 @@
           (x + 13) +
           '" y="' +
           (y + 50) +
-          '" font-size="15" font-weight="650" fill="' +
+          '" font-size="23" font-weight="650" fill="' +
           it[3] +
           '"' +
           font +
@@ -928,7 +928,7 @@
           (x + 13) +
           '" y="' +
           (y + 72) +
-          '" font-size="9" fill="#7d8478"' +
+          '" font-size="11" fill="#a4adbf"' +
           font +
           ">" +
           esc(it[2]) +
@@ -945,20 +945,24 @@
       " " +
       totalH +
       '">' +
-      '<rect width="100%" height="100%" fill="#100e19"/>' +
-      '<text x="28" y="32" font-size="19" font-weight="700" fill="#f2f4ee"' +
+      '<rect width="100%" height="100%" fill="#10121b"/>' +
+      '<text x="28" y="32" font-size="24" font-weight="700" fill="#f2f4ee"' +
       font +
-      ">MMA · 리센느 기준 표차 흐름 분석</text>" +
-      '<text x="28" y="55" font-size="11" fill="#9aa093"' +
+      ">VOTE/TRACK · 리센느 기준 표차 흐름 분석</text>" +
+      '<text x="28" y="55" font-size="12" fill="#a4adbf"' +
       font +
       ">현재 득표 페이스 · " +
       paceLabel +
       " 기준  |  캔들 " +
       FRAMES[state.tf].label +
       "</text>" +
-      '<text x="28" y="75" font-size="10" fill="#7d8478"' +
+      '<text x="28" y="75" font-size="12" fill="#a4adbf"' +
       font +
-      ">최신 표차 " +
+      ">" +
+      md(last.t) +
+      " " +
+      hm(last.t) +
+      " KST · 최신 표차 " +
       signed(lc.c) +
       "표 · 리센느 " +
       num(last.a) +
@@ -968,7 +972,7 @@
       num(last.b) +
       "</text>" +
       cards +
-      '<text x="28" y="207" font-size="10" fill="#9aa093"' +
+      '<text x="28" y="335" font-size="12" fill="#a4adbf"' +
       font +
       ">표차 캔들 · " +
       md(a.t) +
@@ -986,7 +990,7 @@
       "</g>" +
       '<text x="28" y="' +
       (H + HDR + 21) +
-      '" font-size="9" fill="#7d8478"' +
+      '" font-size="11" fill="#a4adbf"' +
       font +
       '><tspan fill="' +
       UP_COLOR +

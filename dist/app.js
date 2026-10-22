@@ -61,10 +61,7 @@
     );
   const fmt = (n) => nf.format(n);
   const share = (team, snap) => (100 * team.votes) / snap.totalVotes;
-  const displayShare = (team, snap) =>
-    Number.isFinite(team.reportedShare)
-      ? String(team.reportedShare)
-      : share(team, snap).toFixed(1);
+  const displayShare = (team, snap) => share(team, snap).toFixed(2);
   const normalizedId = (team) =>
     String(team.id || team.name)
       .normalize("NFKC")
@@ -896,6 +893,25 @@
       sourceAt: stamp,
       filename: `${config.id}-${type}-${suffix}.png`,
     };
+    const leaders = last.top4.map((team, i) => {
+      const other = last.top4[i === 0 ? 1 : i - 1];
+      return {
+        rank: team.rank,
+        name: team.name,
+        color: colorOf(team),
+        votes: fmt(team.votes) + "표",
+        share: displayShare(team, last) + "%",
+        shareValue: share(team, last),
+        gap: `${other.rank}위 ${other.name}와 ${fmt(Math.abs(team.votes - other.votes))}표 차이`,
+      };
+    });
+    if (type === "leaders")
+      return {
+        ...common,
+        title: "현재 득표 현황",
+        subtitle: "전체 후보 중 점유율 · 순위별 득표와 바로 위 순위 표차",
+        leaders,
+      };
     if (type === "trend") {
       const g = graphGeometry();
       return {
@@ -903,21 +919,7 @@
         title: "현재 득표 현황과 추이",
         subtitle: "그래프 기간 · " + $("chart-window").textContent + " KST",
         chartTitle: $("chart-unit").textContent + " 추이",
-        leaders: last.top4.map((team, i) => {
-          const other = last.top4[i === 0 ? 1 : i - 1];
-          return {
-            rank: team.rank,
-            name: team.name,
-            color: colorOf(team),
-            votes: fmt(team.votes) + "표",
-            share: displayShare(team, last) + "%",
-            gap:
-              other.name +
-              "와 " +
-              fmt(Math.abs(team.votes - other.votes)) +
-              "표 차이",
-          };
-        }),
+        leaders,
         xmin: g.xmin,
         xmax: g.xmax,
         ymin: g.ymin,
@@ -998,6 +1000,7 @@
     throw new Error("Unknown image panel.");
   }
   window.MMAShareModels = {
+    leaders: () => imageModel("leaders"),
     trend: () => imageModel("trend"),
     hourly: () => imageModel("hourly"),
   };
