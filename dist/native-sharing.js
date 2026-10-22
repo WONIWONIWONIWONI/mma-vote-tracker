@@ -180,7 +180,10 @@
     for(const node of template.content.children)visit(node);
     // DOM serialization adds whitespace to every CSS declaration; remove that
     // overhead so redundant backgrounds still fit the board character limit.
-    return template.innerHTML.replace(/style="([^"]*)"/g,(_,css)=>`style="${css.replace(/\s*([:;])\s*/g,"$1").trim()}"`);
+    return template.innerHTML.replace(/style="([^"]*)"/g,(_,css)=>{
+      const compact=css.replace(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)/g,(_,r,g,b)=>"#"+[r,g,b].map(v=>(+v).toString(16).padStart(2,"0")).join(""));
+      return `style="${compact.replace(/\s*([:;])\s*/g,"$1").trim()}"`;
+    });
   }
   window.MMANativeHTML={panel,hourly,leaders,finalize};
 })();
