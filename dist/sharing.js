@@ -154,8 +154,13 @@
       grid.style.height = "auto";
       grid.style.gridTemplateRows = "none";
       grid.style.gridAutoRows = "auto";
-      for (const card of grid.querySelectorAll(".leader"))
+      for (const card of grid.querySelectorAll(".leader")) {
         card.removeAttribute("hidden");
+        card.style.animation = "none";
+        card.style.transition = "none";
+        card.style.opacity = "1";
+        card.style.transform = "none";
+      }
       stage.append(grid);
     } else if (key === "candles") {
       for (const selector of [".cd-controls", ".cd-wrap"])
