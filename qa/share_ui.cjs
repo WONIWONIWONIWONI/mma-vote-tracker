@@ -127,7 +127,7 @@ const root = path.resolve(__dirname, "../dist"),
           const after=await review.locator('td[data-rank-card="true"]').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]}));
           assert.equal(before.length,6);
           assert.equal(after.length,6);
-          const voteColors=await review.locator('b').evaluateAll(es=>es.filter(e=>e.style.fontSize==="32px").map(e=>getComputedStyle(e).color));
+          const voteColors=await review.locator('b').evaluateAll(es=>es.filter(e=>e.style.fontSize.includes("clamp")).map(e=>getComputedStyle(e).color));
           assert.deepEqual(voteColors,Array(6).fill("rgb(245, 246, 250)"),"rank votes remain readable on dark cards");
           assert.ok(mobile ? before[1][1]>before[0][1] : before[1][0]>before[0][0],"cards wrap according to the reader width");
           assert.ok(after[1][1]>after[0][1],"cards stack safely when display CSS is stripped");

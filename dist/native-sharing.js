@@ -17,9 +17,9 @@
   function leaders(model, edition) {
     const cards=model.leaders.map((t,i)=> {
       const c=color(t.color), bg=i===0?"#352034":"#191725";
-      const body=table(`<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2,"0")}</b></font> <font color="#a4adbf">RANK</font>`)}${cell(i===0?'<font color="#e6ff54">현재 선두</font>':"",'align="right"')}</tr>`)+
+      const body=table(`<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2,"0")}</b></font> <font color="#a4adbf">RANK</font>`)}${cell(i===0?'<font color="#e6ff54">현재 선두</font>':"",'align="right" style="padding:4px 0;"')}</tr>`)+
         `<p style="font-size:20px;font-weight:bold;margin:20px 0 12px;"><font color="${c}">●</font> ${esc(t.name)}</p>`+
-        table(`<tr>${cell(`<b style="font-size:32px;">${esc(t.votes.replace(/표$/,""))}</b> <font color="#a4adbf">표</font>`)}${cell(`<font color="${c}" style="font-size:24px;">${esc(t.share)}</font>`,'align="right"')}</tr>`)+
+        table(`<tr>${cell(`<b style="font-size:clamp(20px,7vw,32px);white-space:nowrap;">${esc(t.votes.replace(/표$/,""))}</b> <font color="#a4adbf">표</font>`,'width="65%" style="padding:4px 0;"')}${cell(`<font color="${c}" style="font-size:clamp(16px,5vw,24px);white-space:nowrap;">${esc(t.share)}</font>`,'align="right" style="padding:4px 0;"')}</tr>`)+
         `<p style="border-top:1px solid #41374f;padding-top:14px;margin-top:20px;"><font color="#a4adbf">전체 투표 중 점유율</font></p><p style="font-size:12px;color:${i===0?"#ff789a":"#a4adbf"};">${esc(t.gap)}</p>`;
       // Inline tables wrap without media queries. If a board strips display,
       // ordinary block tables still stack safely instead of clipping.
@@ -76,9 +76,9 @@
     }).join("");
     const columnsHTML=`<colgroup>${Array.from({length:columns},()=>`<col width="${(100/columns).toFixed(4)}%">`).join("")}</colgroup>`;
     const plot=`<table width="100%" height="${rows*rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:1px;line-height:1px;">${columnsHTML}<tbody>${cells}</tbody></table>`;
-    const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
-    const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center"')).join("")}</tr>`);
-    return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="8%"')}${cell(plot+bottom)}</tr>`)}</div>`;
+    const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle" style="padding:0;"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
+    const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center" style="padding:0;"')).join("")}</tr>`);
+    return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="22%" style="padding:0 4px 0 0;"')}${cell(plot+bottom,'width="78%" style="padding:0;"')}</tr>`)}</div>`;
   }
   function panel(stage, columns=160, rows=96) {
     const rootStyle=getComputedStyle(stage);
@@ -107,8 +107,12 @@
       const elements=children.filter(c=>c instanceof Element);
       if((s.display.includes("flex")&&s.flexDirection!=="column" || s.display.includes("grid")) && elements.length>1 && elements.length===children.length){
         const grouped=[];for(const child of elements){const top=child.getBoundingClientRect().top;let row=grouped.find(r=>Math.abs(r.top-top)<4);if(!row){row={top,nodes:[]};grouped.push(row);}row.nodes.push(child);}
-        const max=Math.max(...grouped.map(r=>r.nodes.length));
-        content=table(grouped.map(r=>`<tr>${r.nodes.map(child=>cell(flow(child),`width="${n(100/max)}%" style="padding:4px;"`)).join("")}</tr>`).join(""));
+        // Preserve each item's desktop size as an upper bound, not a minimum.
+        // Inline tables wrap in a reader narrower than the source viewport.
+        content=grouped.map(r=>`<div>${r.nodes.map(child=>{
+          const limit=Math.max(140,Math.min(460,Math.ceil(child.getBoundingClientRect().width)));
+          return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:${limit}px;table-layout:fixed;vertical-align:top;"><tbody><tr>${cell(flow(child),'style="padding:4px;"')}</tr></tbody></table>`;
+        }).join(" ")}</div>`).join("");
       }else content=children.map(flow).join("");
       const tag=["SPAN","B","STRONG","SMALL","EM","LABEL","I"].includes(node.tagName)?"span":"div";
       return `<${tag} style="${esc(style)}">${content}</${tag}>`;
