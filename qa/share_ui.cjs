@@ -119,6 +119,8 @@ const root = path.resolve(__dirname, "../dist"),
           const after=await review.locator("td[bgcolor]").evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]}));
           assert.deepEqual(after,before,"filtering positioning CSS preserves all card layout");
           assert.equal(after.length,6);
+          const voteColors=await review.locator('b[style*="font-size:32px"]').evaluateAll(es=>es.map(e=>getComputedStyle(e).color));
+          assert.deepEqual(voteColors,Array(6).fill("rgb(245, 246, 250)"),"rank votes remain readable on dark cards");
           assert.ok(mobile ? after[1][1]>after[0][1] : after[1][0]>after[0][0]);
           assert.ok(after[2][1]>after[0][1]);
         }

@@ -12,7 +12,7 @@
     const alpha=a[3]??1, bg=[25,23,37];
     return "#"+a.slice(0,3).map((v,i)=>Math.round(v*alpha+bg[i]*(1-alpha)).toString(16).padStart(2,"0")).join("");
   }
-  const table = (content, extra = "") => `<table width="100%" cellspacing="0" cellpadding="0" border="0" ${extra} style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;">${content}</table>`;
+  const table = (content, extra = "") => `<table width="100%" cellspacing="0" cellpadding="0" border="0" ${extra} style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;color:#f5f6fa;">${content}</table>`;
   const cell = (body, extra = "") => `<td valign="top" ${extra}>${body}</td>`;
   function leaders(model, edition, mobile) {
     const cards=model.leaders.map((t,i)=> {
@@ -29,31 +29,32 @@
   }
   // Convert currently displayed chart geometry to run-length-compressed table cells.
   // Cell colors are HTML attributes, so removing positioning CSS cannot scatter it.
-  function chart(svg, columns=144, rows=66) {
+  function chart(svg, columns=160, rows=96) {
     const vb=svg.viewBox.baseVal, W=vb.width || svg.clientWidth, H=vb.height || svg.clientHeight;
     const clip=svg.querySelector("clipPath rect"), a=k=>Number(clip?.getAttribute(k)||0);
     const area=clip?{x:a("x"),y:a("y"),w:a("width"),h:a("height")}:{x:60,y:12,w:W-80,h:H-54};
     const grid=Array.from({length:rows},()=>Array(columns).fill(null));
     const map=(x,y)=>({x:Math.round((x-area.x)/area.w*(columns-1)),y:Math.round((y-area.y)/area.h*(rows-1))});
     const put=(x,y,c)=>{if(x>=0&&x<columns&&y>=0&&y<rows)grid[y][x]=c;};
-    function segment(A,B,c,dashed) {
+    function segment(A,B,c,dashed,phase=0) {
       let x=A.x,y=A.y, dx=Math.abs(B.x-x),dy=-Math.abs(B.y-y),sx=x<B.x?1:-1,sy=y<B.y?1:-1,err=dx+dy,steps=0;
       // A path can begin outside a zoom window; cap work without joining gaps.
       if(Math.abs(x)>100000 || Math.abs(y)>100000 || Math.abs(B.x)>100000 || Math.abs(B.y)>100000)return;
       for(let limit=0;limit<200000;limit++){
-        if(!dashed || steps%5<3)put(x,y,c);
+        if(!dashed || (steps+phase)%5<3)put(x,y,c);
         if(x===B.x&&y===B.y)break;
         const e=2*err;if(e>=dy){err+=dy;x+=sx;}if(e<=dx){err+=dx;y+=sy;}steps++;
       }
+      return steps;
     }
     for(const node of svg.querySelectorAll("path,line,rect,circle")) {
       if(node.closest("defs"))continue;
       const s=getComputedStyle(node);if(s.display==="none"||s.visibility==="hidden"||Number(s.opacity)===0)continue;
       const tag=node.tagName.toLowerCase(), num=k=>Number(node.getAttribute(k)||0);
       if(tag==="path" && !transparent(s.stroke)){
-        const commands=(node.getAttribute("d")||"").match(/[ML][^ML]*/gi)||[];let last=null;
-        for(const cmd of commands){const nums=cmd.slice(1).match(/-?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi)||[];if(cmd[0].toUpperCase()==="M")last=null;
-          for(let i=0;i+1<nums.length;i+=2){const p=map(+nums[i],+nums[i+1]);if(last)segment(last,p,rgb(s.stroke),s.strokeDasharray!=="none");last=p;}
+        const commands=(node.getAttribute("d")||"").match(/[ML][^ML]*/gi)||[];let last=null,phase=0;
+        for(const cmd of commands){const nums=cmd.slice(1).match(/-?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi)||[];if(cmd[0].toUpperCase()==="M"){last=null;phase=0;}
+          for(let i=0;i+1<nums.length;i+=2){const p=map(+nums[i],+nums[i+1]);if(last)phase+=segment(last,p,rgb(s.stroke),s.strokeDasharray!=="none",phase)||0;last=p;}
         }
       } else if(tag==="line" && !transparent(s.stroke)) segment(map(num("x1"),num("y1")),map(num("x2"),num("y2")),rgb(s.stroke),s.strokeDasharray!=="none");
       else if(tag==="rect" && !transparent(s.fill)){
@@ -65,17 +66,18 @@
     const ticks=text.filter(t=>t.x<area.x && t.y>=area.y-4 && t.y<=area.y+area.h+8).sort((a,b)=>a.y-b.y);
     const labels=text.filter(t=>t.y>area.y+area.h+8).sort((a,b)=>a.x-b.x);
     const annotations=text.filter(t=>!ticks.includes(t)&&!labels.includes(t)).map(t=>t.text);
+    const rowHeight=Math.max(2,Math.round(264/rows));
     const cells=grid.map(row=>{let html="";for(let x=0;x<columns;){let end=x+1;while(end<columns&&row[end]===row[x])end++;
       html+=`<td${end-x>1?` colspan="${end-x}"`:""}${row[x]?` bgcolor="${row[x]}"`:""}></td>`;x=end;}
-      return `<tr height="4" style="height:4px;">${html}</tr>`;
+      return `<tr height="${rowHeight}" style="height:${rowHeight}px;">${html}</tr>`;
     }).join("");
     const columnsHTML=`<colgroup>${Array.from({length:columns},()=>`<col width="${(100/columns).toFixed(4)}%">`).join("")}</colgroup>`;
-    const plot=`<table width="100%" height="${rows*4}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*4}px;table-layout:fixed;border-collapse:collapse;font-size:0;line-height:0;">${columnsHTML}<tbody>${cells}</tbody></table>`;
-    const axis=`<table width="100%" height="${rows*4}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
+    const plot=`<table width="100%" height="${rows*rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:0;line-height:0;">${columnsHTML}<tbody>${cells}</tbody></table>`;
+    const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
     const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center"')).join("")}</tr>`);
     return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="60"')}${cell(plot+bottom)}</tr>`)}</div>`;
   }
-  function panel(stage, columns=144, rows=66) {
+  function panel(stage, columns=160, rows=96) {
     const rootStyle=getComputedStyle(stage);
     function flow(node) {
       if(node.nodeType===Node.TEXT_NODE)return esc(node.textContent.replace(/\s+/g," "));

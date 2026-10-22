@@ -62,7 +62,7 @@
     else {
       const stage=stagePanel(key,panel);
       try {
-        for(const [columns,rows] of [[144,66],[112,54],[96,44]]) {
+        for(const [columns,rows] of [[160,96],[144,80],[112,66]]) {
           html=MMANativeHTML.panel(stage,columns,rows);
           if(html.length<64000)break;
         }
