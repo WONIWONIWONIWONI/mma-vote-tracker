@@ -2311,3 +2311,21 @@ footer a {
   justify-content: center;
   margin: 12px 0 20px;
 }
+
+.leaders-toggle-row {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.share-dialog {
+  background: #10121b;
+  border-color: #30374a;
+  border-radius: 20px;
+}
+.share-dialog textarea {
+  background: #171c28;
+  border: 1px solid #30374a;
+  border-radius: 10px;
+}
+.share-preview {
+  border-radius: 14px;
+}

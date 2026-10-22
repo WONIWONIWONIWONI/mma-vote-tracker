@@ -35,17 +35,30 @@
       timeStyle: "short",
     }).format(new Date(t));
   const p = (s) =>
-    `<p style="margin:8px 0;color:#bfb6cb;font-size:12px;line-height:1.7;">${esc(s)}</p>`;
+    `<p style="margin:12px 0;color:#a4adbf;font-size:12px;line-height:1.8;">${esc(s)}</p>`;
   const box = (s) =>
-    `<div style="margin-top:10px;padding:14px;background:#211d2c;color:#f5f0f6;">${s}</div>`;
+    `<div style="margin-top:14px;padding:20px;background:#1a1e2b;border:1px solid #2c3346;border-radius:14px;color:#f5f6fa;">${s}</div>`;
   function table(headers, rows) {
     const cell = (s, tag) =>
-      `<${tag} style="border:1px solid #4b405a;padding:8px;text-align:left;font-size:12px;word-break:break-word;color:#f5f0f6;">${esc(s)}</${tag}>`;
+      `<${tag} style="border:0;border-bottom:1px solid #30374a;padding:12px 10px;text-align:left;font-size:${tag === "th" ? 11 : 13}px;font-weight:${tag === "th" ? 500 : 600};word-break:break-word;color:${tag === "th" ? "#a4adbf" : "#f5f6fa"};background:${tag === "th" ? "#22283a" : "#1a1e2b"};">${esc(s)}</${tag}>`;
     return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;"><tbody><tr>${headers.map((s) => cell(s, "th")).join("")}</tr>${rows.map((r) => `<tr>${r.map((s) => cell(s, "td")).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+  function leaderCard(team, i, last) {
+    const other = last.top4[i === 0 ? 1 : i - 1];
+    const color =
+      TrackerConfig.teams.find((x) => String(x.id) === String(team.id))
+        ?.color || "#f2aac2";
+    const percent = ((100 * team.votes) / last.totalVotes).toFixed(2);
+    const gap = `${other.rank}위 ${other.name}와 ${num(Math.abs(team.votes - other.votes))}표 차이`;
+    return `<div style="margin-top:12px;padding:20px;background:${i < 2 ? "#212536" : "#1a1e2b"};border:1px solid #30374a;border-radius:14px;">
+      <p style="margin:0 0 14px;color:#f5f6fa;font-size:17px;font-weight:700;"><span style="color:${esc(color)};font-size:12px;margin-right:12px;">${String(team.rank).padStart(2, "0")} RANK</span> ${esc(team.name)}</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tbody><tr><td style="border:0;padding:0;color:#a4adbf;font-size:11px;">누적 득표수</td><td style="border:0;padding:0;text-align:right;color:#a4adbf;font-size:11px;">전체 투표 중 득표율</td></tr><tr><td style="border:0;padding:6px 0;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:-1px;">${esc(num(team.votes))}<span style="font-size:12px;color:#a4adbf;font-weight:400;"> 표</span></td><td style="border:0;padding:6px 0;text-align:right;color:${esc(color)};font-size:22px;font-weight:700;">${percent}<span style="font-size:12px;">%</span></td></tr></tbody></table>
+      <div style="height:3px;margin:12px 0;background:#343c50;border-radius:3px;"><div style="width:${percent}%;height:3px;background:${esc(color)};border-radius:3px;"></div></div>
+      <p style="margin:0;color:#b8c0d1;font-size:12px;line-height:1.7;">${esc(gap)}</p></div>`;
   }
   function bar(name, value, width, color) {
     return box(
-      `<p style="margin:0 0 8px;color:${esc(color)};font-weight:700;">${esc(name)}</p><p style="margin:0 0 10px;font-size:22px;font-weight:800;color:#ffffff;">${esc(value)}</p><div style="height:7px;background:#423749;"><div style="width:${Math.min(100, Math.max(0, width))}%;height:7px;background:${esc(color)};"></div></div>`,
+      `<p style="margin:0 0 12px;font-size:13px;color:${esc(color)};font-weight:700;">${esc(name)}</p><p style="margin:0 0 10px;font-size:28px;font-weight:800;letter-spacing:-0.6px;color:#ffffff;">${esc(value)}</p><div style="height:7px;background:#343c50;border-radius:6px;"><div style="width:${Math.min(100, Math.max(0, width))}%;height:7px;background:${esc(color)};border-radius:6px;"></div></div>`,
     );
   }
   // Rebuild trusted UI text with an explicit tag/attribute allowlist. Never copy handlers,
@@ -89,28 +102,24 @@
     if (out === "table")
       style += "width:100%;border-collapse:collapse;table-layout:fixed;";
     else if (["td", "th"].includes(out))
-      style += "border:1px solid #4b405a;padding:7px;word-break:break-word;";
+      style +=
+        "border:0;border-bottom:1px solid #30374a;padding:12px 8px;word-break:break-word;";
     else if (out === "div") style += "margin:6px 0;";
     else if (out === "small") style += "display:block;";
+    if (
+      node.matches(
+        ".pc-team,.pc-metric,.gf-cards > div,.gf-now-values > div,.gf-model,.gf-accuracy",
+      )
+    )
+      style +=
+        "padding:18px;margin:12px 0;background:#1a1e2b;border:1px solid #30374a;border-radius:12px;";
+    if (node.matches("strong")) style += "color:#f5f6fa;font-size:20px;";
     return `<${out} style="${esc(style)}">${[...node.childNodes].map(native).join("")}</${out}>`;
   }
   function content(key) {
     const last = window.MMA_DATA.snapshots.at(-1);
     if (key === "leaders")
-      return last.top4
-        .map((t) =>
-          bar(
-            `${t.rank}위 · ${t.name}`,
-            num(t.votes) +
-              "표 · " +
-              num((100 * t.votes) / last.totalVotes) +
-              "%",
-            (100 * t.votes) / last.totalVotes,
-            TrackerConfig.teams.find((x) => String(x.id) === String(t.id))
-              ?.color || "#ff789a",
-          ),
-        )
-        .join("");
+      return last.top4.map((t, i) => leaderCard(t, i, last)).join("");
     if (key === "overview")
       return table(
         ["항목", "값"],
@@ -281,7 +290,9 @@
     else panel.append(controls);
     button.onclick = () => {
       const link = new URL("#" + panel.id, location.href).href;
-      const html = `<div style="max-width:680px;margin:0 auto;padding:18px;background:#14111e;color:#f5f0f6;font-family:'Malgun Gothic',sans-serif;line-height:1.6;"><p style="color:#ff789a;font-size:12px;font-weight:800;">VOTE/TRACK · ${esc(TrackerConfig.edition)}</p><p style="font-size:24px;font-weight:800;color:#ffffff;">${esc(title)}</p>${p("관측 시각 " + kst(window.MMA_DATA.snapshots.at(-1).sourceAt) + " KST")}${content(key)}${p("Melon 공개 집계 · 비공식 팬 대시보드 · 공유 당시 기록")}<p><a href="${esc(link)}" style="color:#ff789a;font-weight:700;">최신 트래커와 그래프 열기 →</a></p></div>`;
+      const html = `<div style="max-width:680px;margin:0 auto;padding:24px;background:#10121b;border:1px solid #30374a;border-radius:20px;color:#f5f6fa;font-family:'Malgun Gothic',sans-serif;line-height:1.6;">
+        <div style="padding:8px 0 20px;border-bottom:1px solid #30374a;margin-bottom:20px;"><p style="margin:0 0 14px;color:#f2aac2;font-size:11px;letter-spacing:2px;font-weight:700;">VOTE / TRACK · ${esc(TrackerConfig.edition)}</p><p style="margin:0;color:#ffffff;font-size:28px;letter-spacing:-1px;font-weight:800;">${esc(title)}</p>${p("관측 시각 " + kst(window.MMA_DATA.snapshots.at(-1).sourceAt) + " KST")}</div>
+        ${content(key)}<div style="margin-top:24px;padding-top:16px;border-top:1px solid #30374a;">${p("Melon 공개 집계 · 비공식 팬 대시보드 · 공유 당시 기록")}<p style="margin:14px 0 4px;"><a href="${esc(link)}" style="color:#f2aac2;font-size:13px;font-weight:700;text-decoration:none;">최신 트래커와 그래프 열기 ↗</a></p></div></div>`;
       dialog.querySelector("textarea").value = html;
       dialog.querySelector(".share-preview").innerHTML = html;
       dialog.querySelector(".share-status").textContent =

@@ -43,6 +43,43 @@ const history = JSON.parse(
         history.snapshots.length,
       );
       assert.equal(await page.locator("[data-share-panel]").count(), 8);
+      const shares = await page.locator(".share-value").allTextContents();
+      assert.ok(
+        shares.every((v) => /^\d+\.\d{2}%$/.test(v)),
+        "main share has exactly two decimals",
+      );
+      const display = await page.locator(".share-value").first().textContent();
+      const first = history.snapshots.at(-1);
+      assert.equal(
+        display,
+        ((100 * first.top4[0].votes) / first.totalVotes).toFixed(2) + "%",
+        "derive share from votes, not rounded reportedShare",
+      );
+      fs.mkdirSync("qa-output", { recursive: true });
+      for (const type of ["leaders", "trend", "hourly"]) {
+        const model = await page.evaluate(
+          (type) => window.MMAShareModels[type](),
+          type,
+        );
+        if (type !== "hourly") {
+          for (const team of model.leaders) {
+            assert.match(team.share, /^\d+\.\d{2}%$/);
+            assert.match(team.gap, /표 차이/);
+          }
+        }
+        const waiting = page.waitForEvent("download");
+        await page.locator(`[data-image="${type}"]`).click();
+        const file = await waiting;
+        await file.saveAs(
+          `qa-output/export-${type}-${mobile ? "mobile" : "desktop"}.png`,
+        );
+      }
+      const candleWaiting = page.waitForEvent("download");
+      await page.locator("#cd-image").click();
+      const candleFile = await candleWaiting;
+      await candleFile.saveAs(
+        `qa-output/export-candles-${mobile ? "mobile" : "desktop"}.png`,
+      );
       await page.selectOption("#daily-date", "2026-10-15");
       assert.match(await page.locator(".daily-winner").textContent(), /임영웅/);
       assert.match(await page.locator(".daily-winner").textContent(), /86,056/);
@@ -69,6 +106,22 @@ const history = JSON.parse(
           ),
         );
         assert.ok(html.includes("https://share.test/"));
+        if (key === "leaders") {
+          assert.match(html, /표 차이/);
+          const last = history.snapshots.at(-1);
+          assert.ok(
+            html.includes(
+              ((100 * last.top4[0].votes) / last.totalVotes).toFixed(2),
+            ),
+          );
+          assert.ok(
+            html.includes(
+              Math.abs(last.top4[0].votes - last.top4[1].votes).toLocaleString(
+                "ko-KR",
+              ),
+            ),
+          );
+        }
         if (key === "daily") {
           assert.ok(html.includes("86,056"));
           assert.ok(html.includes("2026.10.15"));
@@ -94,6 +147,15 @@ const history = JSON.parse(
           await page.screenshot({
             path: `qa-output/share-${mobile ? "mobile" : "desktop"}.png`,
           });
+        }
+        if (
+          ["leaders", "trend", "hourly", "candles", "forecast"].includes(key)
+        ) {
+          await page
+            .locator(".share-preview")
+            .screenshot({
+              path: `qa-output/html-${key}-${mobile ? "mobile" : "desktop"}.png`,
+            });
         }
         await page.locator("[data-close-share]").click();
       }
