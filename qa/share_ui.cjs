@@ -87,6 +87,7 @@ const root = path.resolve(__dirname, "../dist"),
         await candleWaiting
       ).saveAs(`qa-output/export-candles-${mobile ? "mobile" : "desktop"}.png`);
       await page.selectOption("#daily-date", "2026-10-15");
+      await page.selectOption("#hourly-date", "2026-10-22");
       assert.match(await page.locator(".daily-winner").textContent(), /86,056/);
       for (const key of [
         "leaders",
