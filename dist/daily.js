@@ -38,7 +38,14 @@
       const end = start + DAY,
         bucket = buckets.get(start);
       const a = bucket?.first,
-        boundary = exact.get(end);
+        // A slightly late midnight sample is shared by both adjacent days.
+        // Use the observed timestamp; never relabel or interpolate it to 00:00.
+        nextFirst = buckets.get(end)?.first,
+        boundary =
+          exact.get(end) ||
+          (nextFirst && Date.parse(nextFirst.sourceAt) - end <= 60000
+            ? nextFirst
+            : null);
       const b = boundary || bucket?.last,
         ongoing = now < end;
       const from = a ? Date.parse(a.sourceAt) : null,
@@ -62,6 +69,7 @@
         from,
         to,
         complete,
+        boundaryLate: !!boundary && to !== end,
         partial: !valid || from !== start || (!ongoing && to !== end),
         total: valid ? b.totalVotes - a.totalVotes : null,
         values,

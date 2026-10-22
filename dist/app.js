@@ -37,6 +37,7 @@
     range: "24",
     historyLimit: 12,
     dailyDate: null,
+    leadersExpanded: false,
     hourlyDate: null,
     hourlyLimit: 6,
     fetching: false,
@@ -169,9 +170,16 @@
     $("leaders").innerHTML = last.top4
       .map(
         (t, i) =>
-          `<article class="leader ${i === 0 ? "first" : ""}" style="--color:${colorOf(t)}"><div class="leader-top"><span class="rank-badge"><b>${String(i + 1).padStart(2, "0")}</b> RANK</span>${i === 0 ? '<span class="mini-label">현재 선두</span>' : ""}</div><h2 class="artist" title="${escapeHTML(t.name)}"><i class="artist-dot"></i><span class="artist-name">${escapeHTML(t.name)}</span></h2><div class="count-row"><span class="vote-total"><strong class="vote-value">${fmt(t.votes)}</strong><span class="unit">표</span></span><span class="share-value">${displayShare(t, last)}<span>%</span></span></div><div class="leader-bottom"><span>전체 투표 중 점유율</span><b>${i === 0 ? `2위와 ${fmt(t.votes - last.top4[1].votes)}표 차이` : `${i}위와 ${fmt(last.top4[i - 1].votes - t.votes)}표 차이`}</b></div></article>`,
+          `<article id="leader-rank-${i + 1}" ${i >= 2 && !state.leadersExpanded ? "hidden" : ""} class="leader ${i === 0 ? "first" : ""}" style="--color:${colorOf(t)}"><div class="leader-top"><span class="rank-badge"><b>${String(i + 1).padStart(2, "0")}</b> RANK</span>${i === 0 ? '<span class="mini-label">현재 선두</span>' : ""}</div><h2 class="artist" title="${escapeHTML(t.name)}"><i class="artist-dot"></i><span class="artist-name">${escapeHTML(t.name)}</span></h2><div class="count-row"><span class="vote-total"><strong class="vote-value">${fmt(t.votes)}</strong><span class="unit">표</span></span><span class="share-value">${displayShare(t, last)}<span>%</span></span></div><div class="leader-bottom"><span>전체 투표 중 점유율</span><b>${i === 0 ? `2위와 ${fmt(t.votes - last.top4[1].votes)}표 차이` : `${i}위와 ${fmt(last.top4[i - 1].votes - t.votes)}표 차이`}</b></div></article>`,
       )
       .join("");
+    $("leaders-toggle").setAttribute(
+      "aria-expanded",
+      String(state.leadersExpanded),
+    );
+    $("leaders-toggle").textContent = state.leadersExpanded
+      ? "3~6위 접기 ▴"
+      : "3~6위 더보기 ▾";
     $("total-votes").textContent = fmt(last.totalVotes);
     $("sample-count").textContent = fmt(state.data.snapshots.length);
     const sum = last.top4.reduce((s, t) => s + t.votes, 0);
@@ -215,10 +223,17 @@
       return;
     }
     const number = (v) => (v == null ? "—" : change(v) + "표"),
+      boundaryTime = (t) => {
+        const second = new Date(t).getUTCSeconds();
+        return (
+          kst(t, "short") +
+          (second ? ":" + String(second).padStart(2, "0") : "")
+        );
+      },
       range = (d) =>
         d.from == null
           ? "관측 대기"
-          : `${kst(d.from, "short")} → ${kst(d.to, "short")}`;
+          : `${boundaryTime(d.from)} → ${boundaryTime(d.to)}`;
     $("daily-title").textContent =
       `${today.date.replaceAll("-", ".")} 하루 누적 득표 증가량`;
     $("daily-summary").innerHTML =
@@ -234,7 +249,7 @@
       )
       .join("");
     $("daily-note").textContent =
-      "한국 시간 00시 기준 하루 증가량입니다. 첫날은 둘째 날 00시의 누적표수로 복원합니다(이후 증가량을 차감하는 방식과 동일). 해당 경계 기록이 없으면 관측된 일부 구간만 표시합니다. 날짜를 선택해 비교할 수 있으며 오늘 수치는 접속·새로고침 때 갱신합니다. 경계 관측이 누락된 날은 일부 구간, 계산할 수 없는 팀은 —로 표시합니다.";
+      "한국 시간 00시 기준 하루 증가량입니다. 첫날은 둘째 날 00시의 누적표수로 복원합니다(이후 증가량을 차감하는 방식과 동일). 해당 경계 기록이 없으면 관측된 일부 구간만 표시합니다. 날짜를 선택해 비교할 수 있으며 오늘 수치는 접속·새로고침 때 갱신합니다. 자정 기록이 1분 이내 늦게 찍힌 경우 그 실제 관측을 전날 끝·다음 날 시작에 공통으로 사용합니다. 정확한 자정 기록이 없는 날은 일부 구간, 계산할 수 없는 팀은 —로 표시합니다.";
     $("daily-head").innerHTML =
       '<tr><th scope="col">날짜 / 상태</th><th scope="col">전체 후보</th>' +
       teams
@@ -1050,6 +1065,10 @@
       renderChart();
     }),
   );
+  $("leaders-toggle").addEventListener("click", () => {
+    state.leadersExpanded = !state.leadersExpanded;
+    renderCards();
+  });
   $("hourly-date").addEventListener("change", (event) => {
     state.hourlyDate = event.target.value;
     state.hourlyLimit = 6;

@@ -2301,3 +2301,13 @@ footer a {
   overflow: auto;
   margin: 12px 0;
 }
+
+/* Rank cards remain in the normal grid flow when expanded. */
+.leader[hidden] {
+  display: none;
+}
+.leaders-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 20px;
+}
