@@ -102,7 +102,20 @@ const root = path.resolve(__dirname, "../dist"),
           null,
           { timeout: 30000 },
         );
-        const html = await page.locator(".share-dialog textarea").inputValue();
+        assert.ok(await page.locator("[data-copy-native]").isEnabled(), "HTML is independent of the image URL");
+        const native = await page.locator(".share-native-source").inputValue();
+        assert.ok(native.length > 500 && native.length <= 65535, `${key}: ${native.length} chars`);
+        assert.ok(!/<(?:img|svg|canvas|script|iframe|style|link|object|embed)\b|data:|url\(|\bon\w+=/i.test(native));
+        assert.ok(native.includes("https://share.test/"));
+        await page.locator(".share-native-preview").evaluate(e => { e.closest("details").open = true; });
+        if (["trend", "forecast"].includes(key))
+          assert.ok(await page.locator('.share-native-preview [style*="clip-path:polygon"]').count() > 0, `${key} contains CSS chart paths`);
+        if (key === "hourly") {
+          assert.equal(await page.locator(".share-native-preview tbody tr").count(), (await page.evaluate(() => MMAShareModels.hourly())).rows.length);
+        }
+        await page.locator(".share-native-preview").screenshot({path:`qa-output/native-${key}-${mobile ? "mobile" : "desktop"}.png`});
+        console.log(`Native HTML ${mobile ? "mobile" : "desktop"} ${key}: ${native.length} characters`);
+        const html = await page.locator(".share-url-source").inputValue();
         assert.equal(html, "", "never offer oversized inline HTML for a board");
         assert.ok(await page.locator("[data-copy-share]").isDisabled());
         const captured = await page.locator(".share-preview img").getAttribute("src");
@@ -138,6 +151,7 @@ const root = path.resolve(__dirname, "../dist"),
             await page.locator(".share-preview img").getAttribute("src"),
             captured,
           );
+          assert.equal(await page.locator(".share-native-source").inputValue(), native);
         }
         if (key === "leaders")
           assert.equal(
@@ -155,6 +169,8 @@ const root = path.resolve(__dirname, "../dist"),
             writeText: async text => { window.copiedHTML = text; },
           }});
         });
+        await page.locator("[data-copy-native]").click();
+        assert.equal(await page.evaluate(() => window.copiedHTML), native);
         await page.locator("[data-copy-image]").click();
         await page.waitForFunction(() => window.copiedImage);
         assert.deepEqual(await page.evaluate(() => window.copiedImage), [137,80,78,71,13,10,26,10]);
@@ -163,11 +179,11 @@ const root = path.resolve(__dirname, "../dist"),
           .locator(".share-image-url")
           .fill("https://example.test/attached.png");
         assert.ok(
-          (await page.locator(".share-dialog textarea").inputValue()).includes(
+          (await page.locator(".share-url-source").inputValue()).includes(
             'src="https://example.test/attached.png"',
           ),
         );
-        const boardHTML = await page.locator(".share-dialog textarea").inputValue();
+        const boardHTML = await page.locator(".share-url-source").inputValue();
         assert.ok(boardHTML.length < 65535);
         assert.ok(!boardHTML.includes("data:"));
         assert.ok(!/<(?:script|iframe|svg|canvas)\b|\bon\w+=/.test(boardHTML));
@@ -208,7 +224,7 @@ const root = path.resolve(__dirname, "../dist"),
     await browser.close();
   }
   console.log(
-    "Six exact panel snapshots: desktop/mobile, charts, two decimals, gaps, downloads, immutable copy, short HTML limits, PNG clipboard and cache passed.",
+    "Six exact panel snapshots: desktop/mobile, charts, two decimals, gaps, downloads, immutable copy, short HTML limits, PNG clipboard, native HTML/CSS for six panels and cache passed.",
   );
 })().catch((e) => {
   console.error(e);
