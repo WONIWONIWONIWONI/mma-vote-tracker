@@ -147,6 +147,8 @@
       // Show all six in the capture without changing the user's collapsed page.
       const grid = append(panel);
       grid.style.gridAutoRows = "auto";
+      grid.style.gridTemplateRows = "none";
+      grid.style.height = "auto";
       for (const node of panel.querySelectorAll(".leader[hidden]")) {
         const c = freeze(node);
         c.removeAttribute("hidden");
