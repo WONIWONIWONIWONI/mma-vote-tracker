@@ -1,4 +1,4 @@
-/* Share exactly the six requested panels as local, immutable PNG snapshots. */
+/* Preserve PNG sharing and offer independent, immutable HTML/CSS snapshots. */
 (() => {
   "use strict";
   const panels = [
@@ -30,7 +30,10 @@
   const dialog = document.createElement("dialog");
   dialog.className = "share-dialog";
   dialog.innerHTML =
-    '<h2>이미지 공유하기</h2><p>선택한 차트와 날짜를 이미지로 담습니다. 이미지 복사 후 게시판 편집기에 붙여넣거나, PNG를 저장해 사진으로 첨부하세요.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><p>디시는 본문이 65,535자로 제한됩니다. 이미지 전체를 넣는 HTML은 제공하지 않습니다. HTML이 필요하면 먼저 사진을 첨부하고 그 이미지의 공개 HTTPS 주소를 아래에 넣으세요.</p><label>첨부 이미지의 공개 HTTPS 주소<input class="share-image-url" type="url" placeholder="https://…" /></label><textarea aria-label="공유 HTML 소스" readonly placeholder="이미지 주소를 넣으면 짧은 HTML이 만들어집니다."></textarea><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 저장</button><button class="quiet-button" data-copy-share disabled>주소 HTML 복사</button><button class="quiet-button" data-file-share disabled>HTML 파일 저장</button><button class="quiet-button" data-close-share>닫기</button></div>';
+    '<h2>이미지·HTML 공유하기</h2><p>선택한 차트와 날짜를 이미지로 담습니다. 이미지 복사 후 게시판 편집기에 붙여넣거나, PNG를 저장해 사진으로 첨부하세요.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><p>디시는 본문이 65,535자로 제한됩니다. 이미지 전체를 넣는 HTML은 제공하지 않습니다. 이미지 주소 방식의 HTML이 필요하면 먼저 사진을 첨부하고 그 이미지의 공개 HTTPS 주소를 아래에 넣으세요.</p><label>첨부 이미지의 공개 HTTPS 주소<input class="share-image-url" type="url" placeholder="https://…" /></label><textarea class="share-url-source" aria-label="이미지 주소 HTML 소스" readonly placeholder="이미지 주소를 넣으면 짧은 HTML이 만들어집니다."></textarea><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 저장</button><button class="quiet-button" data-copy-share disabled>주소 HTML 복사</button><button class="quiet-button" data-file-share disabled>HTML 파일 저장</button><button class="quiet-button" data-close-share>닫기</button></div>';
+  const nativeSection = document.createElement("section");
+  nativeSection.innerHTML = '<h3>이미지 없는 HTML 공유</h3><p>화면의 색상·배치·숫자·그래프를 HTML/CSS로 구성합니다. 이미지·외부 업로드 없이 복사할 수 있습니다.</p><button class="quiet-button" data-copy-native disabled>HTML 복사</button><p class="share-native-status" role="status"></p><details><summary>HTML 미리보기와 소스</summary><div class="share-native-preview" style="overflow:auto;max-height:45vh;"></div><textarea class="share-native-source" aria-label="이미지 없는 공유 HTML 소스" readonly></textarea></details><hr>';
+  dialog.querySelector(".share-preview").before(nativeSection);
   document.body.append(dialog);
   const $ = (s) => dialog.querySelector(s);
   const status = (s) => ($(".share-status").textContent = s);
@@ -58,15 +61,43 @@
     try {
       const html = markup();
       if (html.length > htmlLimit) throw new Error("HTML이 65,535자를 넘습니다. 더 짧은 이미지 주소를 사용하세요.");
-      $("textarea").value = html;
+      $(".share-url-source").value = html;
       $("[data-copy-share]").disabled = false;
       $("[data-file-share]").disabled = false;
     } catch (e) {
-      $("textarea").value = "";
+      $(".share-url-source").value = "";
       $("[data-copy-share]").disabled = true;
       $("[data-file-share]").disabled = false;
       status(e.message);
     }
+  }
+  $("[data-copy-native]").onclick = async () => {
+    const html = $(".share-native-source").value;
+    if (!html || html.length > htmlLimit) return;
+    try {
+      await navigator.clipboard.writeText(html);
+      $(".share-native-status").textContent = "HTML을 복사했습니다. 게시판의 HTML 편집 모드에 붙여넣으세요. 게시판의 스타일 필터에 따라 표시가 달라질 수 있습니다.";
+    } catch {
+      nativeSection.querySelector("details").open = true;
+      $(".share-native-source").focus();
+      $(".share-native-source").select();
+      $(".share-native-status").textContent = "HTML을 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.";
+    }
+  };
+  function prepareNative(key, panel, link) {
+    const started=performance.now();
+    let html;
+    if(key === "hourly") html=MMANativeHTML.hourly(window.MMAShareModels.hourly(), TrackerConfig.edition);
+    else {
+      const stage=stagePanel(key,panel);
+      try {html=MMANativeHTML.panel(stage);} finally {stage.remove();}
+    }
+    html+=`<p style="font:12px/1.5 system-ui,sans-serif;color:#777;">복사 시점의 정적 기록 · <a href="${esc(link)}">원본 트래커</a></p>`;
+    if(html.length>htmlLimit) throw new Error(`HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`);
+    $(".share-native-source").value=html;
+    $(".share-native-preview").innerHTML=html;
+    $("[data-copy-native]").disabled=false;
+    $(".share-native-status").textContent=`이미지 없는 HTML 준비 · ${html.length.toLocaleString()}자 / 65,535자 · ${Math.round(performance.now()-started)}ms`;
   }
   $(".share-image-url").addEventListener("input", updateHTML);
   $("[data-close-share]").onclick = () => dialog.close();
@@ -77,8 +108,8 @@
         "이미지 주소 HTML을 복사했습니다. 게시판의 HTML 편집 모드에 붙여넣으세요.",
       );
     } catch {
-      $("textarea").focus();
-      $("textarea").select();
+      $(".share-url-source").focus();
+      $(".share-url-source").select();
       status("소스를 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.");
     }
   };
@@ -275,7 +306,11 @@
       busy = true;
       sequence++;
       current = null;
-      $("textarea").value = "";
+      $("[data-copy-native]").disabled = true;
+      $(".share-native-source").value = "";
+      $(".share-native-preview").replaceChildren();
+      $(".share-native-status").textContent = "HTML을 준비하고 있습니다…";
+      $(".share-url-source").value = "";
       $(".share-image-url").value = "";
       $(".share-preview").replaceChildren();
       for (const b of dialog.querySelectorAll(
@@ -291,6 +326,9 @@
           timeStyle: "short",
         }).format(new Date(window.MMA_DATA.snapshots.at(-1).sourceAt)) + " KST";
       const link = new URL("#" + panel.id, location.href).href;
+      try {prepareNative(key,panel,link);} catch(e) {$(".share-native-status").textContent=e.message;console.error("HTML snapshot failed",e);}
+      // Paint the independent HTML action before starting the existing PNG work.
+      await new Promise(resolve=>setTimeout(resolve,0));
       try {
         const started = performance.now();
         // Serialize selected control state as well as plotted DOM to invalidate
