@@ -125,11 +125,12 @@ const root = path.resolve(__dirname, "../dist"),
         });
         if(key === "leaders") {
           const after=await review.locator('td[data-rank-card="true"]').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]}));
-          assert.deepEqual(after,before,"filtering positioning CSS preserves all card layout");
+          assert.equal(before.length,6);
           assert.equal(after.length,6);
-          const voteColors=await review.locator('b').evaluateAll(es=>es.filter(e=>e.style.fontSize==="32px").map(e=>getComputedStyle(e).color));
+          const voteColors=await review.locator('b').evaluateAll(es=>es.filter(e=>e.style.fontSize.includes("clamp")).map(e=>getComputedStyle(e).color));
           assert.deepEqual(voteColors,Array(6).fill("rgb(245, 246, 250)"),"rank votes remain readable on dark cards");
-          assert.ok(mobile ? after[1][1]>after[0][1] : after[1][0]>after[0][0]);
+          assert.ok(mobile ? before[1][1]>before[0][1] : before[1][0]>before[0][0],"cards wrap according to the reader width");
+          assert.ok(after[1][1]>after[0][1],"cards stack safely when display CSS is stripped");
           assert.ok(after[2][1]>after[0][1]);
         }
         if(key === "hourly") {
@@ -146,6 +147,30 @@ const root = path.resolve(__dirname, "../dist"),
           assert.ok(bright.every(r=>r.width>0&&r.height>0&&r.expectedHeight>0&&r.height<=r.expectedHeight+.5&&r.text.length>0),`${key}: chart runs keep content, width and small height despite board td rules`);
         }
         await review.screenshot({path:`qa-output/native-${key}-${mobile ? "mobile" : "desktop"}.png`,fullPage:true});
+        // Reuse the exact same exported HTML from desktop AND mobile in narrow
+        // board bodies, including hostile inherited nowrap and extra td padding.
+        for(const width of [320,390]) {
+          await review.setViewportSize({width,height:960});
+          await review.setContent('<style>td{padding:8px;white-space:nowrap}b,strong{color:#333}</style><body style="margin:0;padding:0 16px;background:#fff;"><article style="width:100%;overflow:hidden;">'+native+'</article></body>');
+          await review.evaluate(()=>{
+            for(const e of document.querySelectorAll("[bgcolor],[color]")){e.removeAttribute("bgcolor");e.removeAttribute("color");}
+          });
+          async function assertFits(label) {
+            const outside=await review.locator("article").evaluate(root=>{
+              const bounds=root.getBoundingClientRect();
+              return [...root.querySelectorAll("table,td,div,p,span,b")].filter(e=>{
+                const r=e.getBoundingClientRect();return r.width>0 && (r.left<bounds.left-1 || r.right>bounds.right+1);
+              }).slice(0,5).map(e=>({tag:e.tagName,text:e.textContent.slice(0,45),width:e.getBoundingClientRect().width}));
+            });
+            assert.deepEqual(outside,[],`${key} copied on ${mobile?"mobile":"desktop"} fits ${width}px ${label}`);
+          }
+          await assertFits("board body");
+          await review.screenshot({path:`qa-output/native-${key}-from-${mobile?"mobile":"desktop"}-at-${width}.png`,fullPage:true});
+          await review.evaluate(()=>{
+            for(const e of document.querySelectorAll("[style]"))e.style.removeProperty("display");
+          });
+          await assertFits("after display stripping");
+        }
         await review.close();
         console.log(`Native HTML ${mobile ? "mobile" : "desktop"} ${key}: ${native.length} characters`);
         const captured = await page.locator(".share-preview img").getAttribute("src");

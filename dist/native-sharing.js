@@ -14,18 +14,19 @@
   }
   const table = (content, extra = "") => `<table width="100%" cellspacing="0" cellpadding="0" border="0" ${extra} style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;color:#f5f6fa;">${content}</table>`;
   const cell = (body, extra = "") => `<td valign="top" ${extra}>${body}</td>`;
-  function leaders(model, edition, mobile) {
+  function leaders(model, edition) {
     const cards=model.leaders.map((t,i)=> {
       const c=color(t.color), bg=i===0?"#352034":"#191725";
-      const body=table(`<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2,"0")}</b></font> <font color="#a4adbf">RANK</font>`)}${cell(i===0?'<font color="#e6ff54">현재 선두</font>':"",'align="right"')}</tr>`)+
+      const body=table(`<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2,"0")}</b></font> <font color="#a4adbf">RANK</font>`)}${cell(i===0?'<font color="#e6ff54">현재 선두</font>':"",'align="right" style="padding:4px 0;"')}</tr>`)+
         `<p style="font-size:20px;font-weight:bold;margin:20px 0 12px;"><font color="${c}">●</font> ${esc(t.name)}</p>`+
-        table(`<tr>${cell(`<b style="font-size:32px;">${esc(t.votes.replace(/표$/,""))}</b> <font color="#a4adbf">표</font>`)}${cell(`<font color="${c}" style="font-size:24px;">${esc(t.share)}</font>`,'align="right"')}</tr>`)+
+        table(`<tr>${cell(`<b style="font-size:clamp(20px,7vw,32px);white-space:nowrap;">${esc(t.votes.replace(/표$/,""))}</b> <font color="#a4adbf">표</font>`,'width="65%" style="padding:4px 0;"')}${cell(`<font color="${c}" style="font-size:clamp(16px,5vw,24px);white-space:nowrap;">${esc(t.share)}</font>`,'align="right" style="padding:4px 0;"')}</tr>`)+
         `<p style="border-top:1px solid #41374f;padding-top:14px;margin-top:20px;"><font color="#a4adbf">전체 투표 중 점유율</font></p><p style="font-size:12px;color:${i===0?"#ff789a":"#a4adbf"};">${esc(t.gap)}</p>`;
-      return cell(`<font color="#f5f6fa">${body}</font>`,`bgcolor="${bg}" width="${mobile?100:50}%" style="padding:20px;border:1px solid ${i===0?"#98456a":"#393346"};border-radius:14px;"`);
+      // Inline tables wrap without media queries. If a board strips display,
+      // ordinary block tables still stack safely instead of clipping.
+      return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:460px;table-layout:fixed;vertical-align:top;margin:6px 0;font:14px/1.6 Arial,sans-serif;"><tbody><tr>${cell(`<font color="#f5f6fa">${body}</font>`,`bgcolor="${bg}" width="100%" style="padding:16px;text-align:left;border:1px solid ${i===0?"#98456a":"#393346"};border-radius:14px;"`)}</tr></tbody></table>`;
     });
-    const count=mobile?1:2, rows=[];
-    for(let i=0;i<cards.length;i+=count)rows.push(`<tr>${cards.slice(i,i+count).join("")}</tr>`);
-    return table(`<tr>${cell(`<font color="#ff789a">VOTE/TRACK · ${esc(edition)}</font><p style="font-size:12px;color:#a4adbf;">${esc(model.sourceAt)} KST</p>`,'style="padding:12px;"')}</tr><tr>${cell(`<table width="100%" cellspacing="12" cellpadding="0" border="0" style="width:100%;table-layout:fixed;border-spacing:12px;">${rows.join("")}</table>`)}</tr>`,'bgcolor="#100e19"');
+
+    return table(`<tr>${cell(`<font color="#ff789a">VOTE/TRACK · ${esc(edition)}</font><p style="font-size:12px;color:#a4adbf;">${esc(model.sourceAt)} KST</p>`,'style="padding:12px;"')}</tr><tr>${cell(cards.join(" "),'style="padding:0 8px;text-align:center;"')}</tr>`,'bgcolor="#100e19"');
   }
   // Convert currently displayed chart geometry to run-length-compressed table cells.
   // Cell colors use both HTML attributes and inline CSS; no positioned layers.
@@ -75,9 +76,9 @@
     }).join("");
     const columnsHTML=`<colgroup>${Array.from({length:columns},()=>`<col width="${(100/columns).toFixed(4)}%">`).join("")}</colgroup>`;
     const plot=`<table width="100%" height="${rows*rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:1px;line-height:1px;">${columnsHTML}<tbody>${cells}</tbody></table>`;
-    const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
-    const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center"')).join("")}</tr>`);
-    return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="8%"')}${cell(plot+bottom)}</tr>`)}</div>`;
+    const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle" style="padding:0;"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
+    const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center" style="padding:0;"')).join("")}</tr>`);
+    return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="22%" style="padding:0 4px 0 0;"')}${cell(plot+bottom,'width="78%" style="padding:0;"')}</tr>`)}</div>`;
   }
   function panel(stage, columns=160, rows=96) {
     const rootStyle=getComputedStyle(stage);
@@ -106,8 +107,12 @@
       const elements=children.filter(c=>c instanceof Element);
       if((s.display.includes("flex")&&s.flexDirection!=="column" || s.display.includes("grid")) && elements.length>1 && elements.length===children.length){
         const grouped=[];for(const child of elements){const top=child.getBoundingClientRect().top;let row=grouped.find(r=>Math.abs(r.top-top)<4);if(!row){row={top,nodes:[]};grouped.push(row);}row.nodes.push(child);}
-        const max=Math.max(...grouped.map(r=>r.nodes.length));
-        content=table(grouped.map(r=>`<tr>${r.nodes.map(child=>cell(flow(child),`width="${n(100/max)}%" style="padding:4px;"`)).join("")}</tr>`).join(""));
+        // Preserve each item's desktop size as an upper bound, not a minimum.
+        // Inline tables wrap in a reader narrower than the source viewport.
+        content=grouped.map(r=>`<div>${r.nodes.map(child=>{
+          const limit=Math.max(140,Math.min(460,Math.ceil(child.getBoundingClientRect().width)));
+          return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:${limit}px;table-layout:fixed;vertical-align:top;"><tbody><tr>${cell(flow(child),'style="padding:4px;"')}</tr></tbody></table>`;
+        }).join(" ")}</div>`).join("");
       }else content=children.map(flow).join("");
       const tag=["SPAN","B","STRONG","SMALL","EM","LABEL","I"].includes(node.tagName)?"span":"div";
       return `<${tag} style="${esc(style)}">${content}</${tag}>`;
@@ -154,6 +159,20 @@
         node.setAttribute("bgcolor",rgb(node.style.backgroundColor));
       const graphCell=node.tagName==="TD" && node.style.fontSize==="1px";
       const text=[...node.childNodes].some(n=>n.nodeType===Node.TEXT_NODE && n.textContent.trim());
+      // Percentage widths include padding and borders. Break long labels even
+      // when the HTML was copied from a wide desktop into a narrow board body.
+      // Leave the compressed chart runs untouched to preserve their geometry.
+      if(!graphCell) {
+        if(["TABLE","TD","DIV","P"].includes(node.tagName)) {
+          node.style.boxSizing="border-box";
+          if(node.tagName!=="TD" && !node.style.maxWidth)node.style.maxWidth="100%";
+        }
+        if(node.tagName==="TABLE")node.style.tableLayout="fixed";
+        if(node.tagName==="TD" || node.parentNode===template.content) {
+          node.style.overflowWrap="anywhere";
+          node.style.whiteSpace="normal";
+        }
+      }
       if(!graphCell && (specified || text || ["B","STRONG","TH","TD"].includes(node.tagName)))
         node.style.color=foreground;
       for(const child of node.children)visit(child,foreground);
@@ -161,7 +180,10 @@
     for(const node of template.content.children)visit(node);
     // DOM serialization adds whitespace to every CSS declaration; remove that
     // overhead so redundant backgrounds still fit the board character limit.
-    return template.innerHTML.replace(/style="([^"]*)"/g,(_,css)=>`style="${css.replace(/\s*([:;])\s*/g,"$1").trim()}"`);
+    return template.innerHTML.replace(/style="([^"]*)"/g,(_,css)=>{
+      const compact=css.replace(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)/g,(_,r,g,b)=>"#"+[r,g,b].map(v=>(+v).toString(16).padStart(2,"0")).join(""));
+      return `style="${compact.replace(/\s*([:;])\s*/g,"$1").trim()}"`;
+    });
   }
   window.MMANativeHTML={panel,hourly,leaders,finalize};
 })();
