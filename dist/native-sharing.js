@@ -164,7 +164,7 @@
           if(node.tagName!=="TD" && !node.style.maxWidth)node.style.maxWidth="100%";
         }
         if(node.tagName==="TABLE")node.style.tableLayout="fixed";
-        if(text || node.tagName==="TD") {
+        if(node.tagName==="TD" || node.parentNode===template.content) {
           node.style.overflowWrap="anywhere";
           node.style.whiteSpace="normal";
         }
