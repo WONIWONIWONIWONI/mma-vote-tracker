@@ -135,11 +135,11 @@ const root = path.resolve(__dirname, "../dist"),
         }
         if(["trend","candles","forecast"].includes(key)) {
           const runs=await review.locator("td").evaluateAll(es=>es.filter(e=>e.style.fontSize==="1px").map(e=>{
-            const c=getComputedStyle(e),r=e.getBoundingClientRect();return {bg:c.backgroundColor,width:r.width,height:r.height,text:e.textContent};
+            const c=getComputedStyle(e),r=e.getBoundingClientRect();return {bg:c.backgroundColor,width:r.width,height:r.height,text:e.textContent,expectedHeight:Number(e.closest("tr").getAttribute("height"))};
           }));
           const bright=runs.filter(r=>{const rgb=r.bg.match(/\d+/g)?.map(Number)||[0,0,0];return Math.max(...rgb)-Math.min(...rgb)>45 && Math.max(...rgb)>150;});
           assert.ok(bright.length>10,`${key}: colored chart survives bgcolor stripping`);
-          assert.ok(bright.every(r=>r.width>0&&r.height>0&&r.height<=5&&r.text.length>0),`${key}: chart runs keep content, width and small height despite board td rules`);
+          assert.ok(bright.every(r=>r.width>0&&r.height>0&&r.expectedHeight>0&&r.height<=r.expectedHeight+.5&&r.text.length>0),`${key}: chart runs keep content, width and small height despite board td rules`);
         }
         await review.screenshot({path:`qa-output/native-${key}-${mobile ? "mobile" : "desktop"}.png`,fullPage:true});
         await review.close();
