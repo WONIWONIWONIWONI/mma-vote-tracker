@@ -234,7 +234,7 @@
       )
       .join("");
     $("daily-note").textContent =
-      "한국 시간 00시 기준 하루 증가량입니다. 첫날은 현재 누적표수에서 둘째 날 이후의 일간 증가량을 빼서 계산합니다. 날짜를 선택해 비교할 수 있으며 오늘 수치는 접속·새로고침 때 갱신합니다. 경계 관측이 누락된 날은 일부 구간, 계산할 수 없는 팀은 —로 표시합니다.";
+      "한국 시간 00시 기준 하루 증가량입니다. 첫날은 둘째 날 00시의 누적표수로 복원합니다(이후 증가량을 차감하는 방식과 동일). 해당 경계 기록이 없으면 관측된 일부 구간만 표시합니다. 날짜를 선택해 비교할 수 있으며 오늘 수치는 접속·새로고침 때 갱신합니다. 경계 관측이 누락된 날은 일부 구간, 계산할 수 없는 팀은 —로 표시합니다.";
     $("daily-head").innerHTML =
       '<tr><th scope="col">날짜 / 상태</th><th scope="col">전체 후보</th>' +
       teams
@@ -982,6 +982,10 @@
     }
     throw new Error("Unknown image panel.");
   }
+  window.MMAShareModels = {
+    trend: () => imageModel("trend"),
+    hourly: () => imageModel("hourly"),
+  };
   let imagePending = false;
   async function exportPanel(button) {
     if (imagePending) {

@@ -67,37 +67,19 @@
         values,
       });
     }
-    // Reconstruct the configured first campaign day. Reconstruct only if every subsequent day is covered.
+    // Day-one cumulative total is its exact closing observation. Later gaps
+    // must not invalidate this independent evidence (telescoping subtraction).
     const first = out[0],
-      last = rows.at(-1),
-      lastTime = Date.parse(last.sourceAt),
-      later = out.slice(1).filter((d) => d.start <= lastTime);
-    if (
-      first.date === config.startsOn &&
-      later.length &&
-      later.every(
-        (d, i) =>
-          d.from === d.start &&
-          (d.to === d.end || (i === later.length - 1 && d.to === lastTime)),
-      ) &&
-      later.at(-1).to === Date.parse(last.sourceAt)
-    ) {
-      first.total =
-        last.totalVotes - later.reduce((sum, d) => sum + d.total, 0);
-      first.values = teams.map((team) => {
-        const current = last.top4.find((t) => String(t.id) === String(team.id)),
-          parts = later.map(
-            (d) => d.values.find((v) => v.id === team.id)?.delta,
-          );
-        return {
-          id: team.id,
-          name: team.name,
-          delta:
-            current && parts.every(Number.isFinite)
-              ? current.votes - parts.reduce((a, b) => a + b, 0)
-              : null,
-        };
-      });
+      closing = exact.get(first.end);
+    if (first.date === config.startsOn && closing) {
+      first.total = closing.totalVotes;
+      first.values = teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        delta:
+          closing.top4.find((t) => String(t.id) === String(team.id))?.votes ??
+          null,
+      }));
       first.from = first.start;
       first.to = first.end;
       first.partial = false;
