@@ -8,8 +8,8 @@
   const color = c => /^#[\da-f]{3,8}$/i.test(c) ? c : "#a4adbf";
   const box = (r, origin) => `position:absolute;left:${px(r.left-origin.left)};top:${px(r.top-origin.top)};width:${px(r.width)};height:${px(r.height)};`;
   const element = (style, content = "") => `<div style="${esc(style)}">${content}</div>`;
-  function textStyle(s, base) {
-    let css = "white-space:pre-wrap;overflow-wrap:normal;";
+  function textStyle(s, base, singleLine = false) {
+    let css = `white-space:${singleLine ? "pre" : "pre-wrap"};overflow-wrap:normal;`;
     for (const [p, key] of [["font-size","fontSize"],["font-weight","fontWeight"],["font-style","fontStyle"],["line-height","lineHeight"],["letter-spacing","letterSpacing"],["text-transform","textTransform"],["color","color"]])
       if (s[key] !== base[key]) css += `${p}:${s[key]};`;
     return css;
@@ -98,7 +98,7 @@
         const parent=node.parentElement, s=getComputedStyle(parent);
         const range=document.createRange();range.selectNodeContents(node);
         const r=range.getBoundingClientRect();
-        if(r.width && r.height) blocks.push(element(box(r,origin)+textStyle(s,base),esc(node.textContent.replace(/\s+/g," "))));
+        if(r.width && r.height) blocks.push(element(box(r,origin)+textStyle(s,base,[...range.getClientRects()].filter(r=>r.width>0).length===1),esc(node.textContent.replace(/\s+/g," "))));
         return;
       }
       if(!(node instanceof Element))return;
@@ -118,7 +118,7 @@
       for(const child of node.childNodes)visit(child);
     }
     for(const child of stage.childNodes)visit(child);
-    return `<div style="max-width:100%;overflow-x:auto;background:${esc(base.backgroundColor)}"><div style="position:relative;width:${px(origin.width)};height:${px(stage.scrollHeight)};font:14px/1.5 system-ui,sans-serif;color:${esc(base.color)};text-align:left;">${blocks.join("")}</div></div>`;
+    return `<div style="max-width:100%;overflow-x:auto;background:${esc(base.backgroundColor)}"><div style="position:relative;width:${px(origin.width)};height:${px(stage.scrollHeight)};font:${esc(base.fontSize)}/${esc(base.lineHeight)} system-ui,sans-serif;color:${esc(base.color)};text-align:left;">${blocks.join("")}</div></div>`;
   }
   function hourly(model, edition) {
     const teams=model.rows[0]?.values||[];

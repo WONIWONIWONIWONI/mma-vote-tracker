@@ -113,7 +113,11 @@ const root = path.resolve(__dirname, "../dist"),
         if (key === "hourly") {
           assert.equal(await page.locator(".share-native-preview tbody tr").count(), (await page.evaluate(() => MMAShareModels.hourly())).rows.length);
         }
-        await page.locator(".share-native-preview").screenshot({path:`qa-output/native-${key}-${mobile ? "mobile" : "desktop"}.png`});
+        const artboardWidth = Number(/position:relative;width:([\d.]+)px/.exec(native)?.[1] || 1000);
+        const review = await browser.newPage({viewport:{width:Math.ceil(artboardWidth),height:960}});
+        await review.setContent('<body style="margin:0;background:#10121b;">' + native + '</body>');
+        await review.screenshot({path:`qa-output/native-${key}-${mobile ? "mobile" : "desktop"}.png`,fullPage:true});
+        await review.close();
         console.log(`Native HTML ${mobile ? "mobile" : "desktop"} ${key}: ${native.length} characters`);
         const html = await page.locator(".share-url-source").inputValue();
         assert.equal(html, "", "never offer oversized inline HTML for a board");
