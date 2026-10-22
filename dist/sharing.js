@@ -62,12 +62,13 @@
     else {
       const stage=stagePanel(key,panel);
       try {
-        for(const [columns,rows] of [[160,96],[144,80],[112,66]]) {
-          html=MMANativeHTML.panel(stage,columns,rows);
+        for(const [columns,rows] of [[160,96],[144,80],[112,66],[96,48],[80,40]]) {
+          html=MMANativeHTML.finalize(MMANativeHTML.panel(stage,columns,rows));
           if(html.length<64000)break;
         }
       } finally {stage.remove();}
     }
+    if(key === "leaders" || key === "hourly") html=MMANativeHTML.finalize(html);
     html+=`<p style="font:12px/1.5 system-ui,sans-serif;color:#777;">복사 시점의 정적 기록 · <a href="${esc(link)}">원본 트래커</a></p>`;
     if(html.length>htmlLimit) throw new Error(`HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`);
     $(".share-native-source").value=html;
