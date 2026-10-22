@@ -829,6 +829,11 @@
   }
 
   /* ===== 이미지(PNG) 저장 ===== */
+  window.MMACandleShare = function () {
+    return (state.view?.vis || []).map(function (c) {
+      return { ...c };
+    });
+  };
   function exportPng() {
     var v0 = state.view;
     if (!v0 || !v0.vis.length) return;

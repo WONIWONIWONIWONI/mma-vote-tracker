@@ -90,3 +90,23 @@ console.log(
     ongoing: r.ongoing,
   })),
 );
+
+// A missing midnight several days later must not undo day-one reconstruction.
+const gapped = [...rows, row("2026-10-18T00:00:01", 300, 400)];
+const firstDay = D.build(gapped, teams, time("2026-10-18T12:00:00")).at(-1);
+assert.equal(firstDay.reconstructed, true);
+assert.deepEqual(
+  firstDay.values.map((v) => v.delta),
+  [200, 150],
+);
+assert.equal(firstDay.total, 400);
+const absentFirst = D.build(absent, teams, time("2026-10-17T12:01:00")).at(-1);
+assert.equal(absentFirst.values[1].delta, null);
+const actualFirst = D.build(data.snapshots, data.snapshots.at(-1).top4).find(
+  (d) => d.date === "2026-10-15",
+);
+assert.equal(
+  actualFirst.values.find((v) => String(v.id) === "994944").delta,
+  86056,
+);
+assert.equal(actualFirst.total, 540879);

@@ -2252,3 +2252,52 @@ footer a {
     width: 100%;
   }
 }
+
+.panel-share-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  grid-column: 1 / -1;
+}
+.overview-bar > .panel-share-controls {
+  margin: 0;
+}
+.share-dialog {
+  max-width: 640px;
+  width: calc(100% - 32px);
+  box-sizing: border-box;
+  border: 1px solid #75657e;
+  border-radius: 16px;
+  background: #191725;
+  color: #f5f0f6;
+  padding: 24px;
+}
+.share-dialog::backdrop {
+  background: #000a;
+}
+.share-dialog p {
+  line-height: 1.7;
+  font-size: 14px;
+}
+.share-dialog textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: 180px;
+  background: #100e19;
+  color: #f5f0f6;
+  padding: 12px;
+}
+.share-dialog a {
+  display: block;
+  color: #ff789a;
+  margin: 12px 0;
+}
+.share-dialog {
+  max-height: 90vh;
+  overflow: auto;
+}
+.share-preview {
+  max-height: 45vh;
+  overflow: auto;
+  margin: 12px 0;
+}
