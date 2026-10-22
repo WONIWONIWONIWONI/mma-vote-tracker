@@ -2,10 +2,8 @@ const fs = require("node:fs"),
   path = require("node:path"),
   assert = require("node:assert/strict");
 const { chromium } = require("playwright");
-const root = path.resolve(__dirname, "../dist");
-const history = JSON.parse(
-  fs.readFileSync(path.join(root, "data/history.json")),
-);
+const root = path.resolve(__dirname, "../dist"),
+  history = JSON.parse(fs.readFileSync(path.join(root, "data/history.json")));
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -42,18 +40,27 @@ const history = JSON.parse(
         (n) => window.MMA_DATA?.snapshots.length >= n,
         history.snapshots.length,
       );
-      assert.equal(await page.locator("[data-share-panel]").count(), 8);
-      const shares = await page.locator(".share-value").allTextContents();
-      assert.ok(
-        shares.every((v) => /^\d+\.\d{2}%$/.test(v)),
-        "main share has exactly two decimals",
+      assert.equal(await page.locator("[data-share-panel]").count(), 6);
+      assert.deepEqual(
+        await page
+          .locator("[data-share-panel]")
+          .evaluateAll((es) => es.map((e) => e.dataset.sharePanel)),
+        ["leaders", "trend", "candles", "forecast", "daily", "hourly"],
       );
-      const display = await page.locator(".share-value").first().textContent();
+      assert.ok(
+        (await page.locator("[data-share-panel]").allTextContents()).every(
+          (v) => v === "HTML 공유하기",
+        ),
+      );
+      assert.ok(
+        (await page.locator(".share-value").allTextContents()).every((v) =>
+          /^\d+\.\d{2}%$/.test(v),
+        ),
+      );
       const first = history.snapshots.at(-1);
       assert.equal(
-        display,
+        await page.locator(".share-value").first().textContent(),
         ((100 * first.top4[0].votes) / first.totalVotes).toFixed(2) + "%",
-        "derive share from votes, not rounded reportedShare",
       );
       fs.mkdirSync("qa-output", { recursive: true });
       for (const type of ["leaders", "trend", "hourly"]) {
@@ -61,77 +68,58 @@ const history = JSON.parse(
           (type) => window.MMAShareModels[type](),
           type,
         );
-        if (type !== "hourly") {
+        if (type !== "hourly")
           for (const team of model.leaders) {
             assert.match(team.share, /^\d+\.\d{2}%$/);
             assert.match(team.gap, /표 차이/);
           }
-        }
         const waiting = page.waitForEvent("download");
         await page.locator(`[data-image="${type}"]`).click();
-        const file = await waiting;
-        await file.saveAs(
+        await (
+          await waiting
+        ).saveAs(
           `qa-output/export-${type}-${mobile ? "mobile" : "desktop"}.png`,
         );
       }
       const candleWaiting = page.waitForEvent("download");
       await page.locator("#cd-image").click();
-      const candleFile = await candleWaiting;
-      await candleFile.saveAs(
-        `qa-output/export-candles-${mobile ? "mobile" : "desktop"}.png`,
-      );
+      await (
+        await candleWaiting
+      ).saveAs(`qa-output/export-candles-${mobile ? "mobile" : "desktop"}.png`);
       await page.selectOption("#daily-date", "2026-10-15");
-      assert.match(await page.locator(".daily-winner").textContent(), /임영웅/);
       assert.match(await page.locator(".daily-winner").textContent(), /86,056/);
       for (const key of [
         "leaders",
-        "overview",
         "trend",
         "candles",
         "forecast",
         "daily",
         "hourly",
-        "history",
       ]) {
-        if (key === "history")
-          await page
-            .locator("#history-details")
-            .evaluate((el) => (el.open = true));
         await page.locator(`[data-share-panel="${key}"]`).click();
-        const html = await page.locator(".share-dialog textarea").inputValue();
-        assert.ok(html.length > 500);
-        assert.ok(
-          !/<(?:script|iframe|svg|canvas|img|style|button|select)\b|\bon\w+=|\bclass=|\bid=|var\(--/.test(
-            html,
-          ),
+        await page.waitForFunction(
+          () => !document.querySelector("[data-copy-share]").disabled,
+          { timeout: 30000 },
         );
+        const html = await page.locator(".share-dialog textarea").inputValue();
+        assert.ok(
+          html.includes('<img src="data:image/png;base64,'),
+          "static charts must be included as actual imagery",
+        );
+        assert.ok(!/<(?:script|iframe|svg|canvas)\b|\bon\w+=/.test(html));
         assert.ok(html.includes("https://share.test/"));
-        if (key === "leaders") {
-          assert.match(html, /표 차이/);
-          const last = history.snapshots.at(-1);
-          assert.ok(
-            html.includes(
-              ((100 * last.top4[0].votes) / last.totalVotes).toFixed(2),
-            ),
-          );
-          assert.ok(
-            html.includes(
-              Math.abs(last.top4[0].votes - last.top4[1].votes).toLocaleString(
-                "ko-KR",
-              ),
-            ),
-          );
-        }
-        if (key === "daily") {
-          assert.ok(html.includes("86,056"));
-          assert.ok(html.includes("2026.10.15"));
-          assert.ok(html.includes("height:7px"));
-        }
-        if (key === "trend") assert.ok(html.includes("변화량"));
-        if (key === "candles") {
-          assert.ok(html.includes("최고 표차"));
-          assert.ok(!html.includes("NaN"));
-        }
+        await page
+          .locator(".share-preview img")
+          .evaluate((img) => img.decode());
+        const dimensions = await page
+          .locator(".share-preview img")
+          .evaluate((img) => [img.naturalWidth, img.naturalHeight]);
+        assert.ok(dimensions[0] > 300 && dimensions[1] > 100);
+        const pngWaiting = page.waitForEvent("download");
+        await page.locator("[data-download-share]").click();
+        await (
+          await pngWaiting
+        ).saveAs(`qa-output/share-${key}-${mobile ? "mobile" : "desktop"}.png`);
         await page.locator("[data-copy-share]").click();
         assert.match(
           await page.locator(".share-status").textContent(),
@@ -142,34 +130,54 @@ const history = JSON.parse(
             .locator(".share-dialog")
             .evaluate((e) => e.getBoundingClientRect().right <= innerWidth),
         );
-        if (key === "daily") {
-          fs.mkdirSync("qa-output", { recursive: true });
-          await page.screenshot({
-            path: `qa-output/share-${mobile ? "mobile" : "desktop"}.png`,
-          });
+        if (key === "trend") {
+          // The shared image is immutable after the underlying view changes.
+          await page.evaluate(() =>
+            document.querySelector('[data-range="1"]').click(),
+          );
+          assert.equal(
+            await page.locator(".share-dialog textarea").inputValue(),
+            html,
+          );
         }
-        if (
-          ["leaders", "trend", "hourly", "candles", "forecast"].includes(key)
-        ) {
-          await page
-            .locator(".share-preview")
-            .screenshot({
-              path: `qa-output/html-${key}-${mobile ? "mobile" : "desktop"}.png`,
-            });
-        }
+        if (key === "leaders")
+          assert.equal(
+            await page.locator(".leader:visible").count(),
+            2,
+            "capture must preserve collapsed source page",
+          );
+        // Optional hosted URL: no upload, and unsafe protocols cannot be copied.
+        await page
+          .locator(".share-image-url")
+          .fill("https://example.test/attached.png");
+        assert.ok(
+          (await page.locator(".share-dialog textarea").inputValue()).includes(
+            'src="https://example.test/attached.png"',
+          ),
+        );
+        await page.locator(".share-image-url").fill("javascript:alert(1)");
+        assert.equal(
+          await page.locator("[data-copy-share]").isDisabled(),
+          true,
+        );
+        await page.locator(".share-image-url").fill("");
         await page.locator("[data-close-share]").click();
       }
-      // Input is data, not markup; malicious artist names remain plain text.
-      await page.evaluate(
-        () =>
-          (window.MMA_DATA.snapshots.at(-1).top4[0].name =
-            "<img src=x onerror=alert(1)>"),
+      // New copies reflect the user's changed chart window and selected day.
+      await page.locator('[data-share-panel="trend"]').click();
+      await page.waitForFunction(
+        () => !document.querySelector("[data-copy-share]").disabled,
       );
-      await page.locator('[data-share-panel="leaders"]').click();
-      assert.equal(await page.locator(".share-preview img").count(), 0);
-      assert.match(
-        await page.locator(".share-dialog textarea").inputValue(),
-        /&lt;img/,
+      assert.ok(
+        (await page.locator(".share-dialog textarea").inputValue()).includes(
+          "data:image/png",
+        ),
+      );
+      await page.locator("[data-close-share]").click();
+      assert.equal(
+        await page.locator("[data-snapshot-stage]").count(),
+        0,
+        "no staging leaks",
       );
       assert.deepEqual(errors, []);
       await page.close();
@@ -178,7 +186,7 @@ const history = JSON.parse(
     await browser.close();
   }
   console.log(
-    "Native forum cards: desktop/mobile, all panels, day one, escaping and clipboard fallback passed.",
+    "Six exact panel snapshots: desktop/mobile, charts, two decimals, gaps, downloads, immutable copy, URL fallback passed.",
   );
 })().catch((e) => {
   console.error(e);

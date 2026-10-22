@@ -46,7 +46,7 @@
         if (c.measureText(value).width <= maxWidth || size <= 10) break;
         size--;
       } while (true);
-      c.fillText(value, x, y);
+      c.fillText(value, x, y, maxWidth);
     };
     const line = (x1, y1, x2, y2, color = "#41374f") => {
       c.beginPath();
