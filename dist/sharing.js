@@ -22,7 +22,7 @@
         })[c],
     );
   const exclude =
-    ".panel-share-controls,.panel-image-button,.cd-nav,.gf-method,.daily-history,#daily-note,.trend-help,#tooltip,#cd-tip,#gf-hover";
+    ".panel-share-controls,.panel-image-button,.cd-nav,.gf-method,.gf-accuracy,#gf-content > details,.daily-history,#daily-note,.trend-help,#tooltip,#cd-tip,#gf-hover";
   let sequence = 0,
     current = null,
     busy = false;
@@ -108,6 +108,8 @@
       clone.style.setProperty(name, style.getPropertyValue(name));
     clone.style.animation = "none";
     clone.style.transition = "none";
+    if (source.matches(".gap-future,#gf-content,.chart-panel"))
+      clone.style.height = "auto";
     if (source instanceof HTMLSelectElement) {
       for (const child of source.childNodes) clone.append(freeze(child));
       [...clone.options].forEach((o, i) => {
@@ -138,27 +140,23 @@
     stage.dataset.snapshotStage = key;
     const append = (node) => {
       const c = freeze(node);
-      c.style.margin = "0";
+      if (node === panel) c.style.margin = "0";
       c.style.maxWidth = "100%";
       stage.append(c);
       return c;
     };
     if (key === "leaders") {
       // Show all six in the capture without changing the user's collapsed page.
-      const grid = append(panel);
-      grid.style.gridAutoRows = "auto";
-      grid.style.gridTemplateRows = "none";
+      // Compute hidden cards only after expanding an isolated DOM copy. Styles
+      // measured while display:none contain zero heights and would clip values.
+      const grid = panel.cloneNode(true);
+      grid.style.width = "100%";
       grid.style.height = "auto";
-      for (const node of panel.querySelectorAll(".leader[hidden]")) {
-        const c = freeze(node);
-        c.removeAttribute("hidden");
-        c.style.removeProperty("display");
-        // Hidden cards still have their actual stylesheet layout in the DOM.
-        c.style.display = getComputedStyle(
-          panel.querySelector(".leader:not([hidden])"),
-        ).display;
-        grid.append(c);
-      }
+      grid.style.gridTemplateRows = "none";
+      grid.style.gridAutoRows = "auto";
+      for (const card of grid.querySelectorAll(".leader"))
+        card.removeAttribute("hidden");
+      stage.append(grid);
     } else if (key === "candles") {
       for (const selector of [".cd-controls", ".cd-wrap"])
         append(panel.querySelector(selector));
@@ -191,6 +189,15 @@
         }
       }
     document.body.append(stage);
+    if (
+      key === "leaders" &&
+      [...stage.querySelectorAll(".leader")].some(
+        (card) => card.getBoundingClientRect().height < 100,
+      )
+    ) {
+      stage.remove();
+      throw new Error("Rank capture has clipped cards");
+    }
     return stage;
   }
   async function capture(key, panel) {

@@ -115,6 +115,11 @@ const root = path.resolve(__dirname, "../dist"),
           .locator(".share-preview img")
           .evaluate((img) => [img.naturalWidth, img.naturalHeight]);
         assert.ok(dimensions[0] > 300 && dimensions[1] > 100);
+        if (key === "leaders")
+          assert.ok(
+            dimensions[1] > 600,
+            "all six rank cards must include votes and gaps",
+          );
         const pngWaiting = page.waitForEvent("download");
         await page.locator("[data-download-share]").click();
         await (
