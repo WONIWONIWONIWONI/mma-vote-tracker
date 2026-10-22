@@ -26,10 +26,11 @@
   let sequence = 0,
     current = null,
     busy = false;
+  const cache = new Map(), htmlLimit = 65535;
   const dialog = document.createElement("dialog");
   dialog.className = "share-dialog";
   dialog.innerHTML =
-    '<h2>HTML 공유하기</h2><p>차트·선택 날짜·색상을 복사 순간의 정적 이미지로 담습니다. 게시글 안에서는 차트를 조작하거나 자동 갱신할 수 없습니다.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><p>내장 PNG를 지원하는 곳은 HTML을 그대로 붙여넣을 수 있습니다. 디시 등 게시판이 내장 이미지를 제거하면 아래에서 PNG를 저장해 사진으로 첨부하세요. 첨부한 이미지의 공개 URL을 알면 아래에 넣어 이미지 주소 방식의 HTML도 복사할 수 있습니다.</p><label>첨부 이미지의 공개 HTTPS 주소 (선택)<input class="share-image-url" type="url" placeholder="https://…" /></label><textarea aria-label="공유 HTML 소스" readonly></textarea><div class="share-actions"><button class="quiet-button" data-copy-share disabled>HTML 복사</button><button class="quiet-button" data-download-share disabled>PNG 저장</button><button class="quiet-button" data-file-share disabled>HTML 파일 저장</button><button class="quiet-button" data-close-share>닫기</button></div>';
+    '<h2>이미지 공유하기</h2><p>선택한 차트와 날짜를 이미지로 담습니다. 이미지 복사 후 게시판 편집기에 붙여넣거나, PNG를 저장해 사진으로 첨부하세요.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><p>디시는 본문이 65,535자로 제한됩니다. 이미지 전체를 넣는 HTML은 제공하지 않습니다. HTML이 필요하면 먼저 사진을 첨부하고 그 이미지의 공개 HTTPS 주소를 아래에 넣으세요.</p><label>첨부 이미지의 공개 HTTPS 주소<input class="share-image-url" type="url" placeholder="https://…" /></label><textarea aria-label="공유 HTML 소스" readonly placeholder="이미지 주소를 넣으면 짧은 HTML이 만들어집니다."></textarea><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 저장</button><button class="quiet-button" data-copy-share disabled>주소 HTML 복사</button><button class="quiet-button" data-file-share disabled>HTML 파일 저장</button><button class="quiet-button" data-close-share>닫기</button></div>';
   document.body.append(dialog);
   const $ = (s) => dialog.querySelector(s);
   const status = (s) => ($(".share-status").textContent = s);
@@ -43,25 +44,27 @@
   }
   function imageURL() {
     const value = $(".share-image-url").value.trim();
-    if (!value) return current.png;
+    if (!value) throw new Error("이미지 복사 또는 PNG 저장을 이용하세요. HTML 복사에는 첨부 이미지의 공개 HTTPS 주소가 필요합니다.");
     const url = new URL(value);
     if (url.protocol !== "https:")
       throw new Error("첨부 이미지 주소는 HTTPS 공개 주소여야 합니다.");
     return url.href;
   }
-  function markup() {
-    return `<div style="max-width:100%;margin:0 auto;overflow-x:auto;"><img src="${esc(imageURL())}" alt="${esc(current.title + " · " + current.stamp)}" width="${current.width}" style="display:block;max-width:100%;height:auto;border:0;" /><p style="font-size:12px;color:#777;">${esc(current.stamp)} · 복사 시점의 기록 · <a href="${esc(current.link)}">원본 트래커와 조작 가능한 차트</a></p></div>`;
+  function markup(src = imageURL()) {
+    return `<div style="max-width:100%;margin:0 auto;overflow-x:auto;"><img src="${esc(src)}" alt="${esc(current.title + " · " + current.stamp)}" width="${current.width}" style="display:block;max-width:100%;height:auto;border:0;" /><p style="font-size:12px;color:#777;">${esc(current.stamp)} · 복사 시점의 기록 · <a href="${esc(current.link)}">원본 트래커와 조작 가능한 차트</a></p></div>`;
   }
   function updateHTML() {
     if (!current) return;
     try {
-      $("textarea").value = markup();
+      const html = markup();
+      if (html.length > htmlLimit) throw new Error("HTML이 65,535자를 넘습니다. 더 짧은 이미지 주소를 사용하세요.");
+      $("textarea").value = html;
       $("[data-copy-share]").disabled = false;
       $("[data-file-share]").disabled = false;
     } catch (e) {
       $("textarea").value = "";
       $("[data-copy-share]").disabled = true;
-      $("[data-file-share]").disabled = true;
+      $("[data-file-share]").disabled = false;
       status(e.message);
     }
   }
@@ -71,7 +74,7 @@
     try {
       await navigator.clipboard.writeText(markup());
       status(
-        "HTML을 복사했습니다. 내장 이미지를 차단하는 게시판에서는 PNG를 첨부해 주세요.",
+        "이미지 주소 HTML을 복사했습니다. 게시판의 HTML 편집 모드에 붙여넣으세요.",
       );
     } catch {
       $("textarea").focus();
@@ -79,10 +82,18 @@
       status("소스를 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.");
     }
   };
-  $("[data-download-share]").onclick = async () => {
-    const response = await fetch(current.png);
-    download(await response.blob(), current.name + ".png");
+  $("[data-copy-image]").onclick = async () => {
+    const snapshot = current;
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined")
+        throw new Error("Image clipboard unavailable");
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": snapshot.blob })]);
+      status("이미지를 복사했습니다. 게시판 편집기에 붙여넣으세요. 지원하지 않으면 PNG 저장 후 사진 첨부를 이용하세요.");
+    } catch {
+      status("이 브라우저에서 이미지 복사를 사용할 수 없습니다. PNG 저장 후 게시판에 사진으로 첨부하세요.");
+    }
   };
+  $("[data-download-share]").onclick = () => download(current.blob, current.name + ".png");
   $("[data-file-share]").onclick = () =>
     download(
       new Blob(
@@ -90,7 +101,7 @@
           '<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' +
             esc(current.title) +
             '</title><body style="margin:0;background:#100e19;">' +
-            markup() +
+            markup(current.png) +
             "</body></html>",
         ],
         { type: "text/html;charset=utf-8" },
@@ -193,6 +204,9 @@
           node.setAttribute(attr.name, value);
         }
       }
+    // Use installed fonts in the isolated capture; the live page is unchanged.
+    for (const node of [stage, ...stage.querySelectorAll("*")])
+      node.style.fontFamily = 'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
     document.body.append(stage);
     if (
       key === "leaders" &&
@@ -208,7 +222,6 @@
   async function capture(key, panel) {
     if (key === "hourly") {
       const model = window.MMAShareModels.hourly();
-      await document.fonts.ready;
       const canvas = window.MMAImages.render(model);
       const png = canvas.toDataURL("image/png");
       canvas.width = 1;
@@ -217,18 +230,18 @@
     }
     const stage = stagePanel(key, panel);
     try {
-      await document.fonts.ready;
       const width = stage.offsetWidth,
         height = stage.scrollHeight;
       const png = await htmlToImage.toPng(stage, {
         width,
         height,
         pixelRatio: Math.min(
-          2,
+          1.5,
           4096 / height,
           Math.sqrt(8000000 / (width * height)),
         ),
-        preferredFontFormat: "woff2",
+        // System fonts avoid fetching/embedding hundreds of Korean font subsets.
+        skipFonts: true,
         style: {
           position: "static",
           left: "auto",
@@ -250,9 +263,9 @@
     const button = document.createElement("button");
     button.className = "quiet-button";
     button.type = "button";
-    button.textContent = "HTML 공유하기";
+    button.textContent = "이미지 공유하기";
     button.dataset.sharePanel = key;
-    button.setAttribute("aria-label", title + " HTML 공유하기");
+    button.setAttribute("aria-label", title + " 이미지 공유하기");
     controls.append(button);
     if (key === "leaders") panel.after(controls);
     else if (key === "candles") panel.querySelector(".cd-wrap").after(controls);
@@ -279,7 +292,21 @@
         }).format(new Date(window.MMA_DATA.snapshots.at(-1).sourceAt)) + " KST";
       const link = new URL("#" + panel.id, location.href).href;
       try {
-        const result = await capture(key, panel);
+        const started = performance.now();
+        // Serialize selected control state as well as plotted DOM to invalidate
+        // captures when zoom, day, data, metric or team visibility changes.
+        const fingerprint = JSON.stringify([
+          panel.outerHTML,
+          [...panel.querySelectorAll("input,select")].map(n => [n.value, n.checked]),
+          key === "hourly" ? window.MMAShareModels.hourly() : null,
+        ]);
+        const previous = cache.get(key);
+        const reused = previous?.fingerprint === fingerprint;
+        const result = reused ? previous.result : await capture(key, panel);
+        if (!reused) {
+          result.blob = await (await fetch(result.png)).blob();
+          cache.set(key, { fingerprint, result });
+        }
         current = {
           ...result,
           title,
@@ -293,10 +320,11 @@
         img.style.cssText = "display:block;max-width:100%;height:auto;";
         $(".share-preview").append(img);
         updateHTML();
+        $("[data-copy-image]").disabled = false;
         $("[data-download-share]").disabled = false;
         $("[data-file-share]").disabled = false;
         status(
-          "복사 시점의 차트와 디자인을 담았습니다. HTML 복사 또는 PNG 저장을 선택하세요.",
+          `${reused ? "저장된 이미지 재사용" : "이미지 준비"} · ${((performance.now() - started) / 1000).toFixed(1)}초 · 이미지 복사 또는 PNG 저장을 선택하세요.`,
         );
       } catch (e) {
         status("이미지를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
@@ -307,3 +335,4 @@
     };
   }
 })();
+
