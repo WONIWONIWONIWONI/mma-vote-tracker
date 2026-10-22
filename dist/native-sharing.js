@@ -14,18 +14,19 @@
   }
   const table = (content, extra = "") => `<table width="100%" cellspacing="0" cellpadding="0" border="0" ${extra} style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;color:#f5f6fa;">${content}</table>`;
   const cell = (body, extra = "") => `<td valign="top" ${extra}>${body}</td>`;
-  function leaders(model, edition, mobile) {
+  function leaders(model, edition) {
     const cards=model.leaders.map((t,i)=> {
       const c=color(t.color), bg=i===0?"#352034":"#191725";
       const body=table(`<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2,"0")}</b></font> <font color="#a4adbf">RANK</font>`)}${cell(i===0?'<font color="#e6ff54">현재 선두</font>':"",'align="right"')}</tr>`)+
         `<p style="font-size:20px;font-weight:bold;margin:20px 0 12px;"><font color="${c}">●</font> ${esc(t.name)}</p>`+
         table(`<tr>${cell(`<b style="font-size:32px;">${esc(t.votes.replace(/표$/,""))}</b> <font color="#a4adbf">표</font>`)}${cell(`<font color="${c}" style="font-size:24px;">${esc(t.share)}</font>`,'align="right"')}</tr>`)+
         `<p style="border-top:1px solid #41374f;padding-top:14px;margin-top:20px;"><font color="#a4adbf">전체 투표 중 점유율</font></p><p style="font-size:12px;color:${i===0?"#ff789a":"#a4adbf"};">${esc(t.gap)}</p>`;
-      return cell(`<font color="#f5f6fa">${body}</font>`,`bgcolor="${bg}" width="${mobile?100:50}%" style="padding:20px;border:1px solid ${i===0?"#98456a":"#393346"};border-radius:14px;"`);
+      // Inline tables wrap without media queries. If a board strips display,
+      // ordinary block tables still stack safely instead of clipping.
+      return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:460px;table-layout:fixed;vertical-align:top;margin:6px 0;font:14px/1.6 Arial,sans-serif;"><tbody><tr>${cell(`<font color="#f5f6fa">${body}</font>`,`bgcolor="${bg}" width="100%" style="padding:16px;text-align:left;border:1px solid ${i===0?"#98456a":"#393346"};border-radius:14px;"`)}</tr></tbody></table>`;
     });
-    const count=mobile?1:2, rows=[];
-    for(let i=0;i<cards.length;i+=count)rows.push(`<tr>${cards.slice(i,i+count).join("")}</tr>`);
-    return table(`<tr>${cell(`<font color="#ff789a">VOTE/TRACK · ${esc(edition)}</font><p style="font-size:12px;color:#a4adbf;">${esc(model.sourceAt)} KST</p>`,'style="padding:12px;"')}</tr><tr>${cell(`<table width="100%" cellspacing="12" cellpadding="0" border="0" style="width:100%;table-layout:fixed;border-spacing:12px;">${rows.join("")}</table>`)}</tr>`,'bgcolor="#100e19"');
+
+    return table(`<tr>${cell(`<font color="#ff789a">VOTE/TRACK · ${esc(edition)}</font><p style="font-size:12px;color:#a4adbf;">${esc(model.sourceAt)} KST</p>`,'style="padding:12px;"')}</tr><tr>${cell(cards.join(" "),'style="padding:0 8px;text-align:center;"')}</tr>`,'bgcolor="#100e19"');
   }
   // Convert currently displayed chart geometry to run-length-compressed table cells.
   // Cell colors use both HTML attributes and inline CSS; no positioned layers.
@@ -154,6 +155,20 @@
         node.setAttribute("bgcolor",rgb(node.style.backgroundColor));
       const graphCell=node.tagName==="TD" && node.style.fontSize==="1px";
       const text=[...node.childNodes].some(n=>n.nodeType===Node.TEXT_NODE && n.textContent.trim());
+      // Percentage widths include padding and borders. Break long labels even
+      // when the HTML was copied from a wide desktop into a narrow board body.
+      // Leave the compressed chart runs untouched to preserve their geometry.
+      if(!graphCell) {
+        if(["TABLE","TD","DIV","P"].includes(node.tagName)) {
+          node.style.boxSizing="border-box";
+          if(node.tagName!=="TD" && !node.style.maxWidth)node.style.maxWidth="100%";
+        }
+        if(node.tagName==="TABLE")node.style.tableLayout="fixed";
+        if(text || node.tagName==="TD") {
+          node.style.overflowWrap="anywhere";
+          node.style.whiteSpace="normal";
+        }
+      }
       if(!graphCell && (specified || text || ["B","STRONG","TH","TD"].includes(node.tagName)))
         node.style.color=foreground;
       for(const child of node.children)visit(child,foreground);

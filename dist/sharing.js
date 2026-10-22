@@ -57,12 +57,12 @@
   function prepareNative(key, panel, link) {
     const started=performance.now();
     let html;
-    if(key === "leaders") html=MMANativeHTML.leaders(window.MMAShareModels.leaders(), TrackerConfig.edition, matchMedia("(max-width:760px)").matches);
+    if(key === "leaders") html=MMANativeHTML.leaders(window.MMAShareModels.leaders(), TrackerConfig.edition);
     else if(key === "hourly") html=MMANativeHTML.hourly(window.MMAShareModels.hourly(), TrackerConfig.edition);
     else {
       const stage=stagePanel(key,panel);
       try {
-        for(const [columns,rows] of [[160,96],[144,80],[112,66],[96,48],[80,40]]) {
+        for(const [columns,rows] of [[160,96],[144,80],[112,66],[96,48],[80,40],[64,32],[48,24]]) {
           html=MMANativeHTML.finalize(MMANativeHTML.panel(stage,columns,rows));
           if(html.length<64000)break;
         }
