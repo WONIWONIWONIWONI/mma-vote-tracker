@@ -1075,7 +1075,7 @@
     }
     if (root.className.indexOf("cd-panel") < 0) root.className += " cd-panel";
     root.innerHTML =
-      '<button type="button" class="quiet-button panel-image-button" id="cd-image" aria-label="표차 캔들차트 PNG 저장" title="표차 캔들차트 PNG 저장"><span aria-hidden="true">↓</span> 이미지</button>' +
+      '' +
       '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div>' +
       '<label class="cd-pair-control" for="gap-pair"><span>상대 팀 (순위순)</span><select id="gap-pair" class="control-select"><option value="">상대 팀 기록 대기</option></select></label></div>' +
       '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="240">4시간</button><button data-min="1440">24시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">리센느−상대 팀의 부호 표차를 가중 선형회귀합니다. 음수에서 상승하면 리센느의 추격, 양수에서 하락하면 상대 팀의 추격입니다. 6개·15분 미만, 긴 공백·득표 정정·낮은 적합도는 보류하며, 먼 미래(최대 6시간)는 수치로 단정하지 않습니다.</p></div>' +
@@ -1386,7 +1386,6 @@
     document.addEventListener("pointerdown", function (e) {
       if (!el.svg.contains(e.target) && !el.tip.hidden) hideTip();
     });
-    root.querySelector("#cd-image").addEventListener("click", exportPng);
     var timer;
     window.addEventListener("resize", function () {
       clearTimeout(timer);
@@ -1415,3 +1414,4 @@
     document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
+

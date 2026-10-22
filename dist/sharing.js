@@ -29,11 +29,7 @@
   const cache = new Map(), htmlLimit = 65535;
   const dialog = document.createElement("dialog");
   dialog.className = "share-dialog";
-  dialog.innerHTML =
-    '<h2>이미지·HTML 공유하기</h2><p>선택한 차트와 날짜를 이미지로 담습니다. 이미지 복사 후 게시판 편집기에 붙여넣거나, PNG를 저장해 사진으로 첨부하세요.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><p>디시는 본문이 65,535자로 제한됩니다. 이미지 전체를 넣는 HTML은 제공하지 않습니다. 이미지 주소 방식의 HTML이 필요하면 먼저 사진을 첨부하고 그 이미지의 공개 HTTPS 주소를 아래에 넣으세요.</p><label>첨부 이미지의 공개 HTTPS 주소<input class="share-image-url" type="url" placeholder="https://…" /></label><textarea class="share-url-source" aria-label="이미지 주소 HTML 소스" readonly placeholder="이미지 주소를 넣으면 짧은 HTML이 만들어집니다."></textarea><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 저장</button><button class="quiet-button" data-copy-share disabled>주소 HTML 복사</button><button class="quiet-button" data-file-share disabled>HTML 파일 저장</button><button class="quiet-button" data-close-share>닫기</button></div>';
-  const nativeSection = document.createElement("section");
-  nativeSection.innerHTML = '<h3>이미지 없는 HTML 공유</h3><p>화면의 색상·배치·숫자·그래프를 HTML/CSS로 구성합니다. 이미지·외부 업로드 없이 복사할 수 있습니다.</p><button class="quiet-button" data-copy-native disabled>HTML 복사</button><p class="share-native-status" role="status"></p><details><summary>HTML 미리보기와 소스</summary><div class="share-native-preview" style="overflow:auto;max-height:45vh;"></div><textarea class="share-native-source" aria-label="이미지 없는 공유 HTML 소스" readonly></textarea></details><hr>';
-  dialog.querySelector(".share-preview").before(nativeSection);
+  dialog.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;"><h2>이미지 공유하기</h2><button class="quiet-button" data-close-share aria-label="공유창 닫기">×</button></div><p>이미지 복사, PNG 다운로드 또는 이미지 없는 HTML 공유를 선택하세요.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 다운로드</button><button class="quiet-button" data-copy-native disabled>HTML 공유</button></div><p class="share-native-status" role="status"></p><p>HTML은 게시판의 HTML 편집 모드에 붙여넣으세요. 게시판에 맞춘 표 배치이며 그래프는 간략 표시됩니다.</p><details><summary>HTML 미리보기와 소스</summary><div class="share-native-preview" style="overflow:auto;max-height:45vh;"></div><textarea class="share-native-source" aria-label="이미지 없는 공유 HTML 소스" readonly></textarea></details>';
   document.body.append(dialog);
   const $ = (s) => dialog.querySelector(s);
   const status = (s) => ($(".share-status").textContent = s);
@@ -45,32 +41,6 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
-  function imageURL() {
-    const value = $(".share-image-url").value.trim();
-    if (!value) throw new Error("이미지 복사 또는 PNG 저장을 이용하세요. HTML 복사에는 첨부 이미지의 공개 HTTPS 주소가 필요합니다.");
-    const url = new URL(value);
-    if (url.protocol !== "https:")
-      throw new Error("첨부 이미지 주소는 HTTPS 공개 주소여야 합니다.");
-    return url.href;
-  }
-  function markup(src = imageURL()) {
-    return `<div style="max-width:100%;margin:0 auto;overflow-x:auto;"><img src="${esc(src)}" alt="${esc(current.title + " · " + current.stamp)}" width="${current.width}" style="display:block;max-width:100%;height:auto;border:0;" /><p style="font-size:12px;color:#777;">${esc(current.stamp)} · 복사 시점의 기록 · <a href="${esc(current.link)}">원본 트래커와 조작 가능한 차트</a></p></div>`;
-  }
-  function updateHTML() {
-    if (!current) return;
-    try {
-      const html = markup();
-      if (html.length > htmlLimit) throw new Error("HTML이 65,535자를 넘습니다. 더 짧은 이미지 주소를 사용하세요.");
-      $(".share-url-source").value = html;
-      $("[data-copy-share]").disabled = false;
-      $("[data-file-share]").disabled = false;
-    } catch (e) {
-      $(".share-url-source").value = "";
-      $("[data-copy-share]").disabled = true;
-      $("[data-file-share]").disabled = false;
-      status(e.message);
-    }
-  }
   $("[data-copy-native]").onclick = async () => {
     const html = $(".share-native-source").value;
     if (!html || html.length > htmlLimit) return;
@@ -78,7 +48,7 @@
       await navigator.clipboard.writeText(html);
       $(".share-native-status").textContent = "HTML을 복사했습니다. 게시판의 HTML 편집 모드에 붙여넣으세요. 게시판의 스타일 필터에 따라 표시가 달라질 수 있습니다.";
     } catch {
-      nativeSection.querySelector("details").open = true;
+      $("details").open = true;
       $(".share-native-source").focus();
       $(".share-native-source").select();
       $(".share-native-status").textContent = "HTML을 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.";
@@ -87,10 +57,16 @@
   function prepareNative(key, panel, link) {
     const started=performance.now();
     let html;
-    if(key === "hourly") html=MMANativeHTML.hourly(window.MMAShareModels.hourly(), TrackerConfig.edition);
+    if(key === "leaders") html=MMANativeHTML.leaders(window.MMAShareModels.leaders(), TrackerConfig.edition, matchMedia("(max-width:760px)").matches);
+    else if(key === "hourly") html=MMANativeHTML.hourly(window.MMAShareModels.hourly(), TrackerConfig.edition);
     else {
       const stage=stagePanel(key,panel);
-      try {html=MMANativeHTML.panel(stage);} finally {stage.remove();}
+      try {
+        for(const [columns,rows] of [[160,96],[144,80],[112,66]]) {
+          html=MMANativeHTML.panel(stage,columns,rows);
+          if(html.length<64000)break;
+        }
+      } finally {stage.remove();}
     }
     html+=`<p style="font:12px/1.5 system-ui,sans-serif;color:#777;">복사 시점의 정적 기록 · <a href="${esc(link)}">원본 트래커</a></p>`;
     if(html.length>htmlLimit) throw new Error(`HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`);
@@ -99,20 +75,7 @@
     $("[data-copy-native]").disabled=false;
     $(".share-native-status").textContent=`이미지 없는 HTML 준비 · ${html.length.toLocaleString()}자 / 65,535자 · ${Math.round(performance.now()-started)}ms`;
   }
-  $(".share-image-url").addEventListener("input", updateHTML);
   $("[data-close-share]").onclick = () => dialog.close();
-  $("[data-copy-share]").onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(markup());
-      status(
-        "이미지 주소 HTML을 복사했습니다. 게시판의 HTML 편집 모드에 붙여넣으세요.",
-      );
-    } catch {
-      $(".share-url-source").focus();
-      $(".share-url-source").select();
-      status("소스를 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.");
-    }
-  };
   $("[data-copy-image]").onclick = async () => {
     const snapshot = current;
     try {
@@ -125,21 +88,6 @@
     }
   };
   $("[data-download-share]").onclick = () => download(current.blob, current.name + ".png");
-  $("[data-file-share]").onclick = () =>
-    download(
-      new Blob(
-        [
-          '<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' +
-            esc(current.title) +
-            '</title><body style="margin:0;background:#100e19;">' +
-            markup(current.png) +
-            "</body></html>",
-        ],
-        { type: "text/html;charset=utf-8" },
-      ),
-      current.name + ".html",
-    );
-
   // Inline computed styles before removing context, including SVG chart styles.
   // This freezes the actual plotted paths, zoom window and selected controls.
   function freeze(source) {
@@ -310,11 +258,9 @@
       $(".share-native-source").value = "";
       $(".share-native-preview").replaceChildren();
       $(".share-native-status").textContent = "HTML을 준비하고 있습니다…";
-      $(".share-url-source").value = "";
-      $(".share-image-url").value = "";
       $(".share-preview").replaceChildren();
       for (const b of dialog.querySelectorAll(
-        ".share-actions button:not([data-close-share])",
+        ".share-actions button:not([data-copy-native])",
       ))
         b.disabled = true;
       status("선택한 패널과 차트를 이미지로 준비하고 있습니다…");
@@ -357,12 +303,10 @@
         img.alt = title;
         img.style.cssText = "display:block;max-width:100%;height:auto;";
         $(".share-preview").append(img);
-        updateHTML();
         $("[data-copy-image]").disabled = false;
         $("[data-download-share]").disabled = false;
-        $("[data-file-share]").disabled = false;
         status(
-          `${reused ? "저장된 이미지 재사용" : "이미지 준비"} · ${((performance.now() - started) / 1000).toFixed(1)}초 · 이미지 복사 또는 PNG 저장을 선택하세요.`,
+          `${reused ? "저장된 이미지 재사용" : "이미지 준비"} · ${((performance.now() - started) / 1000).toFixed(1)}초 · 이미지 복사 · PNG 다운로드 · HTML 공유를 선택하세요.`,
         );
       } catch (e) {
         status("이미지를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
