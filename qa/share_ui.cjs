@@ -95,7 +95,7 @@ const root = path.resolve(__dirname, "../dist"),
         assert.ok(await page.locator("[data-copy-native]").isEnabled(), "HTML is independent of the image URL");
         const native = await page.locator(".share-native-source").inputValue();
         assert.ok(native.length > 500 && native.length <= 65535, `${key}: ${native.length} chars`);
-        assert.ok(!/<(?:img|svg|canvas|script|iframe|style|link|object|embed)\b|data:|url\(|\bon\w+=/i.test(native));
+        assert.ok(!/<(?:html|head|body|form|input|button|font|small|h2|th|img|svg|canvas|script|iframe|style|link|object|embed)\b|data:|url\(|\bon\w+=/i.test(native));
         assert.ok(native.includes("https://share.test/"));
         await page.locator(".share-native-preview").evaluate(e => { e.closest("details").open = true; });
         assert.ok(!/position:|clip-path:|transform:|inset:|z-index:|display:(?:flex|grid)/i.test(native));
@@ -109,11 +109,14 @@ const root = path.resolve(__dirname, "../dist"),
         const review = await browser.newPage({viewport:{width:mobile?390:1000,height:960}});
         // Hostile board defaults: td metrics and bold text override inheritance.
         await review.setContent('<style>td{color:#333;font-size:14px;line-height:22px;padding:8px}b,strong{color:#333}</style><body style="margin:0;background:#10121b;">' + native + '</body>');
-        const before = key === "leaders" ? await review.locator("td[bgcolor]").evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]})) : null;
+        const before = key === "leaders" ? await review.locator("td[width][bgcolor]").evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height]})) : null;
+        const backgrounds=await review.locator("table,td").evaluateAll(es=>es.filter(e=>e.style.backgroundColor).map(e=>!!e.getAttribute("bgcolor")));
+        assert.ok(backgrounds.length>0 && backgrounds.every(Boolean),"filled tables and cells have CSS and bgcolor fallbacks");
+        assert.ok(!/min-width:/i.test(native),"shared layout has no fixed minimum width");
         // Strip legacy presentation attributes as well as advanced layout CSS.
         await review.evaluate(()=>{
           for(const e of document.querySelectorAll("[bgcolor],[color]")){
-            if(e.matches("td[bgcolor]"))e.dataset.rankCard="true";
+            if(e.matches("td[width][bgcolor]"))e.dataset.rankCard="true";
             e.removeAttribute("bgcolor");e.removeAttribute("color");
           }
           for(const e of document.querySelectorAll("[style]"))
@@ -130,6 +133,7 @@ const root = path.resolve(__dirname, "../dist"),
           assert.ok(after[2][1]>after[0][1]);
         }
         if(key === "hourly") {
+          assert.ok(await review.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),"hourly HTML fits the viewport without horizontal scrolling");
           const colors=await review.locator("tbody b").evaluateAll(es=>es.map(e=>getComputedStyle(e).color));
           assert.ok(colors.length>10 && colors.every(c=>c!=="rgb(51, 51, 51)" && c!=="rgb(0, 0, 0)"),"all hourly times and votes have explicit readable colors");
         }

@@ -28,7 +28,7 @@
     return table(`<tr>${cell(`<font color="#ff789a">VOTE/TRACK · ${esc(edition)}</font><p style="font-size:12px;color:#a4adbf;">${esc(model.sourceAt)} KST</p>`,'style="padding:12px;"')}</tr><tr>${cell(`<table width="100%" cellspacing="12" cellpadding="0" border="0" style="width:100%;table-layout:fixed;border-spacing:12px;">${rows.join("")}</table>`)}</tr>`,'bgcolor="#100e19"');
   }
   // Convert currently displayed chart geometry to run-length-compressed table cells.
-  // Cell colors are HTML attributes, so removing positioning CSS cannot scatter it.
+  // Cell colors use both HTML attributes and inline CSS; no positioned layers.
   function chart(svg, columns=160, rows=96) {
     const vb=svg.viewBox.baseVal, W=vb.width || svg.clientWidth, H=vb.height || svg.clientHeight;
     const clip=svg.querySelector("clipPath rect"), a=k=>Number(clip?.getAttribute(k)||0);
@@ -77,7 +77,7 @@
     const plot=`<table width="100%" height="${rows*rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows*rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:1px;line-height:1px;">${columnsHTML}<tbody>${cells}</tbody></table>`;
     const axis=`<table width="100%" height="${rows*rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map(t=>`<tr><td align="right" valign="middle"><font color="#a4adbf" style="font-size:10px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
     const bottom=table(`<tr>${labels.map(t=>cell(`<font color="#a4adbf" style="font-size:9px;">${esc(t.text)}</font>`,'align="center"')).join("")}</tr>`);
-    return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="60"')}${cell(plot+bottom)}</tr>`)}</div>`;
+    return `<div><p style="font-size:11px;color:#a4adbf;">${annotations.map(esc).join(" · ")}</p>${table(`<tr>${cell(axis,'width="8%"')}${cell(plot+bottom)}</tr>`)}</div>`;
   }
   function panel(stage, columns=160, rows=96) {
     const rootStyle=getComputedStyle(stage);
@@ -120,9 +120,9 @@
       const valid=row.values.filter(v=>v.delta!=null), same=new Set(valid.map(v=>v.from+":"+v.to)).size===1;
       const max=Math.max(0,...valid.map(v=>v.delta)), winners=same&&max>0?valid.filter(v=>v.delta===max):[];
       const scale=Math.max(1,...valid.map(v=>Math.abs(v.delta)));
-      return `<tr><td style="padding:14px 10px;background:#1a1e2b;vertical-align:top;"><b>${esc(row.label)}</b><br><small style="color:#f2aac2">${esc(winners.length?winners.map(v=>v.name).join(" · "):"구간 다름 / 기록 대기")}</small><br><small style="color:#a4adbf">${esc(row.status)}</small></td>${row.values.map(v=>`<td style="padding:14px 6px;background:#1a1e2b;vertical-align:top;"><b${winners.includes(v)?' style="color:#ff789a"':""}>${esc(v.label)}</b><div style="height:4px;width:${n(Math.abs(v.delta??0)/scale*100)}%;background:${color(v.color)};margin:8px 0;"></div>${v.coverage?`<small style="color:#a4adbf;font-size:9px;overflow-wrap:anywhere;">${esc(v.coverage)}</small>`:""}</td>`).join("")}</tr>`;
+      return `<tr><td style="padding:14px 4px;background:#1a1e2b;vertical-align:top;overflow-wrap:anywhere;"><b>${esc(row.label)}</b><br><small style="color:#f2aac2">${esc(winners.length?winners.map(v=>v.name).join(" · "):"구간 다름 / 기록 대기")}</small><br><small style="color:#a4adbf">${esc(row.status)}</small></td>${row.values.map(v=>`<td style="padding:14px 3px;background:#1a1e2b;vertical-align:top;overflow-wrap:anywhere;"><b${winners.includes(v)?' style="color:#ff789a"':""}>${esc(v.label)}</b><div style="height:4px;width:${n(Math.abs(v.delta??0)/scale*100)}%;background:${color(v.color)};margin:8px 0;"></div>${v.coverage?`<small style="color:#a4adbf;font-size:12px;overflow-wrap:anywhere;">${esc(v.coverage)}</small>`:""}</td>`).join("")}</tr>`;
     }).join("");
-    return `<div style="padding:24px;background:#10121b;color:#f5f6fa;font:13px/1.6 system-ui,sans-serif;text-align:left;overflow-x:auto;"><p style="color:#f2aac2;margin:0;">VOTE/TRACK · ${esc(edition)}</p><p style="color:#a4adbf;font-size:10px;">최신 관측 ${esc(model.sourceAt)} KST</p><h2 style="color:#f5f6fa;font-size:24px;margin:18px 0;">${esc(model.title)}</h2><p style="color:#a4adbf;">${esc(model.subtitle)}</p><table style="width:100%;min-width:720px;table-layout:fixed;border-collapse:separate;border-spacing:0 8px;color:inherit;font:inherit;"><colgroup><col style="width:22%;">${teams.map(()=>'<col style="width:13%;">').join("")}</colgroup><thead><tr><th style="text-align:left;color:#a4adbf;">시간 / 관측 최다</th>${teams.map(t=>`<th style="text-align:left;font-size:11px;color:${color(t.color)};">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table><p style="color:#a4adbf;font-size:10px;">데이터 출처 Melon · 비공식 팬 대시보드 · 모든 시각 KST</p></div>`;
+    return `<div style="padding:12px;background:#10121b;color:#f5f6fa;font:14px/1.7 Arial,sans-serif;text-align:left;overflow-wrap:anywhere;"><p style="color:#f2aac2;margin:0;">VOTE/TRACK · ${esc(edition)}</p><p style="color:#a4adbf;font-size:12px;">최신 관측 ${esc(model.sourceAt)} KST</p><h2 style="color:#f5f6fa;font-size:24px;margin:18px 0;">${esc(model.title)}</h2><p style="color:#a4adbf;">${esc(model.subtitle)}</p><table style="width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 8px;color:inherit;font:inherit;"><colgroup><col style="width:22%;">${teams.map(()=>'<col style="width:13%;">').join("")}</colgroup><thead><tr><th style="text-align:left;color:#a4adbf;">시간 / 관측 최다</th>${teams.map(t=>`<th style="text-align:left;font-size:12px;color:${color(t.color)};">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table><p style="color:#a4adbf;font-size:12px;">데이터 출처 Melon · 비공식 팬 대시보드 · 모든 시각 KST</p></div>`;
   }
   function finalize(html) {
     const template=document.createElement("template");
@@ -136,11 +136,22 @@
       if(Math.max(...channels)-Math.min(...channels)<45 && luminance<.62)return "#d0d8e8";
       return luminance<.24 ? "#d0d8e8" : hex;
     }
+    // Keep the established palette, while exporting only simple presentation
+    // elements. Table structural tags remain for sizing the compressed charts.
+    for(const old of template.content.querySelectorAll("font,small,h2,th")) {
+      const tag=old.tagName, replacement=document.createElement(tag==="TH"?"td":tag==="H2"?"div":"span");
+      for(const attr of old.attributes)replacement.setAttribute(attr.name,attr.value);
+      if(tag==="SMALL" && !replacement.style.fontSize)replacement.style.fontSize="12px";
+      if(tag==="H2" || tag==="TH")replacement.style.fontWeight="bold";
+      replacement.append(...old.childNodes);old.replaceWith(replacement);
+    }
     function visit(node,inherited="#f5f6fa") {
       const specified=node.style.color||node.getAttribute("color");
       const foreground=readable(specified && specified!=="inherit" ? specified : inherited);
       if(node.hasAttribute("bgcolor") && !node.style.backgroundColor)
         node.style.backgroundColor=node.getAttribute("bgcolor");
+      if(node.style.backgroundColor && ["TABLE","TD"].includes(node.tagName))
+        node.setAttribute("bgcolor",rgb(node.style.backgroundColor));
       const graphCell=node.tagName==="TD" && node.style.fontSize==="1px";
       const text=[...node.childNodes].some(n=>n.nodeType===Node.TEXT_NODE && n.textContent.trim());
       if(!graphCell && (specified || text || ["B","STRONG","TH","TD"].includes(node.tagName)))
@@ -148,7 +159,9 @@
       for(const child of node.children)visit(child,foreground);
     }
     for(const node of template.content.children)visit(node);
-    return template.innerHTML;
+    // DOM serialization adds whitespace to every CSS declaration; remove that
+    // overhead so redundant backgrounds still fit the board character limit.
+    return template.innerHTML.replace(/style="([^"]*)"/g,(_,css)=>`style="${css.replace(/\s*([:;])\s*/g,"$1").trim()}"`);
   }
   window.MMANativeHTML={panel,hourly,leaders,finalize};
 })();
