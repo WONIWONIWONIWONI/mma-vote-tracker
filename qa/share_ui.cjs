@@ -49,7 +49,7 @@ const root = path.resolve(__dirname, "../dist"),
       );
       assert.ok(
         (await page.locator("[data-share-panel]").allTextContents()).every(
-          (v) => v === "HTML 공유하기",
+          (v) => v === "이미지 공유하기",
         ),
       );
       assert.ok(
@@ -98,16 +98,15 @@ const root = path.resolve(__dirname, "../dist"),
       ]) {
         await page.locator(`[data-share-panel="${key}"]`).click();
         await page.waitForFunction(
-          () => !document.querySelector("[data-copy-share]").disabled,
+          () => !document.querySelector("[data-copy-image]").disabled,
+          null,
           { timeout: 30000 },
         );
         const html = await page.locator(".share-dialog textarea").inputValue();
-        assert.ok(
-          html.includes('<img src="data:image/png;base64,'),
-          "static charts must be included as actual imagery",
-        );
-        assert.ok(!/<(?:script|iframe|svg|canvas)\b|\bon\w+=/.test(html));
-        assert.ok(html.includes("https://share.test/"));
+        assert.equal(html, "", "never offer oversized inline HTML for a board");
+        assert.ok(await page.locator("[data-copy-share]").isDisabled());
+        const captured = await page.locator(".share-preview img").getAttribute("src");
+        assert.ok(captured.startsWith("data:image/png;base64,"));
         await page
           .locator(".share-preview img")
           .evaluate((img) => img.decode());
@@ -125,11 +124,6 @@ const root = path.resolve(__dirname, "../dist"),
         await (
           await pngWaiting
         ).saveAs(`qa-output/share-${key}-${mobile ? "mobile" : "desktop"}.png`);
-        await page.locator("[data-copy-share]").click();
-        assert.match(
-          await page.locator(".share-status").textContent(),
-          /복사|선택/,
-        );
         assert.ok(
           await page
             .locator(".share-dialog")
@@ -141,8 +135,8 @@ const root = path.resolve(__dirname, "../dist"),
             document.querySelector('[data-range="1"]').click(),
           );
           assert.equal(
-            await page.locator(".share-dialog textarea").inputValue(),
-            html,
+            await page.locator(".share-preview img").getAttribute("src"),
+            captured,
           );
         }
         if (key === "leaders")
@@ -151,7 +145,20 @@ const root = path.resolve(__dirname, "../dist"),
             2,
             "capture must preserve collapsed source page",
           );
-        // Optional hosted URL: no upload, and unsafe protocols cannot be copied.
+        // Clipboard contains a PNG blob, never a base64 HTML payload.
+        await page.evaluate(() => {
+          window.copiedImage = null;
+          Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+            write: async items => {
+              window.copiedImage = await (await items[0].getType("image/png")).arrayBuffer().then(b => [...new Uint8Array(b).slice(0, 8)]);
+            },
+            writeText: async text => { window.copiedHTML = text; },
+          }});
+        });
+        await page.locator("[data-copy-image]").click();
+        await page.waitForFunction(() => window.copiedImage);
+        assert.deepEqual(await page.evaluate(() => window.copiedImage), [137,80,78,71,13,10,26,10]);
+        // Optional hosted URL: short HTML, unsafe protocols and size rejected.
         await page
           .locator(".share-image-url")
           .fill("https://example.test/attached.png");
@@ -160,6 +167,14 @@ const root = path.resolve(__dirname, "../dist"),
             'src="https://example.test/attached.png"',
           ),
         );
+        const boardHTML = await page.locator(".share-dialog textarea").inputValue();
+        assert.ok(boardHTML.length < 65535);
+        assert.ok(!boardHTML.includes("data:"));
+        assert.ok(!/<(?:script|iframe|svg|canvas)\b|\bon\w+=/.test(boardHTML));
+        await page.locator("[data-copy-share]").click();
+        assert.equal(await page.evaluate(() => window.copiedHTML), boardHTML);
+        await page.locator(".share-image-url").fill("https://example.test/" + "x".repeat(66000));
+        assert.ok(await page.locator("[data-copy-share]").isDisabled());
         await page.locator(".share-image-url").fill("javascript:alert(1)");
         assert.equal(
           await page.locator("[data-copy-share]").isDisabled(),
@@ -171,13 +186,15 @@ const root = path.resolve(__dirname, "../dist"),
       // New copies reflect the user's changed chart window and selected day.
       await page.locator('[data-share-panel="trend"]').click();
       await page.waitForFunction(
-        () => !document.querySelector("[data-copy-share]").disabled,
+        () => !document.querySelector("[data-copy-image]").disabled,
       );
-      assert.ok(
-        (await page.locator(".share-dialog textarea").inputValue()).includes(
-          "data:image/png",
-        ),
-      );
+      assert.ok((await page.locator(".share-preview img").getAttribute("src")).startsWith("data:image/png"));
+      const refreshed = await page.locator(".share-preview img").getAttribute("src");
+      await page.locator("[data-close-share]").click();
+      await page.locator('[data-share-panel="trend"]').click();
+      await page.waitForFunction(() => !document.querySelector("[data-copy-image]").disabled);
+      assert.match(await page.locator(".share-status").textContent(), /재사용/);
+      assert.equal(await page.locator(".share-preview img").getAttribute("src"), refreshed);
       await page.locator("[data-close-share]").click();
       assert.equal(
         await page.locator("[data-snapshot-stage]").count(),
@@ -191,9 +208,10 @@ const root = path.resolve(__dirname, "../dist"),
     await browser.close();
   }
   console.log(
-    "Six exact panel snapshots: desktop/mobile, charts, two decimals, gaps, downloads, immutable copy, URL fallback passed.",
+    "Six exact panel snapshots: desktop/mobile, charts, two decimals, gaps, downloads, immutable copy, short HTML limits, PNG clipboard and cache passed.",
   );
 })().catch((e) => {
   console.error(e);
   process.exitCode = 1;
 });
+
