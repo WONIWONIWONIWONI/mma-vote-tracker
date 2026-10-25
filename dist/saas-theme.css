@@ -2,6 +2,13 @@
 #daily-history-mobile {
   display: none;
 }
+.daily-history td.daily-best,
+.daily-record .daily-best,
+.daily-record .daily-best dd {
+  color: var(--text);
+  background-color: var(--panel2);
+  font-weight: 700;
+}
 @media (max-width: 760px) {
   .daily-history > .table-scroll {
     display: none;

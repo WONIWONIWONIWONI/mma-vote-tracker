@@ -266,12 +266,23 @@
         })
         .join("") ||
       `<tr><td colspan="${teams.length + 2}">아직 마감한 날짜가 없습니다.</td></tr>`;
+    const mobileHistory = matchMedia("(max-width: 760px)").matches,
+      historyDetails = $("daily-history-mobile").closest("details"),
+      recordOpen = new Map(
+        [...$("daily-history-mobile").querySelectorAll(".daily-record")].map(
+          (record) => [record.dataset.date, record.open],
+        ),
+      );
+    if (mobileHistory && !historyDetails.dataset.mobileExpanded) {
+      historyDetails.open = true;
+      historyDetails.dataset.mobileExpanded = "true";
+    }
     $("daily-history-mobile").innerHTML =
       days
         .slice(1)
         .map((d) => {
           const peak = Math.max(0, ...d.values.map((v) => v.delta ?? 0));
-          return `<details class="daily-record"><summary><span>${d.date}</span><strong>${number(d.total)}</strong></summary><p>마감${d.partial ? " / 일부 구간" : ""}<br>${range(d)} KST</p><dl>${d.values.map((v) => `<div class="${v.delta === peak && peak > 0 ? "daily-best" : ""}"><dt style="color:${colorOf(v)}">${escapeHTML(v.name)}</dt><dd>${number(v.delta)}${v.delta === peak && peak > 0 ? " ★" : ""}</dd></div>`).join("")}</dl></details>`;
+          return `<details class="daily-record" data-date="${d.date}" ${(recordOpen.get(d.date) ?? mobileHistory) ? "open" : ""}><summary><span>${d.date}</span><strong>${number(d.total)}</strong></summary><p>마감${d.partial ? " / 일부 구간" : ""}<br>${range(d)} KST</p><dl>${d.values.map((v) => `<div class="${v.delta === peak && peak > 0 ? "daily-best" : ""}"><dt style="color:${colorOf(v)}">${escapeHTML(v.name)}</dt><dd>${number(v.delta)}${v.delta === peak && peak > 0 ? " ★" : ""}</dd></div>`).join("")}</dl></details>`;
         })
         .join("") || "<p>아직 마감한 날짜가 없습니다.</p>";
   }
