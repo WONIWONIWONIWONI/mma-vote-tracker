@@ -165,7 +165,7 @@
     for (const series of model.series) {
       c.beginPath();
       c.strokeStyle = series.color;
-      c.lineWidth = 0.5;
+      c.lineWidth = 1.2;
       let active = false;
       for (const point of series.points) {
         if (point.value == null) continue;
@@ -197,7 +197,7 @@
       for (const f of model.forecasts) {
         c.beginPath();
         c.strokeStyle = f.color;
-        c.lineWidth = 0.5;
+        c.lineWidth = 1.2;
         f.points.forEach((p, i) => {
           if (i) c.lineTo(x(p.time), y(p.value));
           else c.moveTo(x(p.time), y(p.value));

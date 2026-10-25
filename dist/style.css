@@ -2346,3 +2346,8 @@ svg line,
 svg path {
   stroke-width: 0.5;
 }
+
+/* Keep trend series legible while panel borders and chart grids stay thin. */
+#trend-chart path[stroke] {
+  stroke-width: 1.2;
+}
