@@ -22,7 +22,7 @@
     const a = value.match(/[\d.]+/g)?.map(Number);
     if (!a || a.length < 3) return "#71738b";
     const alpha = a[3] ?? 1,
-      bg = [255, 255, 255];
+      bg = TrackerTheme.current === "dark" ? [25, 23, 37] : [255, 255, 255];
     return (
       "#" +
       a
@@ -318,7 +318,9 @@
   }
   function finalize(html) {
     const template = document.createElement("template");
-    template.innerHTML = html;
+    template.innerHTML = html.replace(/#[\da-f]{3,8}\b/gi, (value) =>
+      TrackerTheme.color(value),
+    );
     function readable(value) {
       const hex = rgb(value);
       const channels = hex
@@ -331,6 +333,8 @@
       });
       const luminance =
         0.2126 * light[0] + 0.7152 * light[1] + 0.0722 * light[2];
+      if (TrackerTheme.current === "dark")
+        return luminance < 0.24 ? "#f5f0f6" : hex;
       return 1.05 / (luminance + 0.05) < 4.5 ? "#20213b" : hex;
     }
     // Keep the established palette, while exporting only simple presentation
@@ -348,7 +352,7 @@
       replacement.append(...old.childNodes);
       old.replaceWith(replacement);
     }
-    function visit(node, inherited = "#20213b") {
+    function visit(node, inherited = TrackerTheme.color("#20213b")) {
       const specified = node.style.color || node.getAttribute("color");
       const foreground = readable(
         specified && specified !== "inherit" ? specified : inherited,

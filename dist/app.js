@@ -68,12 +68,15 @@
       .trim()
       .toLowerCase()
       .replace(/\s+/g, " ");
-  function colorOf(team) {
+  function baseColorOf(team) {
     const id = normalizedId(team);
     if (colors[id]) return colors[id];
     const used = new Set(Object.values(colors));
     const extra = ["#a96a00", "#20213b", "#ab469e", "#617d00"];
     return (colors[id] = extra.find((c) => !used.has(c)) || "#71738b");
+  }
+  function colorOf(team) {
+    return TrackerTheme.color(baseColorOf(team));
   }
   function kst(iso, mode = "full") {
     const d = new Date(iso);
@@ -1098,6 +1101,9 @@
     $("history-toggle-label").textContent = $("history-details").open
       ? "접기"
       : "펼치기";
+  });
+  window.addEventListener("tracker:theme", () => {
+    if (state.data) render();
   });
   let resizeTimer;
   addEventListener("resize", () => {

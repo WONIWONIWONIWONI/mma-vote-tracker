@@ -1,0 +1,340 @@
+/* The light dashboard and the original purple palette share one layout. */
+:root {
+  --theme-scheme: light;
+  --tone-177c60: #177c60;
+  --tone-20213b: #20213b;
+  --tone-20213b55: #20213b55;
+  --tone-227da8: #227da8;
+  --tone-53566f: #53566f;
+  --tone-6055f5: #6055f5;
+  --tone-6055f510: #6055f510;
+  --tone-71738b: #71738b;
+  --tone-94600e: #94600e;
+  --tone-a96a00: #a96a00;
+  --tone-c9c4ff: #c9c4ff;
+  --tone-cf3c61: #cf3c61;
+  --tone-d63b50: #d63b50;
+  --tone-d9e9e2: #d9e9e2;
+  --tone-ddd9ff: #ddd9ff;
+  --tone-dddfea: #dddfea;
+  --tone-e5e0ff: #e5e0ff;
+  --tone-e8eaf1: #e8eaf1;
+  --tone-efedff: #efedff;
+  --tone-f0dfc5: #f0dfc5;
+  --tone-f0f8f4: #f0f8f4;
+  --tone-f1f0ff: #f1f0ff;
+  --tone-f3f2ff: #f3f2ff;
+  --tone-f7f8fc: #f7f8fc;
+  --tone-fafaff: #fafaff;
+  --tone-fff: #fff;
+  --tone-fff3e6: #fff3e6;
+  --tone-fff5eb: #fff5eb;
+  --tone-ffffff: #ffffff;
+  --tone-fffffff5: #fffffff5;
+}
+:root[data-theme="dark"] {
+  --theme-scheme: dark;
+  --tone-177c60: #83d9b5;
+  --tone-20213b: #f5f0f6;
+  --tone-20213b55: #000000aa;
+  --tone-227da8: #4fc8e0;
+  --tone-53566f: #d4c7d2;
+  --tone-6055f5: #ff7594;
+  --tone-6055f510: #ff789a12;
+  --tone-71738b: #aaa3b8;
+  --tone-94600e: #ffc176;
+  --tone-a96a00: #ffc06c;
+  --tone-c9c4ff: #8b536a;
+  --tone-cf3c61: #ff789a;
+  --tone-d63b50: #ff4757;
+  --tone-d9e9e2: #53404b;
+  --tone-ddd9ff: #624354;
+  --tone-dddfea: #53404b;
+  --tone-e5e0ff: #443448;
+  --tone-e8eaf1: #3b374d;
+  --tone-efedff: #41223c;
+  --tone-f0dfc5: #72503b;
+  --tone-f0f8f4: #241925;
+  --tone-f1f0ff: #252237;
+  --tone-f3f2ff: #252237;
+  --tone-f7f8fc: #100e19;
+  --tone-fafaff: #211b30;
+  --tone-fff: #191725;
+  --tone-fff3e6: #311c2a;
+  --tone-fff5eb: #2a1b20;
+  --tone-ffffff: #191725;
+  --tone-fffffff5: #211823f2;
+}
+svg [fill="#177c60"] {
+  fill: var(--tone-177c60);
+}
+svg [stroke="#177c60"] {
+  stroke: var(--tone-177c60);
+}
+svg [fill="#20213b"] {
+  fill: var(--tone-20213b);
+}
+svg [stroke="#20213b"] {
+  stroke: var(--tone-20213b);
+}
+svg [fill="#20213b55"] {
+  fill: var(--tone-20213b55);
+}
+svg [stroke="#20213b55"] {
+  stroke: var(--tone-20213b55);
+}
+svg [fill="#227da8"] {
+  fill: var(--tone-227da8);
+}
+svg [stroke="#227da8"] {
+  stroke: var(--tone-227da8);
+}
+svg [fill="#53566f"] {
+  fill: var(--tone-53566f);
+}
+svg [stroke="#53566f"] {
+  stroke: var(--tone-53566f);
+}
+svg [fill="#6055f5"] {
+  fill: var(--tone-6055f5);
+}
+svg [stroke="#6055f5"] {
+  stroke: var(--tone-6055f5);
+}
+svg [fill="#6055f510"] {
+  fill: var(--tone-6055f510);
+}
+svg [stroke="#6055f510"] {
+  stroke: var(--tone-6055f510);
+}
+svg [fill="#71738b"] {
+  fill: var(--tone-71738b);
+}
+svg [stroke="#71738b"] {
+  stroke: var(--tone-71738b);
+}
+svg [fill="#94600e"] {
+  fill: var(--tone-94600e);
+}
+svg [stroke="#94600e"] {
+  stroke: var(--tone-94600e);
+}
+svg [fill="#a96a00"] {
+  fill: var(--tone-a96a00);
+}
+svg [stroke="#a96a00"] {
+  stroke: var(--tone-a96a00);
+}
+svg [fill="#c9c4ff"] {
+  fill: var(--tone-c9c4ff);
+}
+svg [stroke="#c9c4ff"] {
+  stroke: var(--tone-c9c4ff);
+}
+svg [fill="#cf3c61"] {
+  fill: var(--tone-cf3c61);
+}
+svg [stroke="#cf3c61"] {
+  stroke: var(--tone-cf3c61);
+}
+svg [fill="#d63b50"] {
+  fill: var(--tone-d63b50);
+}
+svg [stroke="#d63b50"] {
+  stroke: var(--tone-d63b50);
+}
+svg [fill="#d9e9e2"] {
+  fill: var(--tone-d9e9e2);
+}
+svg [stroke="#d9e9e2"] {
+  stroke: var(--tone-d9e9e2);
+}
+svg [fill="#ddd9ff"] {
+  fill: var(--tone-ddd9ff);
+}
+svg [stroke="#ddd9ff"] {
+  stroke: var(--tone-ddd9ff);
+}
+svg [fill="#dddfea"] {
+  fill: var(--tone-dddfea);
+}
+svg [stroke="#dddfea"] {
+  stroke: var(--tone-dddfea);
+}
+svg [fill="#e5e0ff"] {
+  fill: var(--tone-e5e0ff);
+}
+svg [stroke="#e5e0ff"] {
+  stroke: var(--tone-e5e0ff);
+}
+svg [fill="#e8eaf1"] {
+  fill: var(--tone-e8eaf1);
+}
+svg [stroke="#e8eaf1"] {
+  stroke: var(--tone-e8eaf1);
+}
+svg [fill="#efedff"] {
+  fill: var(--tone-efedff);
+}
+svg [stroke="#efedff"] {
+  stroke: var(--tone-efedff);
+}
+svg [fill="#f0dfc5"] {
+  fill: var(--tone-f0dfc5);
+}
+svg [stroke="#f0dfc5"] {
+  stroke: var(--tone-f0dfc5);
+}
+svg [fill="#f0f8f4"] {
+  fill: var(--tone-f0f8f4);
+}
+svg [stroke="#f0f8f4"] {
+  stroke: var(--tone-f0f8f4);
+}
+svg [fill="#f1f0ff"] {
+  fill: var(--tone-f1f0ff);
+}
+svg [stroke="#f1f0ff"] {
+  stroke: var(--tone-f1f0ff);
+}
+svg [fill="#f3f2ff"] {
+  fill: var(--tone-f3f2ff);
+}
+svg [stroke="#f3f2ff"] {
+  stroke: var(--tone-f3f2ff);
+}
+svg [fill="#f7f8fc"] {
+  fill: var(--tone-f7f8fc);
+}
+svg [stroke="#f7f8fc"] {
+  stroke: var(--tone-f7f8fc);
+}
+svg [fill="#fafaff"] {
+  fill: var(--tone-fafaff);
+}
+svg [stroke="#fafaff"] {
+  stroke: var(--tone-fafaff);
+}
+svg [fill="#fff"] {
+  fill: var(--tone-fff);
+}
+svg [stroke="#fff"] {
+  stroke: var(--tone-fff);
+}
+svg [fill="#fff3e6"] {
+  fill: var(--tone-fff3e6);
+}
+svg [stroke="#fff3e6"] {
+  stroke: var(--tone-fff3e6);
+}
+svg [fill="#fff5eb"] {
+  fill: var(--tone-fff5eb);
+}
+svg [stroke="#fff5eb"] {
+  stroke: var(--tone-fff5eb);
+}
+svg [fill="#ffffff"] {
+  fill: var(--tone-ffffff);
+}
+svg [stroke="#ffffff"] {
+  stroke: var(--tone-ffffff);
+}
+svg [fill="#fffffff5"] {
+  fill: var(--tone-fffffff5);
+}
+svg [stroke="#fffffff5"] {
+  stroke: var(--tone-fffffff5);
+}
+:root[data-theme="dark"] svg [fill="#f0efff"] {
+  fill: #41223c;
+}
+:root[data-theme="dark"] svg [stroke="#f0efff"] {
+  stroke: #41223c;
+}
+:root[data-theme="dark"] svg [fill="#b8bacb"] {
+  fill: #877b95;
+}
+:root[data-theme="dark"] svg [stroke="#b8bacb"] {
+  stroke: #877b95;
+}
+:root[data-theme="dark"] svg [fill="#617d00"] {
+  fill: #e6ff54;
+}
+:root[data-theme="dark"] svg [stroke="#617d00"] {
+  stroke: #e6ff54;
+}
+:root[data-theme="dark"] svg [fill="#6754ce"] {
+  fill: #9cbcff;
+}
+:root[data-theme="dark"] svg [stroke="#6754ce"] {
+  stroke: #9cbcff;
+}
+:root[data-theme="dark"] svg [fill="#ab469e"] {
+  fill: #ed94df;
+}
+:root[data-theme="dark"] svg [stroke="#ab469e"] {
+  stroke: #ed94df;
+}
+:root[data-theme="dark"] svg [fill="#6055f50b"] {
+  fill: #b997ff0b;
+}
+:root[data-theme="dark"] svg [stroke="#6055f50b"] {
+  stroke: #b997ff0b;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.theme-switch {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--tone-fff);
+  border: 0.5px solid var(--line);
+  border-radius: 6px;
+}
+.theme-switch button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.theme-switch button[aria-pressed="true"] {
+  background: var(--tone-efedff);
+  color: var(--lime);
+  font-weight: 600;
+}
+.theme-switch svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.theme-switch svg path,
+.theme-switch svg line {
+  stroke-width: 1.5;
+}
+:root[data-theme="dark"] .leader.first {
+  background: linear-gradient(135deg, #4a243d, #211a31);
+  border-color: #97445f;
+}
+:root[data-theme="dark"] .leader.first .leader-bottom b {
+  color: #ff7594;
+}
+@media (max-width: 760px) {
+  .topbar-actions {
+    gap: 8px;
+  }
+  .theme-switch button {
+    padding: 5px 8px;
+  }
+}

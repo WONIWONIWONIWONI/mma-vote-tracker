@@ -28,6 +28,7 @@
     busy = false;
   const cache = new Map(),
     htmlLimit = 65535;
+  window.addEventListener("tracker:theme", () => cache.clear());
   const dialog = document.createElement("dialog");
   dialog.className = "share-dialog";
   dialog.innerHTML =
@@ -92,7 +93,7 @@
     }
     if (key === "leaders" || key === "hourly")
       html = MMANativeHTML.finalize(html);
-    html += `<p style="font:12px/1.5 system-ui,sans-serif;color:#777;">복사 시점의 정적 기록 / <a href="${esc(link)}">원본 트래커</a></p>`;
+    html += `<p style="font:12px/1.5 system-ui,sans-serif;color:${TrackerTheme.color("#71738b")};">복사 시점의 정적 기록 / <a href="${esc(link)}">원본 트래커</a></p>`;
     if (html.length > htmlLimit)
       throw new Error(
         `HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`,
@@ -156,7 +157,7 @@
   function stagePanel(key, panel) {
     const stage = document.createElement("div"),
       width = Math.ceil(panel.getBoundingClientRect().width);
-    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#f7f8fc" : "#ffffff"};color:#20213b;box-sizing:border-box;pointer-events:none;z-index:-100;`;
+    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${TrackerTheme.color(key === "leaders" ? "#f7f8fc" : "#ffffff")};color:${TrackerTheme.color("#20213b")};box-sizing:border-box;pointer-events:none;z-index:-100;`;
     stage.dataset.snapshotStage = key;
     const append = (node) => {
       const c = freeze(node);

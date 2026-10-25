@@ -5,9 +5,9 @@
   "use strict";
 
   /* ===== 설정 (색 주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = "#d63b50"; // 부호 표차 상승 (빨강)
-  var DOWN_COLOR = "#227da8"; // 부호 표차 하락 (파랑)
-  var FLAT_COLOR = "#71738b"; // 변화 없음
+  var UP_COLOR = TrackerTheme.color("#d63b50"); // 부호 표차 상승 (빨강)
+  var DOWN_COLOR = TrackerTheme.color("#227da8"); // 부호 표차 하락 (파랑)
+  var FLAT_COLOR = TrackerTheme.color("#71738b"); // 변화 없음
   var FRAMES = {
     5: { min: 5, label: "5분봉", show: 144 },
     60: { min: 60, label: "1시간봉", show: 96 },
@@ -1405,6 +1405,12 @@
       render();
     }
     receive(window.MMA_DATA || window.MMA_SEED);
+    window.addEventListener("tracker:theme", function () {
+      UP_COLOR = TrackerTheme.color("#d63b50");
+      DOWN_COLOR = TrackerTheme.color("#227da8");
+      FLAT_COLOR = TrackerTheme.color("#71738b");
+      render();
+    });
     window.addEventListener("mma:data", function (event) {
       receive(event.detail);
     });
