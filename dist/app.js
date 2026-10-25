@@ -597,7 +597,7 @@
       futureWidth = box.x + box.w - futureX;
     if (forecasts.length && xmax > lastTime)
       grid.push(
-        `<rect x="${futureX}" y="${box.y}" width="${futureWidth}" height="${box.h}" fill="#b1a9ff"/><line x1="${futureX}" x2="${futureX}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b0b4ba" stroke-dasharray="3 5"/><text x="${futureX + 5}" y="15" fill="#b1a9ff" font-size="12">점선: 조건부 예측</text>`,
+        `<rect x="${futureX}" y="${box.y}" width="${futureWidth}" height="${box.h}" fill="#202248"/><line x1="${futureX}" x2="${futureX}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b0b4ba" stroke-dasharray="3 5"/><text x="${futureX + 5}" y="15" fill="#b1a9ff" font-size="12">점선: 조건부 예측</text>`,
       );
     const path = (points) => {
       let active = false;

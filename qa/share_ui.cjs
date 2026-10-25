@@ -447,7 +447,11 @@ const root = path.resolve(__dirname, "../dist"),
       await page.waitForFunction(
         () => !document.querySelector("[data-copy-image]").disabled,
       );
-      assert.match(await page.locator(".share-status").textContent(), /재사용/);
+      assert.equal(
+        await page.locator(".share-status").textContent(),
+        "",
+        "ready state has no redundant technical status",
+      );
       assert.equal(
         await page.locator(".share-preview img").getAttribute("src"),
         refreshed,

@@ -3120,3 +3120,53 @@ small,
 svg text {
   font-size: 12px;
 }
+/* Semantic emphasis stays on component backgrounds, never text-color steps. */
+.toast {
+  background: var(--iris-9);
+  color: var(--iris-12);
+  border: 0.5px solid var(--iris-8);
+  border-radius: 4px;
+  box-shadow: none;
+  font-size: 12px;
+}
+.hourly-compact td.hour-winner {
+  background: var(--iris-3);
+}
+.hour-card-team {
+  background: var(--slate-3);
+  border: 0.5px solid var(--slate-6);
+  border-radius: 4px;
+}
+.hour-card-team.hour-card-best {
+  background: var(--iris-3);
+  border-color: var(--iris-7);
+}
+.daily-panel {
+  background: transparent;
+  border: 0;
+  border-top: 0.5px solid var(--slate-6);
+  border-radius: 0;
+  margin: 24px 0 0;
+  padding: 24px 0;
+}
+.daily-heading {
+  padding: 0;
+}
+.daily-team.daily-winner {
+  border-color: var(--iris-8);
+}
+@media (max-width: 760px) {
+  .hero-right {
+    margin-left: 0;
+    margin-top: 0;
+    width: 100%;
+    padding: 0;
+  }
+  .source-controls {
+    grid-row: auto;
+  }
+  .daily-panel {
+    margin-top: 20px;
+    padding: 20px 0;
+  }
+}
