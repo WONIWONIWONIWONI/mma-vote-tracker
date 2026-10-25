@@ -9,7 +9,7 @@
   gap: 9px;
   margin-left: auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -20,26 +20,26 @@
 .cd-tf {
   display: flex;
   gap: 4px;
-  background: #151321;
+  background: #111113;
   padding: 4px;
-  border-radius: 7px;
-  border: 1px solid #41374f;
+  border-radius: 6px;
+  border: 0.5px solid #363a3f;
 }
 .cd-tf button {
   border: 0;
   background: none;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 4px;
   padding: 7px 11px;
 }
 .cd-tf button.selected {
-  background: #4b2d49;
+  background: #363a3f;
   color: var(--lime);
 }
 .cd-controls {
   margin-top: 22px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 0.5px solid var(--line);
   padding-bottom: 12px;
 }
 .cd-legend {
@@ -51,8 +51,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #ddced7;
-  font-size: 10px;
+  color: #ffd1d9;
+  font-size: 12px;
 }
 .cd-legend i {
   display: inline-block;
@@ -70,7 +70,7 @@
 }
 .cd-unit {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   padding: 3px 0 2px;
   margin-bottom: 10px;
@@ -102,9 +102,9 @@
   display: flex;
   justify-content: space-between;
   gap: 15px;
-  border-top: 1px solid var(--line);
+  border-top: 0.5px solid var(--line);
   padding-top: 12px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   line-height: 1.6;
 }
@@ -119,12 +119,12 @@
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  background: #211823f2;
-  box-shadow: 0 5px 22px #0006;
-  border: 1px solid #8b536a;
+  background: #212225;
+  box-shadow: none;
+  border: 0.5px solid #873356;
   padding: 11px 13px;
-  border-radius: 7px;
-  font-size: 11px;
+  border-radius: 6px;
+  font-size: 12px;
   min-width: 160px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -134,7 +134,7 @@
 }
 .cd-tip > strong {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-bottom: 8px;
   font-weight: 600;
@@ -150,7 +150,7 @@
   font-weight: 500;
 }
 .cd-dim {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 8px;
 }
@@ -163,7 +163,7 @@
 .pc-summary {
   margin-top: 20px;
   padding-bottom: 18px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 0.5px solid var(--line);
 }
 .pc-summary-head {
   display: flex;
@@ -173,27 +173,27 @@
   margin-bottom: 12px;
 }
 .pc-summary-head > span {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 .pc-tf {
   display: flex;
   gap: 4px;
-  background: #151321;
+  background: #111113;
   padding: 4px;
-  border-radius: 7px;
-  border: 1px solid #41374f;
+  border-radius: 6px;
+  border: 0.5px solid #363a3f;
 }
 .pc-tf button {
   border: 0;
   background: none;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 4px;
   padding: 7px 11px;
 }
 .pc-tf button.selected {
-  background: #4b2d49;
+  background: #363a3f;
   color: var(--lime);
 }
 .pc-body {
@@ -203,9 +203,9 @@
 }
 .pc-team,
 .pc-metric {
-  background: #151321;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: #111113;
+  border: 0.5px solid var(--line);
+  border-radius: 6px;
   padding: 15px 16px;
   min-width: 0;
 }
@@ -213,7 +213,7 @@
 .pc-metric span {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -222,7 +222,7 @@
 .pc-team strong,
 .pc-metric strong {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 650;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -231,18 +231,18 @@
 .pc-metric small {
   display: block;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   margin-top: 7px;
   line-height: 1.4;
 }
 .pc-metric strong.down {
-  color: #4fc8e0;
+  color: #4ccce6;
 }
 .pc-metric strong.up {
-  color: #ff4757;
+  color: #e5484d;
 }
 .pc-eta strong {
-  font-size: 15px;
+  font-size: 16px;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: keep-all;
@@ -251,7 +251,7 @@
 .pc-note {
   margin: 12px 0 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.55;
 }
 .pc-empty {
@@ -259,7 +259,7 @@
   padding: 24px;
   text-align: center;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 @media (max-width: 900px) {
   .cd-panel > .panel-heading {
@@ -277,7 +277,7 @@
   }
   .cd-tf button {
     padding: 8px 4px;
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 @media (max-width: 760px) {
@@ -312,7 +312,7 @@
   }
   .pc-tf button {
     padding: 8px 4px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .pc-body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -324,10 +324,10 @@
   }
   .pc-team strong,
   .pc-metric strong {
-    font-size: 15px;
+    font-size: 16px;
   }
   .pc-eta strong {
-    font-size: 13px;
+    font-size: 12px;
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: keep-all;
@@ -344,7 +344,7 @@
     margin-top: 7px;
   }
   .cd-tip {
-    font-size: 10px;
+    font-size: 12px;
     min-width: 145px;
   }
 }

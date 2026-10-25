@@ -28,7 +28,7 @@
   const section = document.createElement("section");
   section.className = "gap-future";
   section.setAttribute("aria-labelledby", "gap-future-title");
-  section.innerHTML = `<div class="gf-heading"><div><div class="section-kicker">NEXT 12 HOURS · RESCENE − 임영웅</div><h3 id="gap-future-title">시간대 패턴으로 보는 12시간 표차 예측</h3></div><label>보기<select id="gf-origin" class="control-select" aria-label="예측 보기"></select></label></div><p class="gf-intro">한국 시간 매일 00시·12시에 이후 12시간을 예측합니다. 양수는 리센느 우세, 음수는 임영웅 우세입니다. 점선은 조건부 예측, 청록 실선은 실제 관측입니다.</p><div id="gf-content"></div><details class="gf-method"><summary>계산 방식·예측 보관과 실제값 비교</summary><p>10월 16일 00시(KST) 이후 최근 최대 7일의 두 팀 관측만 사용합니다. 15분 초과 관측 공백과 득표 정정 구간은 학습에서 제외합니다. 후보는 30분 패턴(최근 보정 포함/제외), 15분 패턴, 전날 동일 시간 변동 반복입니다. 각 정시에 완료된 과거 12시간 예측의 오차로 모델을 다시 비교합니다. 결과는 5분 간격 144개 구간으로 계산합니다.</p><p>최소 24시간의 학습과 충분한 시간대 관측이 필요합니다. 모델 교체는 완료된 12시간 검증 6개 이상·비중복 12시간 구간 6개 이상, 종합 오차 10% 이상 개선, 검증 구간 60% 이상 승리, 최종 표차 오차 악화 5% 이내일 때만 허용합니다. 종합 오차는 경로 MAE 70%와 최종 표차 MAE 30%입니다. 아직 며칠치 자료이므로 반복 패턴이 유지된다는 가정이며, 투표 집중·동원·추세 변화는 미리 알 수 없습니다. 확률이나 확정 결과가 아닙니다.</p><p>정시 예측은 수집 서버에서 발행해 공용 저장소에 기준 시각·모델·선택 근거·입력 해시·예측 경로를 고정 보관합니다. 한 번 발행한 예측은 모델이 바뀌어도 덮어쓰지 않습니다. 과거 예측에서는 완료된 공용 12시간 예측을 시간순으로 이어 봅니다. 새 예측이 시작되는 경계에서는 예측 표차가 다시 맞춰져 선이 달라질 수 있습니다. 보관 기록이 없는 구간은 만들지 않습니다. 오차는 실제 − 예측이며 실제 관측 시각에서 계산합니다. 앞으로의 실제값은 접속·새로고침 후 추가되며 관측이 없으면 —로 남깁니다.</p></details>`;
+  section.innerHTML = `<div class="gf-heading"><div><span class="section-kicker" hidden></span><h3 id="gap-future-title">12시간 표차 예측</h3></div><label>보기<select id="gf-origin" class="control-select" aria-label="예측 보기"></select></label></div><p class="gf-intro">양수: 리센느 우세, 음수: 임영웅 우세. 점선은 조건부 예측입니다.</p><div id="gf-content"></div><details class="gf-method"><summary>예측 기준</summary><p>10월 16일 00시(KST) 이후 최근 최대 7일의 두 팀 관측만 사용합니다. 15분 초과 관측 공백과 득표 정정 구간은 학습에서 제외합니다. 후보는 30분 패턴(최근 보정 포함/제외), 15분 패턴, 전날 동일 시간 변동 반복입니다. 각 정시에 완료된 과거 12시간 예측의 오차로 모델을 다시 비교합니다. 결과는 5분 간격 144개 구간으로 계산합니다.</p><p>최소 24시간의 학습과 충분한 시간대 관측이 필요합니다. 모델 교체는 완료된 12시간 검증 6개 이상 비중복 12시간 구간 6개 이상, 종합 오차 10% 이상 개선, 검증 구간 60% 이상 승리, 최종 표차 오차 악화 5% 이내일 때만 허용합니다. 종합 오차는 경로 MAE 70%와 최종 표차 MAE 30%입니다. 아직 며칠치 자료이므로 반복 패턴이 유지된다는 가정이며, 투표 집중 동원 추세 변화는 미리 알 수 없습니다. 확률이나 확정 결과가 아닙니다.</p><p>정시 예측은 수집 서버에서 발행해 공용 저장소에 기준 시각 모델 선택 근거 입력 해시 예측 경로를 고정 보관합니다. 한 번 발행한 예측은 모델이 바뀌어도 덮어쓰지 않습니다. 과거 예측에서는 완료된 공용 12시간 예측을 시간순으로 이어 봅니다. 새 예측이 시작되는 경계에서는 예측 표차가 다시 맞춰져 선이 달라질 수 있습니다. 보관 기록이 없는 구간은 만들지 않습니다. 오차는 실제 − 예측이며 실제 관측 시각에서 계산합니다. 앞으로의 실제값은 접속 새로고침 후 추가되며 관측이 없으면 —로 남깁니다.</p></details>`;
   root.appendChild(section);
   const $ = (id) => document.getElementById(id);
   function validRecord(m) {
@@ -98,7 +98,7 @@
         "기존 시간대 모델",
       sel = m.selection;
     if (!sel)
-      return `<div class="gf-model">사용 모델: <b>${current}</b> · 공용 보관 예측</div>`;
+      return `<div class="gf-model">사용 모델: <b>${current}</b> / 공용 보관 예측</div>`;
     const reason =
       {
         "insufficient-validation": "검증 자료 부족으로 기존 모델 유지",
@@ -107,15 +107,15 @@
         "validated-improvement": "개선 기준 충족으로 모델 교체",
         "no-validation": "검증 자료 대기",
       }[sel.reason] || "기존 모델 유지";
-    return `<div class="gf-model">사용 모델: <b>${current}</b> · ${reason}<br>완료 검증 ${sel.validationCount}개 · 비중복 ${sel.nonOverlap}${sel.horizonHours === 12 ? "개 (12시간)" : "일 (발행 당시 검증)"} · ${m.recordKind === "issued" ? "공용 발행 기록" : m.recordKind === "reconstructed" ? "공용 보존·과거 재현 기록" : "과거 재현 계산"}</div><details><summary>모델 자동 선택 근거</summary><div class="table-scroll gf-table"><table><thead><tr><th>후보</th><th>경로 MAE</th><th>최종 MAE</th><th>종합 오차</th></tr></thead><tbody>${(sel.metrics || []).map((r) => `<tr><th>${MMAGapCandidates.find((c) => c.id === r.id)?.name || "후보"}${r.id === m.modelId ? " ✓" : ""}</th><td>${r.n ? fmt(r.mae) : "—"}</td><td>${r.n ? fmt(r.endpointMAE) : "—"}</td><td>${r.n ? fmt(r.score) : "—"}</td></tr>`).join("")}</tbody></table></div></details>`;
+    return `<div class="gf-model">사용 모델: <b>${current}</b> / ${reason}<br>완료 검증 ${sel.validationCount}개 / 비중복 ${sel.nonOverlap}${sel.horizonHours === 12 ? "개 (12시간)" : "일 (발행 당시 검증)"} / ${m.recordKind === "issued" ? "공용 발행 기록" : m.recordKind === "reconstructed" ? "공용 보존 과거 재현 기록" : "과거 재현 계산"}</div><details><summary>모델 자동 선택 근거</summary><div class="table-scroll gf-table"><table><thead><tr><th>후보</th><th>경로 MAE</th><th>최종 MAE</th><th>종합 오차</th></tr></thead><tbody>${(sel.metrics || []).map((r) => `<tr><th>${MMAGapCandidates.find((c) => c.id === r.id)?.name || "후보"}${r.id === m.modelId ? " ✓" : ""}</th><td>${r.n ? fmt(r.mae) : "—"}</td><td>${r.n ? fmt(r.endpointMAE) : "—"}</td><td>${r.n ? fmt(r.score) : "—"}</td></tr>`).join("")}</tbody></table></div></details>`;
   }
   function options() {
     $("gap-future-title").textContent =
       choice === "history" ? "과거 예측과 실제 흐름" : "현재 12시간 표차 예측";
     section.querySelector(".section-kicker").textContent =
       choice === "history"
-        ? "FORECAST HISTORY · RESCENE − 임영웅"
-        : "NEXT 12 HOURS · RESCENE − 임영웅";
+        ? "FORECAST HISTORY / RESCENE − 임영웅"
+        : "NEXT 12 HOURS / RESCENE − 임영웅";
     $("gf-origin").innerHTML = [
       ["live", "현재 12시간 예측"],
       ["history", "과거 예측"],
@@ -162,10 +162,10 @@
   function currentSummary(model) {
     const c = currentComparison(model);
     if (!c) return "";
-    return `<div class="gf-now" aria-label="현재 관측 시점 실제와 예측 표차"><p>현재 관측 · ${date(c.t)} KST <span>같은 시각의 실제와 예측 비교</span></p><div class="gf-now-values">${[
+    return `<div class="gf-now" aria-label="현재 관측 시점 실제와 예측 표차"><p>관측 ${date(c.t)} KST <span></span></p><div class="gf-now-values">${[
       ["actual", "현재 실제 표차", c.actual],
       ["predicted", "현재 예측 표차", c.predicted],
-      ["error", "차이 · 실제 − 예측", c.error],
+      ["error", "실제 − 예측", c.error],
     ]
       .map(
         ([key, label, value]) =>
@@ -176,7 +176,7 @@
   function comparison(model) {
     const c = MMAGapModel.compare(model, data.snapshots);
     return c.samples.length
-      ? `<strong>${fmt(c.mae)}표</strong> 평균 절대 오차 · ${c.samples.length}회 실제 관측 비교<br>최근 ${date(c.last.t)} · 예측 ${signed(c.last.predicted)} / 실제 ${signed(c.last.actual)} / 오차 <b>${signed(c.last.error)}표</b>`
+      ? `<strong>${fmt(c.mae)}표</strong> 평균 절대 오차 / ${c.samples.length}회 실제 관측 비교<br>최근 ${date(c.last.t)} / 예측 ${signed(c.last.predicted)} / 실제 ${signed(c.last.actual)} / 오차 <b>${signed(c.last.error)}표</b>`
       : "아직 예측 이후 실제 관측이 없습니다. 새로고침 후 누적 비교합니다.";
   }
   function table(model, step) {
@@ -251,7 +251,7 @@
     const ticks = tickValues
       .map(
         (v) =>
-          `<g class="gf-y-tick"><line x1="${box.x}" x2="${W - 18}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#a295b0" : "#393346"}" stroke-dasharray="${v === 0 ? "3 3" : "2 4"}"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text></g>`,
+          `<g class="gf-y-tick"><line x1="${box.x}" x2="${W - 18}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#b0b4ba" : "#363a3f"}" stroke-dasharray="${v === 0 ? "3 3" : "2 4"}"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text></g>`,
       )
       .join("");
     const clock = Date.now(),
@@ -273,7 +273,7 @@
           .replace(/\.\s*/g, "/")
           .replace(/\/$/, "");
     const endpoint = (t, label, anchor) =>
-      `<g class="gf-axis-${t === xmin ? "start" : "end"}" data-time="${t}"><text x="${x(t)}" y="${H - 24}" text-anchor="${anchor}" font-size="9">${label} ${shortDate(t)} ${time(t)}</text></g>`;
+      `<g class="gf-axis-${t === xmin ? "start" : "end"}" data-time="${t}"><text x="${x(t)}" y="${H - 24}" text-anchor="${anchor}" font-size="12">${label} ${shortDate(t)} ${time(t)}</text></g>`;
     const count = W < 500 ? 3 : 5,
       labels = historical
         ? Array.from({ length: count }, (_, i) => {
@@ -282,16 +282,16 @@
           }).join("")
         : endpoint(xmin, "시작", "start") + endpoint(xmax, "끝", "end");
     const clockLine = showClock
-      ? `<g class="gf-current-time" data-time="${clock}"><line x1="${x(clock)}" x2="${x(clock)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#c6b7d1" stroke-dasharray="3 4"/><text x="${Math.max(box.x + 32, Math.min(W - 52, x(clock)))}" y="${H - 9}" text-anchor="middle" fill="#aba3b8" font-size="10">현재 ${time(clock)}</text></g>`
+      ? `<g class="gf-current-time" data-time="${clock}"><line x1="${x(clock)}" x2="${x(clock)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b0b4ba" stroke-dasharray="3 4"/><text x="${Math.max(box.x + 32, Math.min(W - 52, x(clock)))}" y="${H - 9}" text-anchor="middle" fill="#b0b4ba" font-size="12">현재 ${time(clock)}</text></g>`
       : "";
     const annotations = now
       ? `<g class="gf-now-markers">${[
-          { g: now.actual, color: "#4fc8e0" },
-          { g: now.predicted, color: "#ff789a" },
+          { g: now.actual, color: "#4ccce6" },
+          { g: now.predicted, color: "#ff92ad" },
         ]
           .map(
             (p) =>
-              `<line x1="${box.x}" x2="${x(now.t)}" y1="${y(p.g)}" y2="${y(p.g)}" stroke="${p.color}" stroke-dasharray="3 3"/><circle cx="${x(now.t)}" cy="${y(p.g)}" r="3" fill="${p.color}" stroke="#151321" stroke-width="1"/>`,
+              `<line x1="${box.x}" x2="${x(now.t)}" y1="${y(p.g)}" y2="${y(p.g)}" stroke="${p.color}" stroke-dasharray="3 3"/><circle cx="${x(now.t)}" cy="${y(p.g)}" r="3" fill="${p.color}" stroke="#111113" stroke-width="0.5"/>`,
           )
           .join("")}</g>`
       : "";
@@ -300,14 +300,14 @@
           .filter((m) => m.origin > xmin && m.origin < xmax)
           .map(
             (m) =>
-              `<line x1="${x(m.origin)}" x2="${x(m.origin)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#877b95" stroke-opacity=".3" stroke-dasharray="2 5"/>`,
+              `<line x1="${x(m.origin)}" x2="${x(m.origin)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#777b84" stroke-opacity=".3" stroke-dasharray="2 5"/>`,
           )
           .join("")
       : "";
-    svg.innerHTML = `<title>${historical ? "완료된 12시간 예측과 실제의 전체 경로" : "리센느와 임영웅의 현재 12시간 예측과 실제"} (KST)</title><defs><clipPath id="gf-plot"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><g fill="#aba3b8" font-size="10">${ticks}<line x1="${box.x}" x2="${W - 18}" y1="${box.y + box.h}" y2="${box.y + box.h}" stroke="#877b95"/>${labels}</g><g clip-path="url(#gf-plot)">${boundaries}${segments.map((p) => `<path class="gf-predicted-path" d="${path(p)}" stroke="#ff789a" stroke-width="1.6" stroke-dasharray="5 4" fill="none"/>`).join("")}<path class="gf-actual-path" d="${path(actual)}" stroke="#4fc8e0" stroke-width="1.6" fill="none"/>${annotations}</g>${clockLine}`;
+    svg.innerHTML = `<title>${historical ? "완료된 12시간 예측과 실제의 전체 경로" : "리센느와 임영웅의 현재 12시간 예측과 실제"} (KST)</title><defs><clipPath id="gf-plot"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><g fill="#b0b4ba" font-size="12">${ticks}<line x1="${box.x}" x2="${W - 18}" y1="${box.y + box.h}" y2="${box.y + box.h}" stroke="#777b84"/>${labels}</g><g clip-path="url(#gf-plot)">${boundaries}${segments.map((p) => `<path class="gf-predicted-path" d="${path(p)}" stroke="#ff92ad" stroke-width="0.5" stroke-dasharray="5 4" fill="none"/>`).join("")}<path class="gf-actual-path" d="${path(actual)}" stroke="#4ccce6" stroke-width="0.5" fill="none"/>${annotations}</g>${clockLine}`;
     if (historical)
       $("gf-history-range").textContent =
-        `${date(xmin)} ~ ${date(xmax)} KST · 전체 ${model.models.length}개 예측`;
+        `${date(xmin)} ~ ${date(xmax)} KST / 전체 ${model.models.length}개 예측`;
     svg.onpointermove = (e) => {
       if (historical && moveHistory(e)) return;
       const rect = e.currentTarget.getBoundingClientRect(),
@@ -327,7 +327,7 @@
         p = m ? MMAGapModel.predicted(m, t) : null,
         a = getActual(t, all);
       $("gf-hover").textContent =
-        `${date(t)} · 예측 ${p == null ? "기록 없음" : signed(p) + "표"}${a ? " · 실제 " + signed(a.g) + "표" : ""}${a && m && a.t >= m.origin ? " · 차이 " + signed(a.g - MMAGapModel.predicted(m, a.t)) + "표" : ""}`;
+        `${date(t)} / 예측 ${p == null ? "기록 없음" : signed(p) + "표"}${a ? " / 실제 " + signed(a.g) + "표" : ""}${a && m && a.t >= m.origin ? " / 차이 " + signed(a.g - MMAGapModel.predicted(m, a.t)) + "표" : ""}`;
     };
   }
   function setHistoryView(view) {
@@ -452,7 +452,7 @@
     }
     const c = MMAGapHistory.compare(h, data.snapshots);
     $("gf-content").innerHTML =
-      `<p class="gf-stamp">누적 예측 ${h.models.length}개 · ${date(h.start)} ~ ${date(h.end)} KST · 완료된 12시간 예측과 실제를 이어 표시합니다.</p><p class="gf-intro">새 12시간 예측이 끝나면 이 그래프에 추가됩니다. 각 경계에서 새 예측의 기준 표차가 반영됩니다. 이전 화면에서 볼 수 있던 과거 예측도 함께 표시합니다.</p><div class="gf-history-controls"><button id="gf-zoom-in" class="subtle" type="button" aria-label="과거 예측 확대">＋ 확대</button><button id="gf-zoom-out" class="subtle" type="button" aria-label="과거 예측 축소">− 축소</button><button id="gf-reset" class="subtle" type="button">전체 보기</button><span>드래그 이동 · Ctrl+휠 확대/축소 · 모바일 두 손가락 확대</span></div><p class="gf-legend"><span>━━ 실제 표차</span><span>┄┄ 당시 12시간 예측</span></p><svg id="gf-chart" role="img" aria-label="과거 12시간 예측과 실제의 전체 경로"></svg><p id="gf-history-range" class="gf-stamp"></p><p id="gf-hover" class="gf-hover">차트에서 시각별 예측과 실제 표차를 비교할 수 있습니다.</p><div class="gf-accuracy"><span>전체 과거 예측과 실제 비교</span><p>${c.mae == null ? "비교할 실제 관측 대기" : `<strong>${fmt(c.mae)}표</strong> 평균 절대 오차 · ${c.samples.length}회 실제 관측 비교`}</p></div><details id="gf-history-detail"><summary>12시간 구간별 예측과 실제 비교</summary><div class="table-scroll gf-table"><table><thead><tr><th>예측 시작 (KST)</th><th>예측 끝 (KST)</th><th>기록</th><th>종료 예측 표차</th><th>종료 실제 표차</th><th>실제 − 예측</th><th>평균 절대 오차</th></tr></thead><tbody>${c.rows
+      `<p class="gf-stamp">누적 예측 ${h.models.length}개 / ${date(h.start)} ~ ${date(h.end)} KST / 완료된 12시간 예측과 실제를 이어 표시합니다.</p><p class="gf-intro">새 12시간 예측이 끝나면 이 그래프에 추가됩니다. 각 경계에서 새 예측의 기준 표차가 반영됩니다. 이전 화면에서 볼 수 있던 과거 예측도 함께 표시합니다.</p><div class="gf-history-controls"><button id="gf-zoom-in" class="subtle" type="button" aria-label="과거 예측 확대">＋ 확대</button><button id="gf-zoom-out" class="subtle" type="button" aria-label="과거 예측 축소">− 축소</button><button id="gf-reset" class="subtle" type="button">전체 보기</button><span>드래그 이동 / Ctrl+휠 확대/축소 / 모바일 두 손가락 확대</span></div><p class="gf-legend"><span>━━ 실제 표차</span><span>┄┄ 당시 12시간 예측</span></p><svg id="gf-chart" role="img" aria-label="과거 12시간 예측과 실제의 전체 경로"></svg><p id="gf-history-range" class="gf-stamp"></p><p id="gf-hover" class="gf-hover">차트에서 시각별 예측과 실제 표차를 비교할 수 있습니다.</p><div class="gf-accuracy"><span>전체 과거 예측과 실제 비교</span><p>${c.mae == null ? "비교할 실제 관측 대기" : `<strong>${fmt(c.mae)}표</strong> 평균 절대 오차 / ${c.samples.length}회 실제 관측 비교`}</p></div><details id="gf-history-detail"><summary>12시간 구간별 예측과 실제 비교</summary><div class="table-scroll gf-table"><table><thead><tr><th>예측 시작 (KST)</th><th>예측 끝 (KST)</th><th>기록</th><th>종료 예측 표차</th><th>종료 실제 표차</th><th>실제 − 예측</th><th>평균 절대 오차</th></tr></thead><tbody>${c.rows
         .map((r) => {
           const end = r.model.path.at(-1),
             a = getActual(end.t, actualPoints()),
@@ -482,7 +482,7 @@
     }
     const m = active;
     $("gf-content").innerHTML =
-      `<p class="gf-stamp">현재 12시간 예측 · ${date(m.cutoff)} ~ ${date(m.cutoff + MMAGapModel.HORIZON)} KST · 학습 ${date(m.trainingFrom)} ~ ${date(m.trainingTo)} · ${m.observations}회${ledgerFailed ? " · 공용 기록 연결 지연" : ""}</p>${selectionInfo(m)}<div class="gf-cards">` +
+      `<p class="gf-stamp">현재 12시간 예측 / ${date(m.cutoff)} ~ ${date(m.cutoff + MMAGapModel.HORIZON)} KST / 학습 ${date(m.trainingFrom)} ~ ${date(m.trainingTo)} / ${m.observations}회${ledgerFailed ? " / 공용 기록 연결 지연" : ""}</p>${selectionInfo(m)}<div class="gf-cards">` +
       [0, 4, 8, 12]
         .map((h) => {
           const p = m.path[h * 12];

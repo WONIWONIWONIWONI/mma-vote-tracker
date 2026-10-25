@@ -60,7 +60,10 @@ async function setup(browser, mobile = false) {
     releaseArchive;
   const gate = new Promise((resolve) => (releaseArchive = resolve)),
     errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => {
+    errors.push(error.message);
+    console.error("Browser error:", error.message);
+  });
   await page.route("**/*", async (route) => {
     const u = new URL(route.request().url());
     if (u.pathname.endsWith("/gap-forecasts.json"))
@@ -168,13 +171,54 @@ async function setup(browser, mobile = false) {
   );
   await page.locator("#leaders-toggle").click();
   assert.equal(await page.locator(".leader:visible").count(), 2);
+  fs.mkdirSync("qa-output", { recursive: true });
+  await page.screenshot({
+    path: `qa-output/${mobile ? "mobile" : "desktop"}-initial.png`,
+    fullPage: true,
+  });
+  const typography = await page
+    .locator("main,header,footer")
+    .evaluateAll((roots) => {
+      const sizes = new Set();
+      for (const root of roots)
+        for (const e of root.querySelectorAll("*")) {
+          if (
+            e.getClientRects().length &&
+            [...e.childNodes].some(
+              (n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim(),
+            )
+          ) {
+            const size = getComputedStyle(e).fontSize;
+            sizes.add(
+              ["12px", "16px", "32px"].includes(size)
+                ? size
+                : size +
+                    " " +
+                    e.tagName +
+                    "#" +
+                    e.id +
+                    " " +
+                    e.textContent.slice(0, 40),
+            );
+          }
+        }
+      return [...sizes];
+    });
+  assert.ok(
+    typography.every((size) => ["12px", "16px", "32px"].includes(size)),
+    "visible UI uses three readable sizes: " + typography.join(","),
+  );
+  assert.ok(
+    !(await page.locator("body").innerText()).includes("·"),
+    "UI copy has no middle-dot separators",
+  );
   const colors = await page
     .locator(".leader")
     .evaluateAll((rows) =>
       rows.map((e) => e.style.getPropertyValue("--color")),
     );
   assert.equal(new Set(colors).size, 6, "all six teams have distinct colors");
-  assert.equal(colors[1], "#e6ff54");
+  assert.equal(colors[1], "#bde56c");
   assert.equal(
     await page.locator("[data-range].selected").getAttribute("data-range"),
     "24",
@@ -377,7 +421,7 @@ async function setup(browser, mobile = false) {
   async function noRightBlank() {
     const gap = await page.locator("#cd-svg").evaluate((e) => {
       const bars = [...e.querySelectorAll("rect")].filter((r) =>
-        ["#ff4757", "#4fc8e0", "#a58e9c"].includes(r.getAttribute("fill")),
+        ["#e5484d", "#4ccce6", "#b0b4ba"].includes(r.getAttribute("fill")),
       );
       const last = bars.at(-1);
       return (
@@ -510,16 +554,16 @@ async function setup(browser, mobile = false) {
   await page.waitForFunction(() =>
     document
       .getElementById("notice-text")
-      .textContent.includes("직접 조회에 실패"),
+      .textContent.includes("최신 조회에 실패"),
   );
   assert.ok(rawCalls > 0, "rate limited API falls back to raw");
   if (!mobile) {
     await page.locator("#gap-pair").selectOption(ids[0]);
     for (const [first, last, label, color] of [
-      [-100, -50, "격차 축소", "#ff4757"],
-      [100, 150, "격차 확대", "#ff4757"],
-      [-100, -150, "격차 확대", "#4fc8e0"],
-      [100, 50, "격차 축소", "#4fc8e0"],
+      [-100, -50, "격차 축소", "#e5484d"],
+      [100, 150, "격차 확대", "#e5484d"],
+      [-100, -150, "격차 확대", "#4ccce6"],
+      [100, 50, "격차 축소", "#4ccce6"],
     ]) {
       const rows = Array.from({ length: 7 }, (_, i) => {
         const s = snapshot(714 + i),
@@ -545,7 +589,7 @@ async function setup(browser, mobile = false) {
         await metric
           .locator("strong")
           .evaluate((e) => getComputedStyle(e).color),
-        color === "#ff4757" ? "rgb(255, 71, 87)" : "rgb(79, 200, 224)",
+        color === "#e5484d" ? "rgb(229, 72, 77)" : "rgb(76, 204, 230)",
       );
     }
   }
@@ -647,7 +691,7 @@ async function setup(browser, mobile = false) {
   );
   assert.equal(
     await page.locator(".gf-current-time text").getAttribute("font-size"),
-    "10",
+    "12",
     "clock label matches axis text size",
   );
   await page.locator("#gf-detail summary").click();

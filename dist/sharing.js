@@ -26,10 +26,12 @@
   let sequence = 0,
     current = null,
     busy = false;
-  const cache = new Map(), htmlLimit = 65535;
+  const cache = new Map(),
+    htmlLimit = 65535;
   const dialog = document.createElement("dialog");
   dialog.className = "share-dialog";
-  dialog.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;"><h2>이미지 공유하기</h2><button class="quiet-button" data-close-share aria-label="공유창 닫기">×</button></div><p>이미지 복사, PNG 다운로드 또는 이미지 없는 HTML 공유를 선택하세요.</p><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 다운로드</button><button class="quiet-button" data-copy-native disabled>HTML 공유</button></div><p class="share-native-status" role="status"></p><p>HTML은 게시판의 HTML 편집 모드에 붙여넣으세요. 게시판에 맞춘 표 배치이며 그래프는 간략 표시됩니다.</p><details><summary>HTML 미리보기와 소스</summary><div class="share-native-preview" style="overflow:auto;max-height:45vh;"></div><textarea class="share-native-source" aria-label="이미지 없는 공유 HTML 소스" readonly></textarea></details>';
+  dialog.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;"><h2>이미지 공유하기</h2><button class="quiet-button" data-close-share aria-label="공유창 닫기">×</button></div><div class="share-preview" aria-label="공유 이미지 미리보기"></div><p class="share-status" role="status"></p><div class="share-actions"><button class="quiet-button" data-copy-image disabled>이미지 복사</button><button class="quiet-button" data-download-share disabled>PNG 다운로드</button><button class="quiet-button" data-copy-native disabled>HTML 공유</button></div><p class="share-native-status" role="status"></p><details><summary>HTML 미리보기와 소스</summary><div class="share-native-preview" style="overflow:auto;max-height:45vh;"></div><textarea class="share-native-source" aria-label="이미지 없는 공유 HTML 소스" readonly></textarea></details>';
   document.body.append(dialog);
   const $ = (s) => dialog.querySelector(s);
   const status = (s) => ($(".share-status").textContent = s);
@@ -46,35 +48,59 @@
     if (!html || html.length > htmlLimit) return;
     try {
       await navigator.clipboard.writeText(html);
-      $(".share-native-status").textContent = "HTML을 복사했습니다. 게시판의 HTML 편집 모드에 붙여넣으세요. 게시판의 스타일 필터에 따라 표시가 달라질 수 있습니다.";
+      $(".share-native-status").textContent = "HTML을 복사했습니다.";
     } catch {
       $("details").open = true;
       $(".share-native-source").focus();
       $(".share-native-source").select();
-      $(".share-native-status").textContent = "HTML을 선택했습니다. Ctrl+C 또는 길게 눌러 복사하세요.";
+      $(".share-native-status").textContent = "Ctrl+C로 복사하세요.";
     }
   };
   function prepareNative(key, panel, link) {
-    const started=performance.now();
+    const started = performance.now();
     let html;
-    if(key === "leaders") html=MMANativeHTML.leaders(window.MMAShareModels.leaders(), TrackerConfig.edition);
-    else if(key === "hourly") html=MMANativeHTML.hourly(window.MMAShareModels.hourly(), TrackerConfig.edition);
+    if (key === "leaders")
+      html = MMANativeHTML.leaders(
+        window.MMAShareModels.leaders(),
+        TrackerConfig.edition,
+      );
+    else if (key === "hourly")
+      html = MMANativeHTML.hourly(
+        window.MMAShareModels.hourly(),
+        TrackerConfig.edition,
+      );
     else {
-      const stage=stagePanel(key,panel);
+      const stage = stagePanel(key, panel);
       try {
-        for(const [columns,rows] of [[160,96],[144,80],[112,66],[96,48],[80,40],[64,32],[48,24]]) {
-          html=MMANativeHTML.finalize(MMANativeHTML.panel(stage,columns,rows));
-          if(html.length<64000)break;
+        for (const [columns, rows] of [
+          [160, 96],
+          [144, 80],
+          [112, 66],
+          [96, 48],
+          [80, 40],
+          [64, 32],
+          [48, 24],
+        ]) {
+          html = MMANativeHTML.finalize(
+            MMANativeHTML.panel(stage, columns, rows),
+          );
+          if (html.length < 64000) break;
         }
-      } finally {stage.remove();}
+      } finally {
+        stage.remove();
+      }
     }
-    if(key === "leaders" || key === "hourly") html=MMANativeHTML.finalize(html);
-    html+=`<p style="font:12px/1.5 system-ui,sans-serif;color:#777;">복사 시점의 정적 기록 · <a href="${esc(link)}">원본 트래커</a></p>`;
-    if(html.length>htmlLimit) throw new Error(`HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`);
-    $(".share-native-source").value=html;
-    $(".share-native-preview").innerHTML=html;
-    $("[data-copy-native]").disabled=false;
-    $(".share-native-status").textContent=`이미지 없는 HTML 준비 · ${html.length.toLocaleString()}자 / 65,535자 · ${Math.round(performance.now()-started)}ms`;
+    if (key === "leaders" || key === "hourly")
+      html = MMANativeHTML.finalize(html);
+    html += `<p style="font:12px/1.5 system-ui,sans-serif;color:#b0b4ba;">복사 시점의 정적 기록 / <a href="${esc(link)}">원본 트래커</a></p>`;
+    if (html.length > htmlLimit)
+      throw new Error(
+        `HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`,
+      );
+    $(".share-native-source").value = html;
+    $(".share-native-preview").innerHTML = html;
+    $("[data-copy-native]").disabled = false;
+    $(".share-native-status").textContent = "";
   }
   $("[data-close-share]").onclick = () => dialog.close();
   $("[data-copy-image]").onclick = async () => {
@@ -82,13 +108,16 @@
     try {
       if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined")
         throw new Error("Image clipboard unavailable");
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": snapshot.blob })]);
-      status("이미지를 복사했습니다. 게시판 편집기에 붙여넣으세요. 지원하지 않으면 PNG 저장 후 사진 첨부를 이용하세요.");
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": snapshot.blob }),
+      ]);
+      status("이미지를 복사했습니다.");
     } catch {
-      status("이 브라우저에서 이미지 복사를 사용할 수 없습니다. PNG 저장 후 게시판에 사진으로 첨부하세요.");
+      status("이미지 복사를 지원하지 않습니다. PNG를 다운로드해 첨부하세요.");
     }
   };
-  $("[data-download-share]").onclick = () => download(current.blob, current.name + ".png");
+  $("[data-download-share]").onclick = () =>
+    download(current.blob, current.name + ".png");
   // Inline computed styles before removing context, including SVG chart styles.
   // This freezes the actual plotted paths, zoom window and selected controls.
   function freeze(source) {
@@ -127,7 +156,7 @@
   function stagePanel(key, panel) {
     const stage = document.createElement("div"),
       width = Math.ceil(panel.getBoundingClientRect().width);
-    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#100e19" : "#191725"};color:#f5f0f6;box-sizing:border-box;pointer-events:none;z-index:-100;`;
+    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#111113" : "#18191b"};color:#edeef0;box-sizing:border-box;pointer-events:none;z-index:-100;`;
     stage.dataset.snapshotStage = key;
     const append = (node) => {
       const c = freeze(node);
@@ -186,7 +215,8 @@
       }
     // Use installed fonts in the isolated capture; the live page is unchanged.
     for (const node of [stage, ...stage.querySelectorAll("*")])
-      node.style.fontFamily = 'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+      node.style.fontFamily =
+        'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
     document.body.append(stage);
     if (
       key === "leaders" &&
@@ -273,16 +303,24 @@
           timeStyle: "short",
         }).format(new Date(window.MMA_DATA.snapshots.at(-1).sourceAt)) + " KST";
       const link = new URL("#" + panel.id, location.href).href;
-      try {prepareNative(key,panel,link);} catch(e) {$(".share-native-status").textContent=e.message;console.error("HTML snapshot failed",e);}
+      try {
+        prepareNative(key, panel, link);
+      } catch (e) {
+        $(".share-native-status").textContent = e.message;
+        console.error("HTML snapshot failed", e);
+      }
       // Paint the independent HTML action before starting the existing PNG work.
-      await new Promise(resolve=>setTimeout(resolve,0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       try {
         const started = performance.now();
         // Serialize selected control state as well as plotted DOM to invalidate
         // captures when zoom, day, data, metric or team visibility changes.
         const fingerprint = JSON.stringify([
           panel.outerHTML,
-          [...panel.querySelectorAll("input,select")].map(n => [n.value, n.checked]),
+          [...panel.querySelectorAll("input,select")].map((n) => [
+            n.value,
+            n.checked,
+          ]),
           key === "hourly" ? window.MMAShareModels.hourly() : null,
         ]);
         const previous = cache.get(key);
@@ -306,9 +344,7 @@
         $(".share-preview").append(img);
         $("[data-copy-image]").disabled = false;
         $("[data-download-share]").disabled = false;
-        status(
-          `${reused ? "저장된 이미지 재사용" : "이미지 준비"} · ${((performance.now() - started) / 1000).toFixed(1)}초 · 이미지 복사 · PNG 다운로드 · HTML 공유를 선택하세요.`,
-        );
+        status("");
       } catch (e) {
         status("이미지를 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
         console.error("Panel snapshot failed", e);
@@ -318,4 +354,3 @@
     };
   }
 })();
-

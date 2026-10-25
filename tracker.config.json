@@ -20,12 +20,36 @@
   ],
   "defaultVisibleIds": ["3709231", "994944"],
   "teams": [
-    { "id": "3709231", "name": "리센느", "color": "#e6ff54" },
-    { "id": "994944", "name": "임영웅", "color": "#ff789a" },
-    { "id": "3574243", "name": "NCT WISH", "color": "#4fc8e0" },
-    { "id": "3207401", "name": "PLAVE", "color": "#ffc06c" },
-    { "id": "672375", "name": "방탄소년단", "color": "#83d9b5" },
-    { "id": "3478478", "name": "RIIZE", "color": "#9cbcff" }
+    {
+      "id": "3709231",
+      "name": "리센느",
+      "color": "#bde56c"
+    },
+    {
+      "id": "994944",
+      "name": "임영웅",
+      "color": "#ff92ad"
+    },
+    {
+      "id": "3574243",
+      "name": "NCT WISH",
+      "color": "#4ccce6"
+    },
+    {
+      "id": "3207401",
+      "name": "PLAVE",
+      "color": "#ffca16"
+    },
+    {
+      "id": "672375",
+      "name": "방탄소년단",
+      "color": "#58d5ba"
+    },
+    {
+      "id": "3478478",
+      "name": "RIIZE",
+      "color": "#b1a9ff"
+    }
   ],
   "forecast": {
     "pair": ["3709231", "994944"],
