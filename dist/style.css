@@ -1192,7 +1192,7 @@ footer a {
     display: grid;
     grid-template-columns: 42px minmax(0, 1fr);
     grid-template-areas: "rank artist" "rank count" "rank footer";
-    grid-template-rows: 20px 38px auto;
+    grid-template-rows: auto auto auto;
     column-gap: 12px;
     row-gap: 8px;
     padding: 17px 16px;

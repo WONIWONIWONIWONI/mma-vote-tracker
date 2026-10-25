@@ -9,40 +9,40 @@
       name="description"
       content="2026 MMA 상위 6팀의 득표수와 득표율, 일별 증가량과 표차 추이."
     />
-    <script src="./themes.js?v=20261025-modes1"></script>
+    <script src="./themes.js?v=20261025-tabs1"></script>
     <link
       rel="icon"
-      href="./favicon.svg?v=20261025-modes1"
+      href="./favicon.svg?v=20261025-tabs1"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="./themes.css?v=20261025-modes1" />
-    <link rel="stylesheet" href="./style.css?v=20261025-modes1" />
-    <link rel="stylesheet" href="./candles.css?v=20261025-modes1" />
-    <link rel="stylesheet" href="./saas-theme.css?v=20261025-modes1" />
+    <link rel="stylesheet" href="./themes.css?v=20261025-tabs1" />
+    <link rel="stylesheet" href="./style.css?v=20261025-tabs1" />
+    <link rel="stylesheet" href="./candles.css?v=20261025-tabs1" />
+    <link rel="stylesheet" href="./saas-theme.css?v=20261025-tabs1" />
     <script src="./data/seed.js"></script>
-    <script src="./config.js?v=20261025-modes1" defer></script>
-    <script src="./http.js?v=20261025-modes1" defer></script>
-    <script src="./daily.js?v=20261025-modes1" defer></script>
-    <script src="./hourly.js?v=20261025-modes1" defer></script>
-    <script src="./axis.js?v=20261025-modes1" defer></script>
-    <script src="./analytics.js?v=20261025-modes1" defer></script>
-    <script src="./exports.js?v=20261025-modes1" defer></script>
-    <script src="./sources.js?v=20261025-modes1" defer></script>
-    <script src="./data.js?v=20261025-modes1" defer></script>
-    <script src="./app.js?v=20261025-modes1" defer></script>
-    <script src="./gap-model.js?v=20261025-modes1" defer></script>
-    <script src="./gap-history.js?v=20261025-modes1" defer></script>
-    <script src="./gap-candidates.js?v=20261025-modes1" defer></script>
-    <script src="./candles.js?v=20261025-modes1" defer></script>
-    <script src="./gap-forecast-ui.js?v=20261025-modes1" defer></script>
+    <script src="./config.js?v=20261025-tabs1" defer></script>
+    <script src="./http.js?v=20261025-tabs1" defer></script>
+    <script src="./daily.js?v=20261025-tabs1" defer></script>
+    <script src="./hourly.js?v=20261025-tabs1" defer></script>
+    <script src="./axis.js?v=20261025-tabs1" defer></script>
+    <script src="./analytics.js?v=20261025-tabs1" defer></script>
+    <script src="./exports.js?v=20261025-tabs1" defer></script>
+    <script src="./sources.js?v=20261025-tabs1" defer></script>
+    <script src="./data.js?v=20261025-tabs1" defer></script>
+    <script src="./app.js?v=20261025-tabs1" defer></script>
+    <script src="./gap-model.js?v=20261025-tabs1" defer></script>
+    <script src="./gap-history.js?v=20261025-tabs1" defer></script>
+    <script src="./gap-candidates.js?v=20261025-tabs1" defer></script>
+    <script src="./candles.js?v=20261025-tabs1" defer></script>
+    <script src="./gap-forecast-ui.js?v=20261025-tabs1" defer></script>
     <script src="./vendor/html-to-image.js?v=1.11.13" defer></script>
-    <script src="./native-sharing.js?v=20261025-modes1" defer></script>
-    <script src="./sharing.js?v=20261025-modes1" defer></script>
-    <script src="./dashboard-nav.js?v=20261025-modes1" defer></script>
+    <script src="./native-sharing.js?v=20261025-tabs1" defer></script>
+    <script src="./sharing.js?v=20261025-tabs1" defer></script>
+    <script src="./dashboard-nav.js?v=20261025-tabs1" defer></script>
   </head>
   <body>
     <aside class="dashboard-sidebar" aria-label="대시보드 메뉴">
-      <a class="dashboard-brand" href="#overview"
+      <a class="dashboard-brand" href="#overview-panel"
         ><span class="dashboard-mark" aria-hidden="true"
           ><svg viewBox="0 0 24 24">
             <path d="M3 15l6-6 5 4 7-8" />
@@ -51,7 +51,7 @@
         ><strong>VOTE/TRACK</strong></a
       >
       <nav class="dashboard-nav" aria-label="패널 이동">
-        <a href="#overview" aria-current="location"
+        <a href="#overview-panel" aria-current="location"
           ><svg viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7" rx="1" />
             <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -131,21 +131,22 @@
             <h1>MMA 득표 현황</h1>
           </div>
           <div class="hero-right">
-            <div class="status-pill" id="status-pill">
-              <span class="status-dot"></span
-              ><span id="status-label">기록 불러오는 중</span>
-            </div>
-            <p class="source-time" id="source-time">—</p>
-            <span class="time-hint">KST</span>
-            <div class="source-controls">
-              <div class="refresh-controls">
-                <span id="collected-time" class="time-hint"></span
-                ><button class="quiet-button" id="refresh-button">
-                  <span aria-hidden="true">↻</span> 새로고침
-                </button>
+            <div class="source-meta">
+              <div class="status-pill" id="status-pill">
+                <span class="status-dot"></span
+                ><span id="status-label">기록 불러오는 중</span>
               </div>
-              <div class="export-controls" role="group" aria-label="요약 복사">
-                <button class="quiet-button" id="copy-button">요약 복사</button>
+              <p class="source-time" id="source-time">—</p>
+              <span class="time-hint">KST</span>
+            </div>
+            <div class="source-controls">
+              <span id="collected-time" class="time-hint"></span>
+              <div class="header-actions">
+                <button class="quiet-button" id="refresh-button">
+                  <span aria-hidden="true">↻</span> 새로고침</button
+                ><button class="quiet-button" id="copy-button">
+                  요약 복사
+                </button>
               </div>
             </div>
           </div>
@@ -156,41 +157,43 @@
             >저장된 투표 집계 기록을 불러오는 중입니다.</span
           >
         </div>
-        <section
-          class="leaders"
-          id="leaders"
-          aria-label="현재 상위 6팀"
-        ></section>
-        <div class="leaders-toggle-row">
-          <button
-            type="button"
-            class="quiet-button"
-            id="leaders-toggle"
-            aria-expanded="false"
-            aria-controls="leader-rank-3 leader-rank-4 leader-rank-5 leader-rank-6"
-          >
-            3~6위 더보기 ▾
-          </button>
-        </div>
-        <section class="overview-bar" aria-label="전체 투표 요약">
-          <div class="total-block">
-            <span class="small-label">전체 투표</span
-            ><strong id="total-votes">—</strong><span class="unit">표</span>
+        <div id="overview-panel" class="dashboard-view">
+          <section
+            class="leaders"
+            id="leaders"
+            aria-label="현재 상위 6팀"
+          ></section>
+          <div class="leaders-toggle-row">
+            <button
+              type="button"
+              class="quiet-button"
+              id="leaders-toggle"
+              aria-expanded="false"
+              aria-controls="leader-rank-3 leader-rank-4 leader-rank-5 leader-rank-6"
+            >
+              3~6위 더보기 ▾
+            </button>
           </div>
-          <div class="distribution">
-            <div class="share-track" id="share-track"></div>
-            <div class="distribution-caption">
-              <span>상위 6팀 합계 <b id="top-share">—</b></span
-              ><span>그 외 <b id="other-share">—</b></span>
+          <section class="overview-bar" aria-label="전체 투표 요약">
+            <div class="total-block">
+              <span class="small-label">전체 투표</span
+              ><strong id="total-votes">—</strong><span class="unit">표</span>
             </div>
-          </div>
-          <div class="sample-block">
-            <span class="small-label">누적 기록</span
-            ><strong id="sample-count">—</strong><span class="unit">회</span>
-          </div>
-        </section>
+            <div class="distribution">
+              <div class="share-track" id="share-track"></div>
+              <div class="distribution-caption">
+                <span>상위 6팀 합계 <b id="top-share">—</b></span
+                ><span>그 외 <b id="other-share">—</b></span>
+              </div>
+            </div>
+            <div class="sample-block">
+              <span class="small-label">누적 기록</span
+              ><strong id="sample-count">—</strong><span class="unit">회</span>
+            </div>
+          </section>
+        </div>
         <section
-          class="chart-panel panel has-image-button"
+          class="chart-panel panel has-image-button dashboard-view"
           id="trend-panel"
           aria-labelledby="trend-title"
         >
@@ -264,12 +267,12 @@
           </div>
         </section>
         <section
-          class="panel has-image-button cd-panel"
+          class="panel has-image-button cd-panel dashboard-view"
           id="candle-panel"
           aria-labelledby="cd-title"
         ></section>
         <section
-          class="panel daily-panel"
+          class="panel daily-panel dashboard-view"
           id="daily-panel"
           aria-labelledby="daily-title"
         >
@@ -300,7 +303,7 @@
           </details>
         </section>
         <section
-          class="panel hourly-panel has-image-button"
+          class="panel hourly-panel has-image-button dashboard-view"
           id="hourly-panel"
           aria-labelledby="hourly-title"
         >
@@ -329,7 +332,10 @@
           </button>
           <p class="panel-footnote" id="hourly-note"></p>
         </section>
-        <details class="panel history-panel" id="history-details">
+        <details
+          class="panel history-panel dashboard-view"
+          id="history-details"
+        >
           <summary class="history-summary">
             <span class="history-title" id="history-title"
               >집계 기록 <small id="history-count"></small></span
@@ -376,7 +382,10 @@
             </button>
           </div>
         </details>
-        <details class="method">
+        <details
+          class="method"
+          data-panel-for="overview-panel trend-panel candle-panel daily-panel hourly-panel history-details"
+        >
           <summary>집계 기준</summary>
           <div>
             <p>
@@ -399,7 +408,10 @@
             </p>
           </div>
         </details>
-        <details class="method">
+        <details
+          class="method"
+          data-panel-for="trend-panel candle-panel gap-future"
+        >
           <summary>예측 기준</summary>
           <div>
             <p>

@@ -1405,6 +1405,9 @@
       render();
     }
     receive(window.MMA_DATA || window.MMA_SEED);
+    window.addEventListener("tracker:panel", function (event) {
+      if (event.detail === "candle-panel") render();
+    });
     window.addEventListener("tracker:theme", function () {
       UP_COLOR = TrackerTheme.color("#d63b50");
       DOWN_COLOR = TrackerTheme.color("#227da8");

@@ -1,0 +1,244 @@
+const { chromium } = require("playwright");
+const assert = require("node:assert/strict");
+const fs = require("node:fs"),
+  path = require("node:path");
+const root = path.resolve(__dirname, "../dist");
+const history = JSON.parse(
+  fs.readFileSync(path.join(root, "data/history.json")),
+);
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const mobile of [false, true])
+      for (const theme of ["light", "dark"]) {
+        const page = await browser.newPage({
+          viewport: { width: mobile ? 390 : 1280, height: 960 },
+          isMobile: mobile,
+          hasTouch: mobile,
+        });
+        const errors = [];
+        page.on("pageerror", (e) => errors.push(e.message));
+        await page.addInitScript(
+          (theme) => localStorage.setItem("vote-track-theme", theme),
+          theme,
+        );
+        await page.clock.install({
+          time: new Date(history.snapshots.at(-1).sourceAt),
+        });
+        let requests = 0;
+        await page.route("**/*", (route) => {
+          const u = new URL(route.request().url()),
+            name = u.pathname.split("/").at(-1);
+          if (u.hostname !== "panels.test") {
+            requests++;
+            if (
+              ["history.json", "latest.json", "gap-forecasts.json"].includes(
+                name,
+              )
+            )
+              return route.fulfill({
+                path: path.join(root, "data", name),
+                headers: { "Access-Control-Allow-Origin": "*" },
+              });
+            return route.abort();
+          }
+          return route.fulfill({
+            path: path.join(
+              root,
+              u.pathname === "/" ? "index.html" : u.pathname,
+            ),
+          });
+        });
+        await page.goto("https://panels.test/");
+        await page.waitForFunction(
+          (n) => window.MMA_DATA?.snapshots.length >= n,
+          history.snapshots.length,
+        );
+        await page.waitForFunction(
+          () => !document.getElementById("refresh-button").disabled,
+        );
+        if (mobile) {
+          const names = await page
+            .locator(".leader:not([hidden]) .artist")
+            .evaluateAll((elements) =>
+              elements.map((element) => {
+                const span = element.querySelector(".artist-name"),
+                  range = document.createRange();
+                range.selectNodeContents(span);
+                const text = range.getBoundingClientRect(),
+                  box = element.getBoundingClientRect();
+                return {
+                  name: span.textContent,
+                  top: text.top - box.top,
+                  bottom: box.bottom - text.bottom,
+                  height: box.height,
+                };
+              }),
+            );
+          assert.ok(
+            names.length === 2 &&
+              names.every(
+                (name) =>
+                  name.height >= 24 && name.top >= -1 && name.bottom >= -1,
+              ),
+            "mobile artist names have full glyph height: " +
+              JSON.stringify(names),
+          );
+        }
+        const before = requests;
+        assert.equal(await page.locator(".dashboard-view:visible").count(), 1);
+        const alignment = await page
+          .locator(".header-actions button")
+          .evaluateAll((es) =>
+            es.map((e) => {
+              const r = e.getBoundingClientRect();
+              return {
+                top: r.top,
+                bottom: r.bottom,
+                height: r.height,
+                left: r.left,
+                right: r.right,
+              };
+            }),
+          );
+        assert.equal(alignment.length, 2);
+        assert.ok(
+          Math.abs(alignment[0].top - alignment[1].top) <= 1 &&
+            Math.abs(alignment[0].height - alignment[1].height) <= 1 &&
+            alignment[1].left >= alignment[0].right,
+          "refresh and copy share one aligned row",
+        );
+        const ids = [
+          "overview-panel",
+          "trend-panel",
+          "candle-panel",
+          "gap-future",
+          "daily-panel",
+          "hourly-panel",
+          "history-details",
+        ];
+        for (const id of ids) {
+          await page.locator(`.dashboard-nav a[href="#${id}"]`).click();
+          assert.equal(
+            await page.locator(".dashboard-view:visible").count(),
+            1,
+            id + " is the only visible panel",
+          );
+          assert.equal(
+            await page.locator(".dashboard-view:visible").getAttribute("id"),
+            id,
+          );
+          assert.equal(
+            await page.locator('[role="tab"][aria-selected="true"]').count(),
+            1,
+          );
+          assert.ok(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth + 1,
+            ),
+          );
+        }
+        await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
+        await page.locator('[data-range="6"]').click();
+        await page.locator('[data-metric="share"]').click();
+        const windowText = await page.locator("#chart-window").textContent();
+        await page.locator('.dashboard-nav a[href="#gap-future"]').click();
+        await page.waitForFunction(
+          () =>
+            document.querySelectorAll("#gf-chart .gf-predicted-path").length >
+            0,
+        );
+        const strokes = await page
+          .locator("#gf-chart .gf-predicted-path,#gf-chart .gf-actual-path")
+          .evaluateAll((es) => es.map((e) => getComputedStyle(e).strokeWidth));
+        assert.ok(
+          strokes.length > 1 &&
+            strokes.every((value) => parseFloat(value) === 1.2),
+          "actual and predicted paths remain legible",
+        );
+        await page.screenshot({
+          path: `qa-output/panel-forecast-${mobile ? "mobile" : "desktop"}-${theme}.png`,
+          fullPage: true,
+        });
+        await page.goBack();
+        assert.equal(
+          await page.locator(".dashboard-view:visible").getAttribute("id"),
+          "trend-panel",
+        );
+        assert.equal(
+          await page
+            .locator("[data-range].selected")
+            .getAttribute("data-range"),
+          "6",
+        );
+        assert.equal(
+          await page
+            .locator("[data-metric].selected")
+            .getAttribute("data-metric"),
+          "share",
+        );
+        assert.equal(
+          await page.locator("#chart-window").textContent(),
+          windowText,
+        );
+        await page.reload();
+        assert.equal(
+          await page.locator(".dashboard-view:visible").getAttribute("id"),
+          "trend-panel",
+          "direct refresh restores the linked tab",
+        );
+        await page.waitForFunction(
+          (n) => window.MMA_DATA?.snapshots.length >= n,
+          history.snapshots.length,
+        );
+        await page.locator('.dashboard-nav a[href="#hourly-panel"]').click();
+        if (mobile) {
+          if (await page.locator("#hourly-more").isVisible())
+            await page.locator("#hourly-more").click();
+          await page.evaluate(() => window.scrollTo(0, 500));
+          const bar = await page.locator(".dashboard-sidebar").boundingBox();
+          assert.ok(
+            Math.abs(bar.y) < 1,
+            "mobile tabs stay at the top after scrolling",
+          );
+          await page.screenshot({
+            path: `qa-output/panel-sticky-mobile-${theme}.png`,
+            fullPage: true,
+          });
+          await page.locator('.dashboard-nav a[href="#daily-panel"]').click();
+          assert.equal(
+            await page.locator(".dashboard-view:visible").getAttribute("id"),
+            "daily-panel",
+          );
+        }
+        // Keyboard users can change panels without moving through hidden controls.
+        await page.locator('.dashboard-nav a[href="#daily-panel"]').click();
+        await page
+          .locator('.dashboard-nav a[href="#daily-panel"]')
+          .press("ArrowRight");
+        assert.equal(
+          await page.locator(".dashboard-view:visible").getAttribute("id"),
+          "hourly-panel",
+        );
+        // Reloads above legitimately fetch data; a plain tab switch must not.
+        const calls = requests;
+        await page.locator('.dashboard-nav a[href="#overview-panel"]').click();
+        assert.equal(requests, calls);
+        assert.ok(before > 0);
+        await page.screenshot({
+          path: `qa-output/panel-overview-${mobile ? "mobile" : "desktop"}-${theme}.png`,
+          fullPage: true,
+        });
+        assert.deepEqual(errors, []);
+        await page.close();
+      }
+  } finally {
+    await browser.close();
+  }
+  console.log(
+    "Single-panel tabs, header alignment, sticky mobile navigation, keyboard/back/direct links, preserved chart choices, forecast stroke widths and no tab polling passed.",
+  );
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

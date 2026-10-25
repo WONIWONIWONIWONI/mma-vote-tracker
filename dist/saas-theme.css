@@ -1122,3 +1122,148 @@ footer {
     flex: 1 1 auto;
   }
 }
+
+/* One panel at a time, with the same tab controls on desktop and mobile. */
+.dashboard-view[hidden] {
+  display: none !important;
+}
+html:not([data-panel]) .dashboard-view:not(#overview-panel) {
+  display: none;
+}
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.source-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.source-meta > .time-hint {
+  display: none;
+}
+.source-meta .source-time {
+  margin: 0;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.source-meta .status-pill {
+  margin: 0;
+  white-space: nowrap;
+}
+.source-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 0;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.source-controls #refresh-button,
+.source-controls #copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-height: 36px;
+  min-width: 96px;
+  padding: 8px 12px;
+  margin: 0;
+  line-height: 1;
+}
+#collected-time {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.dashboard-nav a[aria-selected="true"] {
+  color: var(--lime);
+  background: var(--tone-efedff);
+  font-weight: 600;
+}
+.gap-future.dashboard-view {
+  margin: 0 0 24px;
+  padding: 24px;
+  background: var(--panel);
+  border: 0.5px solid var(--line);
+  border-radius: 10px;
+}
+#gf-chart .gf-predicted-path,
+#gf-chart .gf-actual-path {
+  stroke-width: 1.2;
+}
+@media (max-width: 760px) {
+  .dashboard-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    gap: 10px;
+  }
+  .source-meta {
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .source-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-content: normal;
+    gap: 8px;
+    margin: 0;
+  }
+  .header-actions {
+    gap: 6px;
+  }
+  .source-controls #refresh-button,
+  .source-controls #copy-button {
+    min-width: 0;
+    padding: 8px 10px;
+    height: 36px;
+    min-height: 36px;
+  }
+  #collected-time {
+    white-space: normal;
+  }
+  .gap-future.dashboard-view {
+    padding: 18px 16px;
+    margin-bottom: 18px;
+    border-radius: 9px;
+  }
+  .dashboard-view {
+    scroll-margin-top: 112px;
+  }
+}
+
+/* Let Korean glyphs define their row height instead of clipping a 20px track. */
+@media (max-width: 900px) {
+  .leader {
+    grid-template-rows: auto auto auto;
+  }
+  .artist {
+    line-height: 1.5;
+    min-height: 24px;
+    height: auto;
+  }
+  .artist-name {
+    display: block;
+    line-height: inherit;
+    padding: 1px 0;
+  }
+}

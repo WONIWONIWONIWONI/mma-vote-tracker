@@ -2,9 +2,9 @@
 (() => {
   const root = document.documentElement;
   const key = "vote-track-theme";
-  let theme = "light";
+  let theme = "dark";
   try {
-    if (localStorage.getItem(key) === "dark") theme = "dark";
+    if (localStorage.getItem(key) === "light") theme = "light";
   } catch {}
   root.dataset.theme = theme;
   const darkColors = {
@@ -90,6 +90,6 @@
   });
   window.addEventListener("storage", (event) => {
     if (event.key === key)
-      set(event.newValue === "dark" ? "dark" : "light", false);
+      set(event.newValue === "light" ? "light" : "dark", false);
   });
 })();
