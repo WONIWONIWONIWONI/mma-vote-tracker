@@ -264,12 +264,19 @@
       ) {
         const grouped = [];
         for (const child of elements) {
-          const top = child.getBoundingClientRect().top;
-          let row = grouped.find((r) => Math.abs(r.top - top) < 4);
+          const bounds = child.getBoundingClientRect(),
+            top = bounds.top;
+          let row = grouped.find(
+            (r) =>
+              Math.abs(r.top - top) < 4 ||
+              Math.min(r.bottom, bounds.bottom) > Math.max(r.top, top) + 1,
+          );
           if (!row) {
-            row = { top, nodes: [] };
+            row = { top, bottom: bounds.bottom, nodes: [] };
             grouped.push(row);
           }
+          row.top = Math.min(row.top, top);
+          row.bottom = Math.max(row.bottom, bounds.bottom);
           row.nodes.push(child);
         }
         // Preserve each item's desktop size as an upper bound, not a minimum.
@@ -278,6 +285,11 @@
           .map(
             (r) =>
               `<div>${r.nodes
+                .sort(
+                  (a, b) =>
+                    a.getBoundingClientRect().left -
+                    b.getBoundingClientRect().left,
+                )
                 .map((child) => {
                   const limit = Math.max(
                     140,

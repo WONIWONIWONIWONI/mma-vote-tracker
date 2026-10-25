@@ -132,6 +132,54 @@ const history = JSON.parse(
             await page.locator('[role="tab"][aria-selected="true"]').count(),
             1,
           );
+          if (id === "daily-panel") {
+            const layout = await page.evaluate(() => {
+              const box = (e) => {
+                const r = e.getBoundingClientRect();
+                return { x: r.x, y: r.y, right: r.right, width: r.width };
+              };
+              return {
+                teams: box(document.getElementById("daily-teams")),
+                summary: box(document.getElementById("daily-summary")),
+                rows: [...document.querySelectorAll(".daily-team")].map(box),
+                bars: [...document.querySelectorAll(".daily-bar")].map(box),
+              };
+            });
+            assert.equal(layout.rows.length, 6);
+            if (mobile) {
+              assert.ok(
+                Math.abs(layout.rows[0].y - layout.rows[1].y) < 1 &&
+                  layout.rows[2].y > layout.rows[0].y,
+                "mobile keeps the two-column cards",
+              );
+              assert.ok(
+                layout.summary.y < layout.teams.y,
+                "mobile summary remains above the cards",
+              );
+            } else {
+              assert.ok(
+                layout.rows.every(
+                  (row, index) =>
+                    index === 0 || row.y > layout.rows[index - 1].y,
+                ),
+                "desktop candidates use aligned horizontal rows",
+              );
+              assert.ok(
+                layout.bars.every(
+                  (bar) => Math.abs(bar.width - layout.bars[0].width) < 1,
+                ),
+                "bars share the same comparison width",
+              );
+              assert.ok(
+                layout.summary.x >= layout.teams.right,
+                "desktop totals use the right column",
+              );
+            }
+            await page.screenshot({
+              path: `qa-output/panel-daily-${mobile ? "mobile" : "desktop"}-${theme}.png`,
+              fullPage: true,
+            });
+          }
           assert.ok(
             await page.evaluate(
               () => document.documentElement.scrollWidth <= innerWidth + 1,
