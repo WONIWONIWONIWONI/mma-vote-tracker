@@ -40,6 +40,10 @@ const history = JSON.parse(
           path: path.join(root, u.pathname === "/" ? "index.html" : u.pathname),
         });
       });
+      await page.addInitScript(() => {
+        if (localStorage.getItem("vote-track-theme") === null)
+          localStorage.setItem("vote-track-theme", "light");
+      });
       await page.goto("https://theme.test/");
       await page.waitForFunction(
         (n) => MMA_DATA?.snapshots.length >= n,

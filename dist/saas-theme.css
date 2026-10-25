@@ -1250,3 +1250,20 @@ html:not([data-panel]) .dashboard-view:not(#overview-panel) {
     scroll-margin-top: 112px;
   }
 }
+
+/* Let Korean glyphs define their row height instead of clipping a 20px track. */
+@media (max-width: 900px) {
+  .leader {
+    grid-template-rows: auto auto auto;
+  }
+  .artist {
+    line-height: 1.5;
+    min-height: 24px;
+    height: auto;
+  }
+  .artist-name {
+    display: block;
+    line-height: inherit;
+    padding: 1px 0;
+  }
+}

@@ -115,6 +115,9 @@ async function setup(browser, mobile = false) {
     }
     return route.abort();
   });
+  await page.addInitScript(() =>
+    localStorage.setItem("vote-track-theme", "light"),
+  );
   await page.goto("https://local.test/");
   await page.waitForFunction(
     () => window.MMA_DATA?.snapshots.at(-1).origin === "melon_browser_api",

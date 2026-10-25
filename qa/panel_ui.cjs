@@ -57,6 +57,34 @@ const history = JSON.parse(
         await page.waitForFunction(
           () => !document.getElementById("refresh-button").disabled,
         );
+        if (mobile) {
+          const names = await page
+            .locator(".leader:not([hidden]) .artist")
+            .evaluateAll((elements) =>
+              elements.map((element) => {
+                const span = element.querySelector(".artist-name"),
+                  range = document.createRange();
+                range.selectNodeContents(span);
+                const text = range.getBoundingClientRect(),
+                  box = element.getBoundingClientRect();
+                return {
+                  name: span.textContent,
+                  top: text.top - box.top,
+                  bottom: box.bottom - text.bottom,
+                  height: box.height,
+                };
+              }),
+            );
+          assert.ok(
+            names.length === 2 &&
+              names.every(
+                (name) =>
+                  name.height >= 24 && name.top >= -1 && name.bottom >= -1,
+              ),
+            "mobile artist names have full glyph height: " +
+              JSON.stringify(names),
+          );
+        }
         const before = requests;
         assert.equal(await page.locator(".dashboard-view:visible").count(), 1);
         const alignment = await page
