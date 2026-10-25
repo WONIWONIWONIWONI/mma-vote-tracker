@@ -219,43 +219,58 @@
       node.style.fontFamily =
         'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
     document.body.append(stage);
-    // PNG captures are a fixed snapshot. Let long labels wrap inside their
-    // original cells so the saved image cannot cut text off at panel edges.
-    const textNodes = [
-      ...stage.querySelectorAll(
-        "h1,h2,h3,p,span,b,strong,small,label,button,a,td,th,li",
-      ),
-    ].reverse();
-    for (const node of textNodes) {
-      if (!node.textContent.trim()) continue;
-      const style = getComputedStyle(node);
-      if (
-        style.whiteSpace === "nowrap" ||
-        node.scrollWidth > node.clientWidth + 1
-      ) {
-        node.style.whiteSpace = "normal";
-        node.style.overflowWrap = "anywhere";
-        node.style.minWidth = "0";
-        node.style.maxWidth = "100%";
-        if (node.scrollHeight > node.clientHeight + 1) {
-          node.style.height = "auto";
-          node.style.maxHeight = "none";
-        }
-      }
+    // Computed inline widths belong to the original font. Reflow text after
+    // switching capture fonts instead of wrapping glyphs inside those widths.
+    for (const node of stage.querySelectorAll(
+      "h1,h2,h3,p,span,b,strong,small,label,button,a",
+    )) {
+      if (node instanceof SVGElement) continue;
+      node.style.width = "auto";
+      node.style.height = "auto";
+      node.style.maxHeight = "none";
+      node.style.wordBreak = "keep-all";
+      node.style.overflowWrap = "normal";
     }
-    for (const node of textNodes) {
-      for (
-        let parent = node.parentElement;
-        parent && parent !== stage;
-        parent = parent.parentElement
-      ) {
-        if (parent.scrollHeight <= parent.clientHeight + 1) continue;
-        const overflow = getComputedStyle(parent).overflow;
-        if (overflow !== "hidden" && overflow !== "clip") continue;
-        parent.style.height = "auto";
-        parent.style.maxHeight = "none";
-        parent.style.overflow = "visible";
-      }
+    for (const node of stage.querySelectorAll("div,section")) {
+      if (!node.textContent.trim() || node.closest("svg")) continue;
+      node.style.height = "auto";
+      node.style.wordBreak = "keep-all";
+    }
+    for (const node of stage.querySelectorAll(
+      ".panel-heading > div:first-child,.daily-heading > div:first-child,.gf-heading > div:first-child",
+    )) {
+      node.style.width = "auto";
+      node.style.minWidth = "0";
+      node.style.flex = "1 1 auto";
+    }
+    for (const node of stage.querySelectorAll("h1,h2,h3")) {
+      node.style.wordBreak = "keep-all";
+      node.style.overflowWrap = "normal";
+    }
+    for (const node of stage.querySelectorAll(
+      "button,.cd-legend span,.cd-unit,.chart-unit,.panel-tag,.small-label",
+    )) {
+      node.style.whiteSpace = "nowrap";
+      node.style.flexShrink = "0";
+      node.style.minWidth = "max-content";
+      node.style.maxWidth = "none";
+    }
+    for (const node of stage.querySelectorAll(
+      ".cd-tf,.pc-tf,.range-selector,.metric-selector,.chart-legend,.cd-legend",
+    )) {
+      node.style.width = "auto";
+      node.style.minWidth = "0";
+      node.style.maxWidth = "100%";
+      node.style.display = "flex";
+      node.style.flexWrap = "wrap";
+      node.style.flexShrink = "1";
+    }
+    for (const node of stage.querySelectorAll(
+      ".panel-heading,.daily-heading,.pc-summary-head,.chart-controls,.trend-tools,.gf-heading",
+    )) {
+      node.style.height = "auto";
+      node.style.flexWrap = "wrap";
+      node.style.rowGap = "12px";
     }
     if (
       key === "leaders" &&
