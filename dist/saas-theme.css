@@ -1398,3 +1398,17 @@ html:not([data-panel]) .dashboard-view:not(#overview-panel) {
     grid-row: 4;
   }
 }
+
+@media (min-width: 1000px) {
+  .daily-panel .daily-heading > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  .daily-panel #daily-note:empty {
+    display: none;
+  }
+  .daily-panel .daily-name b {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
