@@ -219,6 +219,44 @@
       node.style.fontFamily =
         'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
     document.body.append(stage);
+    // PNG captures are a fixed snapshot. Let long labels wrap inside their
+    // original cells so the saved image cannot cut text off at panel edges.
+    const textNodes = [
+      ...stage.querySelectorAll(
+        "h1,h2,h3,p,span,b,strong,small,label,button,a,td,th,li",
+      ),
+    ].reverse();
+    for (const node of textNodes) {
+      if (!node.textContent.trim()) continue;
+      const style = getComputedStyle(node);
+      if (
+        style.whiteSpace === "nowrap" ||
+        node.scrollWidth > node.clientWidth + 1
+      ) {
+        node.style.whiteSpace = "normal";
+        node.style.overflowWrap = "anywhere";
+        node.style.minWidth = "0";
+        node.style.maxWidth = "100%";
+        if (node.scrollHeight > node.clientHeight + 1) {
+          node.style.height = "auto";
+          node.style.maxHeight = "none";
+        }
+      }
+    }
+    for (const node of textNodes) {
+      for (
+        let parent = node.parentElement;
+        parent && parent !== stage;
+        parent = parent.parentElement
+      ) {
+        if (parent.scrollHeight <= parent.clientHeight + 1) continue;
+        const overflow = getComputedStyle(parent).overflow;
+        if (overflow !== "hidden" && overflow !== "clip") continue;
+        parent.style.height = "auto";
+        parent.style.maxHeight = "none";
+        parent.style.overflow = "visible";
+      }
+    }
     if (
       key === "leaders" &&
       [...stage.querySelectorAll(".leader")].some(
