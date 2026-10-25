@@ -1907,9 +1907,9 @@ footer a {
   margin-top: 4px;
 }
 .daily-best {
-  color: var(--tone-ffffff);
+  color: var(--text);
   font-weight: 700;
-  background: var(--tone-f7f8fc);
+  background: var(--panel2);
 }
 @media (max-width: 600px) {
   .daily-panel {
