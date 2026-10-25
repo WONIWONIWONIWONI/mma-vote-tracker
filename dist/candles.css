@@ -20,10 +20,10 @@
 .cd-tf {
   display: flex;
   gap: 4px;
-  background: #151321;
+  background: #f7f8fc;
   padding: 4px;
   border-radius: 7px;
-  border: 0.5px solid #41374f;
+  border: 0.5px solid #e8eaf1;
 }
 .cd-tf button {
   border: 0;
@@ -34,7 +34,7 @@
   padding: 7px 11px;
 }
 .cd-tf button.selected {
-  background: #4b2d49;
+  background: #efedff;
   color: var(--lime);
 }
 .cd-controls {
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #ddced7;
+  color: #53566f;
   font-size: 12px;
 }
 .cd-legend i {
@@ -119,9 +119,9 @@
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  background: #211823f2;
+  background: #fffffff5;
   box-shadow: none;
-  border: 0.5px solid #8b536a;
+  border: 0.5px solid #c9c4ff;
   padding: 11px 13px;
   border-radius: 7px;
   font-size: 12px;
@@ -179,10 +179,10 @@
 .pc-tf {
   display: flex;
   gap: 4px;
-  background: #151321;
+  background: #f7f8fc;
   padding: 4px;
   border-radius: 7px;
-  border: 0.5px solid #41374f;
+  border: 0.5px solid #e8eaf1;
 }
 .pc-tf button {
   border: 0;
@@ -193,7 +193,7 @@
   padding: 7px 11px;
 }
 .pc-tf button.selected {
-  background: #4b2d49;
+  background: #efedff;
   color: var(--lime);
 }
 .pc-body {
@@ -203,7 +203,7 @@
 }
 .pc-team,
 .pc-metric {
-  background: #151321;
+  background: #f7f8fc;
   border: 0.5px solid var(--line);
   border-radius: 8px;
   padding: 15px 16px;
@@ -236,10 +236,10 @@
   line-height: 1.4;
 }
 .pc-metric strong.down {
-  color: #4fc8e0;
+  color: #227da8;
 }
 .pc-metric strong.up {
-  color: #ff4757;
+  color: #d63b50;
 }
 .pc-eta strong {
   font-size: 15px;

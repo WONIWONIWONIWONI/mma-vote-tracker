@@ -1,11 +1,11 @@
 /* Draw standalone panel images locally, without screenshots or remote services. */
 ((root) => {
   "use strict";
-  const bg = "#10121b",
-    panel = "#1a1e2b",
-    muted = "#a4adbf",
-    ink = "#f5f6fa",
-    lime = "#f2aac2";
+  const bg = "#f7f8fc",
+    panel = "#ffffff",
+    muted = "#71738b",
+    ink = "#20213b",
+    lime = "#6055f5";
   const font = '"DM Sans", "Noto Sans KR", sans-serif';
   function surface(model, height) {
     const width = 1000;
@@ -44,7 +44,7 @@
       } while (true);
       c.fillText(value, x, y, maxWidth);
     };
-    const line = (x1, y1, x2, y2, color = "#41374f") => {
+    const line = (x1, y1, x2, y2, color = "#e8eaf1") => {
       c.beginPath();
       c.strokeStyle = color;
       c.lineWidth = 0.5;
@@ -71,7 +71,7 @@
     );
     text(model.title, 48, 98, 30, ink, 700);
     text(model.subtitle, 48, 130, 12, muted);
-    line(48, 158, 952, 158, "#303648");
+    line(48, 158, 952, 158, "#e8eaf1");
     line(48, height - 54, 952, height - 54);
     text("데이터 출처 Melon / 비공식 팬 대시보드", 48, height - 27, 10, muted);
     text(
@@ -90,14 +90,14 @@
     model.leaders.forEach((team, i) => {
       const x = 48 + (i % 2) * 464,
         y = start + Math.floor(i / 2) * 152;
-      rect(x, y, 440, 136, i < 2 ? "#212536" : panel, 14);
+      rect(x, y, 440, 136, i < 2 ? "#f3f2ff" : panel, 14);
 
       text(String(team.rank).padStart(2, "0"), x + 24, y + 36, 12, muted, 600);
       text(team.name, x + 66, y + 36, 17, ink, 600, "left", 348);
       text(team.votes, x + 24, y + 77, 30, ink, 600, "left", 285);
       text(team.share, x + 416, y + 77, 21, team.color, 600, "right", 112);
       text(team.gap, x + 24, y + 105, 11, muted, 400, "left", 394);
-      rect(x + 24, y + 119, 392, 3, "#33394c");
+      rect(x + 24, y + 119, 392, 3, "#e8eaf1");
       rect(
         x + 24,
         y + 119,

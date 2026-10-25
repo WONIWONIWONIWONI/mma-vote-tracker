@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#100e19" />
+    <meta name="theme-color" content="#f7f8fc" />
     <title>MMA TOP 6 — 투표 트래커</title>
     <meta
       name="description"
@@ -11,32 +11,82 @@
     />
     <link
       rel="icon"
-      href="./favicon.svg?v=20261025-trend2"
+      href="./favicon.svg?v=20261025-saas1"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="./style.css?v=20261025-trend2" />
-    <link rel="stylesheet" href="./candles.css?v=20261025-trend2" />
+    <link rel="stylesheet" href="./style.css?v=20261025-saas1" />
+    <link rel="stylesheet" href="./candles.css?v=20261025-saas1" />
+    <link rel="stylesheet" href="./saas-theme.css?v=20261025-saas1" />
     <script src="./data/seed.js"></script>
-    <script src="./config.js?v=20261025-trend2" defer></script>
-    <script src="./http.js?v=20261025-trend2" defer></script>
-    <script src="./daily.js?v=20261025-trend2" defer></script>
-    <script src="./hourly.js?v=20261025-trend2" defer></script>
-    <script src="./axis.js?v=20261025-trend2" defer></script>
-    <script src="./analytics.js?v=20261025-trend2" defer></script>
-    <script src="./exports.js?v=20261025-trend2" defer></script>
-    <script src="./sources.js?v=20261025-trend2" defer></script>
-    <script src="./data.js?v=20261025-trend2" defer></script>
-    <script src="./app.js?v=20261025-trend2" defer></script>
-    <script src="./gap-model.js?v=20261025-trend2" defer></script>
-    <script src="./gap-history.js?v=20261025-trend2" defer></script>
-    <script src="./gap-candidates.js?v=20261025-trend2" defer></script>
-    <script src="./candles.js?v=20261025-trend2" defer></script>
-    <script src="./gap-forecast-ui.js?v=20261025-trend2" defer></script>
+    <script src="./config.js?v=20261025-saas1" defer></script>
+    <script src="./http.js?v=20261025-saas1" defer></script>
+    <script src="./daily.js?v=20261025-saas1" defer></script>
+    <script src="./hourly.js?v=20261025-saas1" defer></script>
+    <script src="./axis.js?v=20261025-saas1" defer></script>
+    <script src="./analytics.js?v=20261025-saas1" defer></script>
+    <script src="./exports.js?v=20261025-saas1" defer></script>
+    <script src="./sources.js?v=20261025-saas1" defer></script>
+    <script src="./data.js?v=20261025-saas1" defer></script>
+    <script src="./app.js?v=20261025-saas1" defer></script>
+    <script src="./gap-model.js?v=20261025-saas1" defer></script>
+    <script src="./gap-history.js?v=20261025-saas1" defer></script>
+    <script src="./gap-candidates.js?v=20261025-saas1" defer></script>
+    <script src="./candles.js?v=20261025-saas1" defer></script>
+    <script src="./gap-forecast-ui.js?v=20261025-saas1" defer></script>
     <script src="./vendor/html-to-image.js?v=1.11.13" defer></script>
-    <script src="./native-sharing.js?v=20261025-trend2" defer></script>
-    <script src="./sharing.js?v=20261025-trend2" defer></script>
+    <script src="./native-sharing.js?v=20261025-saas1" defer></script>
+    <script src="./sharing.js?v=20261025-saas1" defer></script>
+    <script src="./dashboard-nav.js?v=20261025-saas1" defer></script>
   </head>
   <body>
+    <aside class="dashboard-sidebar" aria-label="대시보드 메뉴">
+      <a class="dashboard-brand" href="#overview"
+        ><span class="dashboard-mark" aria-hidden="true"
+          ><svg viewBox="0 0 24 24">
+            <path d="M3 15l6-6 5 4 7-8" />
+            <circle cx="9" cy="9" r="2" />
+            <circle cx="14" cy="13" r="2" /></svg></span
+        ><strong>VOTE/TRACK</strong></a
+      >
+      <nav class="dashboard-nav" aria-label="패널 이동">
+        <a href="#overview" aria-current="location"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" /></svg
+          ><span>현황</span></a
+        ><a href="#trend-panel"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 17l6-7 5 4 7-10M3 3v18h18" /></svg
+          ><span>득표 추이</span></a
+        ><a href="#candle-panel"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3v18m6-16v14m6-17v20" />
+            <path d="M4 7h4v8H4zm6 2h4v6h-4zm6-4h4v12h-4z" /></svg
+          ><span>표차 분석</span></a
+        ><a href="#gap-future"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 18l6-6 4 3 8-11M16 4h5v5" /></svg
+          ><span>표차 예측</span></a
+        ><a href="#daily-panel"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <path d="M7 3v4m10-4v4M3 10h18m-13 4h2m4 0h2m-8 3h2" /></svg
+          ><span>하루 증가량</span></a
+        ><a href="#hourly-panel"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 6v6l4 2" /></svg
+          ><span>시간대별</span></a
+        ><a href="#history-details"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h12v18H6zM9 7h6m-6 5h6m-6 5h4" /></svg
+          ><span>집계 기록</span></a
+        >
+      </nav>
+      <div class="sidebar-edition">MMA 2026</div>
+    </aside>
     <div class="site-shell">
       <header class="topbar">
         <a class="brand" href="./" aria-label="MMA 트래커 홈"
@@ -54,7 +104,7 @@
         >
       </header>
       <main>
-        <div class="hero">
+        <div class="hero" id="overview">
           <div>
             <h1>MMA 득표 현황</h1>
           </div>
@@ -119,6 +169,7 @@
         </section>
         <section
           class="chart-panel panel has-image-button"
+          id="trend-panel"
           aria-labelledby="trend-title"
         >
           <div class="panel-heading">
@@ -195,7 +246,11 @@
           id="candle-panel"
           aria-labelledby="cd-title"
         ></section>
-        <section class="panel daily-panel" aria-labelledby="daily-title">
+        <section
+          class="panel daily-panel"
+          id="daily-panel"
+          aria-labelledby="daily-title"
+        >
           <div class="daily-heading">
             <div>
               <span class="section-kicker" hidden></span>
@@ -224,6 +279,7 @@
         </section>
         <section
           class="panel hourly-panel has-image-button"
+          id="hourly-panel"
           aria-labelledby="hourly-title"
         >
           <div class="panel-heading compact">

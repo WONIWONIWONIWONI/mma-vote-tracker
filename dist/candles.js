@@ -5,9 +5,9 @@
   "use strict";
 
   /* ===== 설정 (색 주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = "#ff4757"; // 부호 표차 상승 (빨강)
-  var DOWN_COLOR = "#4fc8e0"; // 부호 표차 하락 (파랑)
-  var FLAT_COLOR = "#a58e9c"; // 변화 없음
+  var UP_COLOR = "#d63b50"; // 부호 표차 상승 (빨강)
+  var DOWN_COLOR = "#227da8"; // 부호 표차 하락 (파랑)
+  var FLAT_COLOR = "#71738b"; // 변화 없음
   var FRAMES = {
     5: { min: 5, label: "5분봉", show: 144 },
     60: { min: 60, label: "1시간봉", show: 96 },
@@ -520,14 +520,14 @@
           y +
           '" y2="' +
           y +
-          '" stroke="#3b374d" stroke-dasharray="2 4" stroke-width="0.5"/>',
+          '" stroke="#e8eaf1" stroke-dasharray="2 4" stroke-width="0.5"/>',
       );
       s.push(
         '<text x="' +
           (m.l - 8) +
           '" y="' +
           (y + 4) +
-          '" text-anchor="end" font-size="12" fill="#aaa3b8" font-family=\'' +
+          '" text-anchor="end" font-size="12" fill="#71738b" font-family=\'' +
           FONT +
           "'>" +
           num(t) +
@@ -563,7 +563,7 @@
             f1(slot) +
             '" height="' +
             ph +
-            '" fill="#ffffff0f"/>',
+            '" fill="#6055f50b"/>',
         );
       if (Math.round(c.t / size) % k === 0) {
         var day = kst(c.t).D;
@@ -572,7 +572,7 @@
             f1(cx) +
             '" y="' +
             (H - m.b + 16) +
-            '" text-anchor="middle" font-size="12" fill="#aaa3b8" font-family=\'' +
+            '" text-anchor="middle" font-size="12" fill="#71738b" font-family=\'' +
             FONT +
             "'>" +
             hm(c.t) +
@@ -584,7 +584,7 @@
               f1(cx) +
               '" y="' +
               (H - m.b + 30) +
-              '" text-anchor="middle" font-size="12" fill="#79816f" font-family=\'' +
+              '" text-anchor="middle" font-size="12" fill="#71738b" font-family=\'' +
               FONT +
               "'>" +
               md(c.t) +
@@ -648,14 +648,14 @@
           ly +
           '" y2="' +
           ly +
-          '" stroke="#ff7594" stroke-opacity="0.5" stroke-dasharray="3 4"/>',
+          '" stroke="#6055f5" stroke-opacity="0.5" stroke-dasharray="3 4"/>',
       );
       s.push(
         '<text x="' +
           (m.l + 4) +
           '" y="' +
           (ly - 5) +
-          '" text-anchor="start" font-size="12" fill="#ff7594" font-family=\'' +
+          '" text-anchor="start" font-size="12" fill="#6055f5" font-family=\'' +
           FONT +
           "'>현재 " +
           num(lc.c) +
@@ -868,13 +868,13 @@
           pd.last.an,
           rateText(pd.aRate),
           "최근 " + Math.round(pd.elapsed) + "분 평균",
-          "#f2f4ee",
+          "#20213b",
         ],
         [
           pd.last.bn,
           rateText(pd.bRate),
           "최근 " + Math.round(pd.elapsed) + "분 평균",
-          "#f2f4ee",
+          "#20213b",
         ],
         [
           "표차 변화",
@@ -886,7 +886,7 @@
           "현재 추세가 지속된다면",
           eta,
           trendLabel + " / 회귀 " + rateText(pd.trend),
-          "#f2f4ee",
+          "#20213b",
         ],
       ];
       items.forEach(function (it, i) {
@@ -903,12 +903,12 @@
           cw +
           '" height="' +
           ch +
-          '" rx="4" fill="#1a1e2b" stroke="#30374a"/>' +
+          '" rx="4" fill="#ffffff" stroke="#e8eaf1"/>' +
           '<text x="' +
           (x + 13) +
           '" y="' +
           (y + 22) +
-          '" font-size="12" fill="#a4adbf"' +
+          '" font-size="12" fill="#71738b"' +
           font +
           ">" +
           esc(it[0]) +
@@ -928,7 +928,7 @@
           (x + 13) +
           '" y="' +
           (y + 72) +
-          '" font-size="12" fill="#a4adbf"' +
+          '" font-size="12" fill="#71738b"' +
           font +
           ">" +
           esc(it[2]) +
@@ -945,18 +945,18 @@
       " " +
       totalH +
       '">' +
-      '<rect width="100%" height="100%" fill="#10121b"/>' +
-      '<text x="28" y="32" font-size="16" font-weight="700" fill="#f2f4ee"' +
+      '<rect width="100%" height="100%" fill="#f7f8fc"/>' +
+      '<text x="28" y="32" font-size="16" font-weight="700" fill="#20213b"' +
       font +
       ">VOTE/TRACK / 리센느 기준 표차 분석</text>" +
-      '<text x="28" y="55" font-size="12" fill="#a4adbf"' +
+      '<text x="28" y="55" font-size="12" fill="#71738b"' +
       font +
       ">현재 득표 페이스 / " +
       paceLabel +
       " 기준  |  캔들 " +
       FRAMES[state.tf].label +
       "</text>" +
-      '<text x="28" y="75" font-size="12" fill="#a4adbf"' +
+      '<text x="28" y="75" font-size="12" fill="#71738b"' +
       font +
       ">" +
       md(last.t) +
@@ -972,7 +972,7 @@
       num(last.b) +
       "</text>" +
       cards +
-      '<text x="28" y="335" font-size="12" fill="#a4adbf"' +
+      '<text x="28" y="335" font-size="12" fill="#71738b"' +
       font +
       ">표차 캔들 / " +
       md(a.t) +
@@ -990,7 +990,7 @@
       "</g>" +
       '<text x="28" y="' +
       (H + HDR + 21) +
-      '" font-size="12" fill="#a4adbf"' +
+      '" font-size="12" fill="#71738b"' +
       font +
       '><tspan fill="' +
       UP_COLOR +
