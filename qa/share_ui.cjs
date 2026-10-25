@@ -72,6 +72,30 @@ const root = path.resolve(__dirname, "../dist"),
           await page.locator(".share-value").first().textContent(),
           ((100 * first.top4[0].votes) / first.totalVotes).toFixed(2) + "%",
         );
+        // Inspect the actual PNG staging layout, including fallback fonts.
+        await page.evaluate(() => {
+          const original = htmlToImage.toPng;
+          htmlToImage.toPng = async (stage, options) => {
+            const broken = [];
+            for (const node of stage.querySelectorAll(
+              "button,.cd-legend span,.pc-summary-head > span,.chart-legend button",
+            )) {
+              if (!node.textContent.trim() || !node.getClientRects().length) continue;
+              const range = document.createRange();
+              range.selectNodeContents(node);
+              const lines = [...range.getClientRects()].filter((r) => r.width > 0);
+              const rows = new Set(lines.map((r) => Math.round(r.top)));
+              const box = node.getBoundingClientRect();
+              if (
+                rows.size > 1 ||
+                lines.some((r) => r.bottom > box.bottom + 2 || r.right > box.right + 2)
+              ) broken.push(node.textContent.trim());
+            }
+            if (broken.length)
+              throw new Error("Shared labels wrap or overflow: " + broken.join(", "));
+            return original(stage, options);
+          };
+        });
         fs.mkdirSync("qa-output", { recursive: true });
         for (const type of ["leaders", "trend", "hourly"]) {
           const model = await page.evaluate(
