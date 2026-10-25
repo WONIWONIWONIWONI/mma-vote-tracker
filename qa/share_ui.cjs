@@ -227,8 +227,8 @@ const root = path.resolve(__dirname, "../dist"),
             );
           assert.deepEqual(
             voteColors,
-            Array(6).fill("rgb(245, 246, 250)"),
-            "rank votes remain readable on dark cards",
+            Array(6).fill("rgb(32, 33, 59)"),
+            "rank votes remain readable on light cards",
           );
           assert.ok(
             mobile ? before[1][1] > before[0][1] : before[1][0] > before[0][0],

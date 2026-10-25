@@ -16,13 +16,13 @@
   const n = (v) => Math.round(Number(v) * 10) / 10;
   const transparent = (c) =>
     !c || c === "none" || c === "transparent" || c === "rgba(0, 0, 0, 0)";
-  const color = (c) => (/^#[\da-f]{3,8}$/i.test(c) ? c : "#a4adbf");
+  const color = (c) => (/^#[\da-f]{3,8}$/i.test(c) ? c : "#71738b");
   function rgb(value) {
     if (/^#[\da-f]{6}$/i.test(value)) return value;
     const a = value.match(/[\d.]+/g)?.map(Number);
-    if (!a || a.length < 3) return "#a4adbf";
+    if (!a || a.length < 3) return "#71738b";
     const alpha = a[3] ?? 1,
-      bg = [24, 25, 27];
+      bg = [255, 255, 255];
     return (
       "#" +
       a
@@ -36,29 +36,29 @@
     );
   }
   const table = (content, extra = "") =>
-    `<table width="100%" cellspacing="0" cellpadding="0" border="0" ${extra} style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;color:#f5f6fa;">${content}</table>`;
+    `<table width="100%" cellspacing="0" cellpadding="0" border="0" ${extra} style="width:100%;border-collapse:collapse;table-layout:fixed;font-family:Arial,sans-serif;color:#20213b;">${content}</table>`;
   const cell = (body, extra = "") => `<td valign="top" ${extra}>${body}</td>`;
   function leaders(model, edition) {
     const cards = model.leaders.map((t, i) => {
       const c = color(t.color),
-        bg = "#191725";
+        bg = "#ffffff";
       const body =
         table(
-          `<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2, "0")}</b></font> <font color="#a4adbf">위</font>`)}${cell("", 'align="right" style="padding:4px 0;"')}</tr>`,
+          `<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2, "0")}</b></font> <font color="#71738b">위</font>`)}${cell("", 'align="right" style="padding:4px 0;"')}</tr>`,
         ) +
         `<p style="font-size:20px;font-weight:bold;margin:20px 0 12px;"><font color="${c}">●</font> ${esc(t.name)}</p>` +
         table(
-          `<tr>${cell(`<b style="font-size:30px;white-space:nowrap;">${esc(t.votes.replace(/표$/, ""))}</b> <font color="#a4adbf">표</font>`, 'width="65%" style="padding:4px 0;"')}${cell(`<font color="${c}" style="font-size:clamp(16px,5vw,24px);white-space:nowrap;">${esc(t.share)}</font>`, 'align="right" style="padding:4px 0;"')}</tr>`,
+          `<tr>${cell(`<b style="font-size:30px;white-space:nowrap;">${esc(t.votes.replace(/표$/, ""))}</b> <font color="#71738b">표</font>`, 'width="65%" style="padding:4px 0;"')}${cell(`<font color="${c}" style="font-size:clamp(16px,5vw,24px);white-space:nowrap;">${esc(t.share)}</font>`, 'align="right" style="padding:4px 0;"')}</tr>`,
         ) +
-        `<p style="font-size:12px;color:${i === 0 ? "#ff789a" : "#a4adbf"};">${esc(t.gap)}</p>`;
+        `<p style="font-size:12px;color:${i === 0 ? "#cf3c61" : "#71738b"};">${esc(t.gap)}</p>`;
       // Inline tables wrap without media queries. If a board strips display,
       // ordinary block tables still stack safely instead of clipping.
-      return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:460px;table-layout:fixed;vertical-align:top;margin:6px 0;font:16px/1.6 Arial,sans-serif;"><tbody><tr>${cell(`<font color="#f5f6fa">${body}</font>`, `bgcolor="${bg}" width="100%" style="padding:16px;text-align:left;border:0.5px solid #98456a;border-radius:14px;"`)}</tr></tbody></table>`;
+      return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:460px;table-layout:fixed;vertical-align:top;margin:6px 0;font:16px/1.6 Arial,sans-serif;"><tbody><tr>${cell(`<font color="#20213b">${body}</font>`, `bgcolor="${bg}" width="100%" style="padding:16px;text-align:left;border:0.5px solid #ddd9ff;border-radius:14px;"`)}</tr></tbody></table>`;
     });
 
     return table(
-      `<tr>${cell(`<font color="#ff789a">VOTE/TRACK / ${esc(edition)}</font><p style="font-size:12px;color:#a4adbf;">${esc(model.sourceAt)} KST</p>`, 'style="padding:12px;"')}</tr><tr>${cell(cards.join(" "), 'style="padding:0 8px;text-align:center;"')}</tr>`,
-      'bgcolor="#100e19"',
+      `<tr>${cell(`<font color="#cf3c61">VOTE/TRACK / ${esc(edition)}</font><p style="font-size:12px;color:#71738b;">${esc(model.sourceAt)} KST</p>`, 'style="padding:12px;"')}</tr><tr>${cell(cards.join(" "), 'style="padding:0 8px;text-align:center;"')}</tr>`,
+      'bgcolor="#f7f8fc"',
     );
   }
   // Convert currently displayed chart geometry to run-length-compressed table cells.
@@ -193,19 +193,19 @@
           while (end < columns && row[end] === row[x]) end++;
           // Inline CSS survives boards that remove legacy bgcolor attributes. Give
           // every run real content and its own metrics so board td rules cannot win.
-          html += `<td${end - x > 1 ? ` colspan="${end - x}"` : ""} style="background:${row[x] || "#191725"};padding:0;font-size:1px;line-height:1px;">\u200b</td>`;
+          html += `<td${end - x > 1 ? ` colspan="${end - x}"` : ""} style="background:${row[x] || "#ffffff"};padding:0;font-size:1px;line-height:1px;">\u200b</td>`;
           x = end;
         }
         return `<tr height="${rowHeight}" style="height:${rowHeight}px;">${html}</tr>`;
       })
       .join("");
     const columnsHTML = `<colgroup>${Array.from({ length: columns }, () => `<col width="${(100 / columns).toFixed(4)}%">`).join("")}</colgroup>`;
-    const plot = `<table width="100%" height="${rows * rowHeight}" bgcolor="#191725" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows * rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:1px;line-height:1px;">${columnsHTML}<tbody>${cells}</tbody></table>`;
-    const axis = `<table width="100%" height="${rows * rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map((t) => `<tr><td align="right" valign="middle" style="padding:0;"><font color="#a4adbf" style="font-size:12px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
+    const plot = `<table width="100%" height="${rows * rowHeight}" bgcolor="#ffffff" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:${rows * rowHeight}px;table-layout:fixed;border-collapse:collapse;font-size:1px;line-height:1px;">${columnsHTML}<tbody>${cells}</tbody></table>`;
+    const axis = `<table width="100%" height="${rows * rowHeight}" cellspacing="0" cellpadding="0" border="0">${ticks.map((t) => `<tr><td align="right" valign="middle" style="padding:0;"><font color="#71738b" style="font-size:12px;">${esc(t.text)}</font></td></tr>`).join("")}</table>`;
     const bottom = table(
-      `<tr>${labels.map((t) => cell(`<font color="#a4adbf" style="font-size:12px;">${esc(t.text)}</font>`, 'align="center" style="padding:0;"')).join("")}</tr>`,
+      `<tr>${labels.map((t) => cell(`<font color="#71738b" style="font-size:12px;">${esc(t.text)}</font>`, 'align="center" style="padding:0;"')).join("")}</tr>`,
     );
-    return `<div><p style="font-size:12px;color:#a4adbf;">${annotations.map(esc).join(" / ")}</p>${table(`<tr>${cell(axis, 'width="22%" style="padding:0 4px 0 0;"')}${cell(plot + bottom, 'width="78%" style="padding:0;"')}</tr>`)}</div>`;
+    return `<div><p style="font-size:12px;color:#71738b;">${annotations.map(esc).join(" / ")}</p>${table(`<tr>${cell(axis, 'width="22%" style="padding:0 4px 0 0;"')}${cell(plot + bottom, 'width="78%" style="padding:0;"')}</tr>`)}</div>`;
   }
   function panel(stage, columns = 160, rows = 96) {
     const rootStyle = getComputedStyle(stage);
@@ -311,34 +311,27 @@
         const max = Math.max(0, ...valid.map((v) => v.delta)),
           winners = same && max > 0 ? valid.filter((v) => v.delta === max) : [];
         const scale = Math.max(1, ...valid.map((v) => Math.abs(v.delta)));
-        return `<tr><td style="padding:14px 4px;background:#1a1e2b;vertical-align:top;overflow-wrap:anywhere;"><b>${esc(row.label)}</b><br><small style="color:#f2aac2">${esc(winners.length ? winners.map((v) => v.name).join(" / ") : "구간 다름 / 기록 대기")}</small><br><small style="color:#a4adbf">${esc(row.status)}</small></td>${row.values.map((v) => `<td style="padding:14px 3px;background:#1a1e2b;vertical-align:top;overflow-wrap:anywhere;"><b${winners.includes(v) ? ' style="color:#ff789a"' : ""}>${esc(v.label)}</b><div style="height:4px;width:${n((Math.abs(v.delta ?? 0) / scale) * 100)}%;background:${color(v.color)};margin:8px 0;"></div>${v.coverage ? `<small style="color:#a4adbf;font-size:12px;overflow-wrap:anywhere;">${esc(v.coverage)}</small>` : ""}</td>`).join("")}</tr>`;
+        return `<tr><td style="padding:14px 4px;background:#ffffff;vertical-align:top;overflow-wrap:anywhere;"><b>${esc(row.label)}</b><br><small style="color:#6055f5">${esc(winners.length ? winners.map((v) => v.name).join(" / ") : "구간 다름 / 기록 대기")}</small><br><small style="color:#71738b">${esc(row.status)}</small></td>${row.values.map((v) => `<td style="padding:14px 3px;background:#ffffff;vertical-align:top;overflow-wrap:anywhere;"><b${winners.includes(v) ? ' style="color:#cf3c61"' : ""}>${esc(v.label)}</b><div style="height:4px;width:${n((Math.abs(v.delta ?? 0) / scale) * 100)}%;background:${color(v.color)};margin:8px 0;"></div>${v.coverage ? `<small style="color:#71738b;font-size:12px;overflow-wrap:anywhere;">${esc(v.coverage)}</small>` : ""}</td>`).join("")}</tr>`;
       })
       .join("");
-    return `<div style="padding:12px;background:#10121b;color:#f5f6fa;font:16px/1.7 Arial,sans-serif;text-align:left;overflow-wrap:anywhere;"><p style="color:#f2aac2;margin:0;">VOTE/TRACK / ${esc(edition)}</p><p style="color:#a4adbf;font-size:12px;">최신 관측 ${esc(model.sourceAt)} KST</p><h2 style="color:#f5f6fa;font-size:16px;margin:18px 0;">${esc(model.title)}</h2><p style="color:#a4adbf;">${esc(model.subtitle)}</p><table style="width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 8px;color:inherit;font:inherit;"><colgroup><col style="width:22%;">${teams.map(() => '<col style="width:13%;">').join("")}</colgroup><thead><tr><th style="text-align:left;color:#a4adbf;">시간 / 관측 최다</th>${teams.map((t) => `<th style="text-align:left;font-size:12px;color:${color(t.color)};">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table><p style="color:#a4adbf;font-size:12px;">데이터 출처 Melon / 비공식 팬 대시보드 / 모든 시각 KST</p></div>`;
+    return `<div style="padding:12px;background:#f7f8fc;color:#20213b;font:16px/1.7 Arial,sans-serif;text-align:left;overflow-wrap:anywhere;"><p style="color:#6055f5;margin:0;">VOTE/TRACK / ${esc(edition)}</p><p style="color:#71738b;font-size:12px;">최신 관측 ${esc(model.sourceAt)} KST</p><h2 style="color:#20213b;font-size:16px;margin:18px 0;">${esc(model.title)}</h2><p style="color:#71738b;">${esc(model.subtitle)}</p><table style="width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0 8px;color:inherit;font:inherit;"><colgroup><col style="width:22%;">${teams.map(() => '<col style="width:13%;">').join("")}</colgroup><thead><tr><th style="text-align:left;color:#71738b;">시간 / 관측 최다</th>${teams.map((t) => `<th style="text-align:left;font-size:12px;color:${color(t.color)};">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table><p style="color:#71738b;font-size:12px;">데이터 출처 Melon / 비공식 팬 대시보드 / 모든 시각 KST</p></div>`;
   }
   function finalize(html) {
     const template = document.createElement("template");
     template.innerHTML = html;
     function readable(value) {
-      const hex = rgb(value),
-        channels = hex
-          .slice(1)
-          .match(/../g)
-          .map((v) => parseInt(v, 16));
+      const hex = rgb(value);
+      const channels = hex
+        .slice(1)
+        .match(/../g)
+        .map((v) => parseInt(v, 16));
       const light = channels.map((v) => {
         v /= 255;
         return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
       });
       const luminance =
         0.2126 * light[0] + 0.7152 * light[1] + 0.0722 * light[2];
-      // Neutral secondary text gets a consistent light tone. Keep bright team
-      // colors, while preventing dark theme-inherited text on dark panels.
-      if (
-        Math.max(...channels) - Math.min(...channels) < 45 &&
-        luminance < 0.62
-      )
-        return "#d0d8e8";
-      return luminance < 0.24 ? "#d0d8e8" : hex;
+      return 1.05 / (luminance + 0.05) < 4.5 ? "#20213b" : hex;
     }
     // Keep the established palette, while exporting only simple presentation
     // elements. Table structural tags remain for sizing the compressed charts.
@@ -355,7 +348,7 @@
       replacement.append(...old.childNodes);
       old.replaceWith(replacement);
     }
-    function visit(node, inherited = "#f5f6fa") {
+    function visit(node, inherited = "#20213b") {
       const specified = node.style.color || node.getAttribute("color");
       const foreground = readable(
         specified && specified !== "inherit" ? specified : inherited,

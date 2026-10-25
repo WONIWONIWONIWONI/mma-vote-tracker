@@ -212,13 +212,43 @@ async function setup(browser, mobile = false) {
     !(await page.locator("body").innerText()).includes("·"),
     "UI copy has no middle-dot separators",
   );
+  assert.equal(
+    await page
+      .locator(".dashboard-sidebar")
+      .evaluate((e) => getComputedStyle(e).backgroundColor),
+    "rgb(255, 255, 255)",
+  );
+  assert.equal(
+    await page
+      .locator(".leader")
+      .first()
+      .evaluate((e) => getComputedStyle(e).backgroundColor),
+    "rgb(255, 255, 255)",
+  );
+  assert.deepEqual(
+    await page
+      .locator(".dashboard-nav a")
+      .evaluateAll((links) =>
+        links
+          .filter((link) => !document.getElementById(link.hash.slice(1)))
+          .map((link) => link.hash),
+      ),
+    [],
+    "every navigation link targets a real panel",
+  );
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+    "dashboard fits the viewport",
+  );
   const colors = await page
     .locator(".leader")
     .evaluateAll((rows) =>
       rows.map((e) => e.style.getPropertyValue("--color")),
     );
   assert.equal(new Set(colors).size, 6, "all six teams have distinct colors");
-  assert.equal(colors[1], "#e6ff54");
+  assert.equal(colors[1], "#617d00");
   assert.equal(
     await page.locator("[data-range].selected").getAttribute("data-range"),
     "24",
@@ -421,7 +451,7 @@ async function setup(browser, mobile = false) {
   async function noRightBlank() {
     const gap = await page.locator("#cd-svg").evaluate((e) => {
       const bars = [...e.querySelectorAll("rect")].filter((r) =>
-        ["#ff4757", "#4fc8e0", "#a58e9c"].includes(r.getAttribute("fill")),
+        ["#d63b50", "#227da8", "#71738b"].includes(r.getAttribute("fill")),
       );
       const last = bars.at(-1);
       return (
@@ -560,10 +590,10 @@ async function setup(browser, mobile = false) {
   if (!mobile) {
     await page.locator("#gap-pair").selectOption(ids[0]);
     for (const [first, last, label, color] of [
-      [-100, -50, "격차 축소", "#ff4757"],
-      [100, 150, "격차 확대", "#ff4757"],
-      [-100, -150, "격차 확대", "#4fc8e0"],
-      [100, 50, "격차 축소", "#4fc8e0"],
+      [-100, -50, "격차 축소", "#d63b50"],
+      [100, 150, "격차 확대", "#d63b50"],
+      [-100, -150, "격차 확대", "#227da8"],
+      [100, 50, "격차 축소", "#227da8"],
     ]) {
       const rows = Array.from({ length: 7 }, (_, i) => {
         const s = snapshot(714 + i),
@@ -589,7 +619,7 @@ async function setup(browser, mobile = false) {
         await metric
           .locator("strong")
           .evaluate((e) => getComputedStyle(e).color),
-        color === "#ff4757" ? "rgb(255, 71, 87)" : "rgb(79, 200, 224)",
+        color === "#d63b50" ? "rgb(214, 59, 80)" : "rgb(34, 125, 168)",
       );
     }
   }

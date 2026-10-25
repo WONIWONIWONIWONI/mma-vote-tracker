@@ -27,6 +27,7 @@
     ledgerFailed = false;
   const section = document.createElement("section");
   section.className = "gap-future";
+  section.id = "gap-future";
   section.setAttribute("aria-labelledby", "gap-future-title");
   section.innerHTML = `<div class="gf-heading"><div><span class="section-kicker" hidden></span><h3 id="gap-future-title">12시간 표차 예측</h3></div><label>보기<select id="gf-origin" class="control-select" aria-label="예측 보기"></select></label></div><p class="gf-intro">양수: 리센느 우세, 음수: 임영웅 우세. 점선은 조건부 예측입니다.</p><div id="gf-content"></div><details class="gf-method"><summary>예측 기준</summary><p>10월 16일 00시(KST) 이후 최근 최대 7일의 두 팀 관측만 사용합니다. 15분 초과 관측 공백과 득표 정정 구간은 학습에서 제외합니다. 후보는 30분 패턴(최근 보정 포함/제외), 15분 패턴, 전날 동일 시간 변동 반복입니다. 각 정시에 완료된 과거 12시간 예측의 오차로 모델을 다시 비교합니다. 결과는 5분 간격 144개 구간으로 계산합니다.</p><p>최소 24시간의 학습과 충분한 시간대 관측이 필요합니다. 모델 교체는 완료된 12시간 검증 6개 이상 비중복 12시간 구간 6개 이상, 종합 오차 10% 이상 개선, 검증 구간 60% 이상 승리, 최종 표차 오차 악화 5% 이내일 때만 허용합니다. 종합 오차는 경로 MAE 70%와 최종 표차 MAE 30%입니다. 아직 며칠치 자료이므로 반복 패턴이 유지된다는 가정이며, 투표 집중 동원 추세 변화는 미리 알 수 없습니다. 확률이나 확정 결과가 아닙니다.</p><p>정시 예측은 수집 서버에서 발행해 공용 저장소에 기준 시각 모델 선택 근거 입력 해시 예측 경로를 고정 보관합니다. 한 번 발행한 예측은 모델이 바뀌어도 덮어쓰지 않습니다. 과거 예측에서는 완료된 공용 12시간 예측을 시간순으로 이어 봅니다. 새 예측이 시작되는 경계에서는 예측 표차가 다시 맞춰져 선이 달라질 수 있습니다. 보관 기록이 없는 구간은 만들지 않습니다. 오차는 실제 − 예측이며 실제 관측 시각에서 계산합니다. 앞으로의 실제값은 접속 새로고침 후 추가되며 관측이 없으면 —로 남깁니다.</p></details>`;
   root.appendChild(section);
@@ -251,7 +252,7 @@
     const ticks = tickValues
       .map(
         (v) =>
-          `<g class="gf-y-tick"><line x1="${box.x}" x2="${W - 18}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#a295b0" : "#393346"}" stroke-dasharray="${v === 0 ? "3 3" : "2 4"}"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text></g>`,
+          `<g class="gf-y-tick"><line x1="${box.x}" x2="${W - 18}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#71738b" : "#e8eaf1"}" stroke-dasharray="${v === 0 ? "3 3" : "2 4"}"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text></g>`,
       )
       .join("");
     const clock = Date.now(),
@@ -282,16 +283,16 @@
           }).join("")
         : endpoint(xmin, "시작", "start") + endpoint(xmax, "끝", "end");
     const clockLine = showClock
-      ? `<g class="gf-current-time" data-time="${clock}"><line x1="${x(clock)}" x2="${x(clock)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#c6b7d1" stroke-dasharray="3 4"/><text x="${Math.max(box.x + 32, Math.min(W - 52, x(clock)))}" y="${H - 9}" text-anchor="middle" fill="#aba3b8" font-size="12">현재 ${time(clock)}</text></g>`
+      ? `<g class="gf-current-time" data-time="${clock}"><line x1="${x(clock)}" x2="${x(clock)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#53566f" stroke-dasharray="3 4"/><text x="${Math.max(box.x + 32, Math.min(W - 52, x(clock)))}" y="${H - 9}" text-anchor="middle" fill="#71738b" font-size="12">현재 ${time(clock)}</text></g>`
       : "";
     const annotations = now
       ? `<g class="gf-now-markers">${[
-          { g: now.actual, color: "#4fc8e0" },
-          { g: now.predicted, color: "#ff789a" },
+          { g: now.actual, color: "#227da8" },
+          { g: now.predicted, color: "#cf3c61" },
         ]
           .map(
             (p) =>
-              `<line x1="${box.x}" x2="${x(now.t)}" y1="${y(p.g)}" y2="${y(p.g)}" stroke="${p.color}" stroke-dasharray="3 3"/><circle cx="${x(now.t)}" cy="${y(p.g)}" r="3" fill="${p.color}" stroke="#151321" stroke-width="0.5"/>`,
+              `<line x1="${box.x}" x2="${x(now.t)}" y1="${y(p.g)}" y2="${y(p.g)}" stroke="${p.color}" stroke-dasharray="3 3"/><circle cx="${x(now.t)}" cy="${y(p.g)}" r="3" fill="${p.color}" stroke="#f7f8fc" stroke-width="0.5"/>`,
           )
           .join("")}</g>`
       : "";
@@ -300,11 +301,11 @@
           .filter((m) => m.origin > xmin && m.origin < xmax)
           .map(
             (m) =>
-              `<line x1="${x(m.origin)}" x2="${x(m.origin)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#877b95" stroke-opacity=".3" stroke-dasharray="2 5"/>`,
+              `<line x1="${x(m.origin)}" x2="${x(m.origin)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b8bacb" stroke-opacity=".3" stroke-dasharray="2 5"/>`,
           )
           .join("")
       : "";
-    svg.innerHTML = `<title>${historical ? "완료된 12시간 예측과 실제의 전체 경로" : "리센느와 임영웅의 현재 12시간 예측과 실제"} (KST)</title><defs><clipPath id="gf-plot"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><g fill="#aba3b8" font-size="12">${ticks}<line x1="${box.x}" x2="${W - 18}" y1="${box.y + box.h}" y2="${box.y + box.h}" stroke="#877b95"/>${labels}</g><g clip-path="url(#gf-plot)">${boundaries}${segments.map((p) => `<path class="gf-predicted-path" d="${path(p)}" stroke="#ff789a" stroke-width="0.5" stroke-dasharray="5 4" fill="none"/>`).join("")}<path class="gf-actual-path" d="${path(actual)}" stroke="#4fc8e0" stroke-width="0.5" fill="none"/>${annotations}</g>${clockLine}`;
+    svg.innerHTML = `<title>${historical ? "완료된 12시간 예측과 실제의 전체 경로" : "리센느와 임영웅의 현재 12시간 예측과 실제"} (KST)</title><defs><clipPath id="gf-plot"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><g fill="#71738b" font-size="12">${ticks}<line x1="${box.x}" x2="${W - 18}" y1="${box.y + box.h}" y2="${box.y + box.h}" stroke="#b8bacb"/>${labels}</g><g clip-path="url(#gf-plot)">${boundaries}${segments.map((p) => `<path class="gf-predicted-path" d="${path(p)}" stroke="#cf3c61" stroke-width="0.5" stroke-dasharray="5 4" fill="none"/>`).join("")}<path class="gf-actual-path" d="${path(actual)}" stroke="#227da8" stroke-width="0.5" fill="none"/>${annotations}</g>${clockLine}`;
     if (historical)
       $("gf-history-range").textContent =
         `${date(xmin)} ~ ${date(xmax)} KST / 전체 ${model.models.length}개 예측`;

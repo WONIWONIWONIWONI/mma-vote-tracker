@@ -156,7 +156,7 @@
   function stagePanel(key, panel) {
     const stage = document.createElement("div"),
       width = Math.ceil(panel.getBoundingClientRect().width);
-    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#100e19" : "#191725"};color:#f5f0f6;box-sizing:border-box;pointer-events:none;z-index:-100;`;
+    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#f7f8fc" : "#ffffff"};color:#20213b;box-sizing:border-box;pointer-events:none;z-index:-100;`;
     stage.dataset.snapshotStage = key;
     const append = (node) => {
       const c = freeze(node);
