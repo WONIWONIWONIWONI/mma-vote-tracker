@@ -8,10 +8,25 @@ const history = JSON.parse(
   fs.readFileSync(path.join(root, "data/history.json")),
 );
 async function checkDailyHistoryContrast(page, theme) {
+  const mobile = page.viewportSize().width <= 760;
+  if (mobile) {
+    assert.ok(
+      await page.locator(".daily-history").evaluate((element) => element.open),
+      "mobile history starts expanded",
+    );
+    assert.ok(
+      await page
+        .locator(".daily-record")
+        .evaluateAll(
+          (records) =>
+            records.length > 0 && records.every((record) => record.open),
+        ),
+      "all mobile dates start expanded",
+    );
+  }
   await page.locator(".daily-history").evaluate((element) => {
     element.open = true;
   });
-  const mobile = page.viewportSize().width <= 760;
   if (mobile) {
     await page
       .locator(".daily-record")
