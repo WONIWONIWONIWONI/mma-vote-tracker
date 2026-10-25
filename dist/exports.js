@@ -21,7 +21,7 @@
     const c = canvas.getContext("2d");
     if (!c) throw new Error("Canvas is unavailable.");
     c.scale(scale, scale);
-    c.fillStyle = bg;
+    c.fillStyle = TrackerTheme.color(bg);
     c.fillRect(0, 0, width, height);
     const text = (
       value,
@@ -35,7 +35,7 @@
     ) => {
       value = String(value);
       size = Math.max(12, size);
-      c.fillStyle = color;
+      c.fillStyle = TrackerTheme.color(color);
       c.textAlign = align;
       do {
         c.font = `${weight} ${size}px ${font}`;
@@ -46,14 +46,14 @@
     };
     const line = (x1, y1, x2, y2, color = "#e8eaf1") => {
       c.beginPath();
-      c.strokeStyle = color;
+      c.strokeStyle = TrackerTheme.color(color);
       c.lineWidth = 0.5;
       c.moveTo(x1, y1);
       c.lineTo(x2, y2);
       c.stroke();
     };
     const rect = (x, y, w, h, color = panel, radius = 12) => {
-      c.fillStyle = color;
+      c.fillStyle = TrackerTheme.color(color);
       c.beginPath();
       c.roundRect(x, y, w, h, Math.min(radius, h / 2));
       c.fill();
@@ -164,7 +164,7 @@
     c.clip();
     for (const series of model.series) {
       c.beginPath();
-      c.strokeStyle = series.color;
+      c.strokeStyle = TrackerTheme.color(series.color);
       c.lineWidth = 1.2;
       let active = false;
       for (const point of series.points) {
@@ -181,7 +181,7 @@
         )
           return;
         c.beginPath();
-        c.fillStyle = series.color;
+        c.fillStyle = TrackerTheme.color(series.color);
         c.arc(
           x(point.time),
           y(point.value),
@@ -196,7 +196,7 @@
       c.setLineDash([5, 5]);
       for (const f of model.forecasts) {
         c.beginPath();
-        c.strokeStyle = f.color;
+        c.strokeStyle = TrackerTheme.color(f.color);
         c.lineWidth = 1.2;
         f.points.forEach((p, i) => {
           if (i) c.lineTo(x(p.time), y(p.value));
@@ -204,7 +204,7 @@
         });
         c.stroke();
       }
-      c.strokeStyle = muted;
+      c.strokeStyle = TrackerTheme.color(muted);
       c.beginPath();
       c.moveTo(x(model.lastTime), top);
       c.lineTo(x(model.lastTime), bottom);
