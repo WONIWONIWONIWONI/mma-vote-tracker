@@ -254,7 +254,8 @@
         </section>
         <details class="panel history-panel" id="history-details">
           <summary class="history-summary">
-            <span><span class="section-kicker" hidden></span></span
+            <span class="history-title" id="history-title"
+              >집계 기록 <small id="history-count"></small></span
             ><span class="history-toggle"
               ><span id="history-toggle-label">펼치기</span
               ><span class="history-chevron" aria-hidden="true">⌄</span></span
@@ -327,12 +328,13 @@
             <p>
               최근 60분의 실제 시각과 수치에 가중 선형회귀를 적용합니다. 최근
               관측에 더 큰 비중(30분 반감기)을 두고, 마지막 실제 값에서 추정
-              기울기를 연장합니다. 기본 예측 기간은 30분이며 1 3 6 12 24시간으로
-              변경할 수 있습니다. 기간이 길수록 오차가 커질 수 있습니다. 점선은
-              조건부 추정이며 실제 관측이나 확정 결과가 아닙니다.
+              기울기를 연장합니다. 기본 예측 기간은 30분이며 1, 3, 6, 12,
+              24시간으로 변경할 수 있습니다. 기간이 길수록 오차가 커질 수
+              있습니다. 점선은 조건부 추정이며 실제 관측이나 확정 결과가
+              아닙니다.
             </p>
             <p>
-              6개 이상 15분 이상 관측이 필요하며, 10~30분의 관측 공백은 실제
+              6개 이상, 15분 이상 관측이 필요하며, 10~30분의 관측 공백은 실제
               시각 간격을 반영해 추정하며 신뢰도 저하를 표시합니다. 30분 초과
               공백 또는 낮은 적합도(R²&lt;0.3)에서는 예측을 보류합니다. 득표수가
               감소한 정정 구간도 보류합니다. 하루치 자료로 시간대별 반복 패턴을

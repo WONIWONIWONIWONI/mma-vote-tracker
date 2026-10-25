@@ -60,7 +60,10 @@ async function setup(browser, mobile = false) {
     releaseArchive;
   const gate = new Promise((resolve) => (releaseArchive = resolve)),
     errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => {
+    errors.push(error.message);
+    console.error("Browser error:", error.message);
+  });
   await page.route("**/*", async (route) => {
     const u = new URL(route.request().url());
     if (u.pathname.endsWith("/gap-forecasts.json"))
