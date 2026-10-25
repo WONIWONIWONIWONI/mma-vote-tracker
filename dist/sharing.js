@@ -228,15 +228,16 @@
       node.style.width = "auto";
       node.style.height = "auto";
       node.style.maxHeight = "none";
-      node.style.wordBreak = "normal";
+      node.style.wordBreak = "keep-all";
       node.style.overflowWrap = "normal";
     }
     for (const node of stage.querySelectorAll("div,section")) {
       if (!node.textContent.trim() || node.closest("svg")) continue;
       node.style.height = "auto";
+      node.style.wordBreak = "keep-all";
     }
     for (const node of stage.querySelectorAll(
-      ".panel-heading > div:first-child,.daily-heading > div:first-child",
+      ".panel-heading > div:first-child,.daily-heading > div:first-child,.gf-heading > div:first-child",
     )) {
       node.style.width = "auto";
       node.style.minWidth = "0";
