@@ -569,7 +569,8 @@
             ph +
             '" fill="#6055f50b"/>',
         );
-      if (Math.round(c.t / size) % k === 0 && cx - lastTickX >= minTickGap) {\n        lastTickX = cx;
+      if (Math.round(c.t / size) % k === 0 && cx - lastTickX >= minTickGap) {
+        lastTickX = cx;
         var day = kst(c.t).D;
         s.push(
           '<text x="' +
