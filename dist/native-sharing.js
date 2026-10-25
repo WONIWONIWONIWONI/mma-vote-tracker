@@ -21,12 +21,14 @@
     if (/^#[\da-f]{6}$/i.test(value)) return value;
     const a = value.match(/[\d.]+/g)?.map(Number);
     if (!a || a.length < 3) return "#71738b";
+    const channels = a
+      .slice(0, 3)
+      .map((v) => (value.startsWith("color(srgb") ? v * 255 : v));
     const alpha = a[3] ?? 1,
       bg = TrackerTheme.current === "dark" ? [25, 23, 37] : [255, 255, 255];
     return (
       "#" +
-      a
-        .slice(0, 3)
+      channels
         .map((v, i) =>
           Math.round(v * alpha + bg[i] * (1 - alpha))
             .toString(16)
@@ -233,7 +235,7 @@
       if (node.tagName === "BR") return "<br>";
       let style = `color:${s.color};font-size:${s.fontSize};font-weight:${s.fontWeight};line-height:1.5;`;
       if (!transparent(s.backgroundColor))
-        style += `background-color:${s.backgroundColor};`;
+        style += `background-color:${rgb(s.backgroundColor)};`;
       if (parseFloat(s.padding)) style += `padding:${s.padding};`;
       if (parseFloat(s.borderTopWidth) > 0 && s.borderTopStyle !== "none")
         style += `border:0.5px solid ${s.borderTopColor};`;

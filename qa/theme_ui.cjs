@@ -81,6 +81,43 @@ const history = JSON.parse(
             await page.locator(".leader").first().getAttribute("style")
           ).includes("#ff789a"),
       );
+      const contrast = await page
+        .locator(".daily-winner strong, .rank-badge b")
+        .evaluateAll((elements) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 1;
+          const context = canvas.getContext("2d");
+          const luminance = (color) => {
+            context.clearRect(0, 0, 1, 1);
+            context.fillStyle = color;
+            context.fillRect(0, 0, 1, 1);
+            const channels = [...context.getImageData(0, 0, 1, 1).data]
+              .slice(0, 3)
+              .map((v) => {
+                v /= 255;
+                return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+              });
+            return (
+              0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+            );
+          };
+          return elements.map((element) => {
+            let parent = element,
+              background;
+            while (parent) {
+              background = getComputedStyle(parent).backgroundColor;
+              if (background !== "rgba(0, 0, 0, 0)") break;
+              parent = parent.parentElement;
+            }
+            const a = luminance(getComputedStyle(element).color),
+              b = luminance(background);
+            return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+          });
+        });
+      assert.ok(
+        contrast.length >= 6 && contrast.every((value) => value >= 4.5),
+        "dark highlight text stays readable: " + contrast.join(","),
+      );
       assert.equal(
         await page.locator("[data-range].selected").getAttribute("data-range"),
         "6",
