@@ -7,6 +7,68 @@ const root = path.resolve(__dirname, "../dist");
 const history = JSON.parse(
   fs.readFileSync(path.join(root, "data/history.json")),
 );
+async function checkDailyHistoryContrast(page, theme) {
+  await page.locator(".daily-history").evaluate((element) => {
+    element.open = true;
+  });
+  const mobile = page.viewportSize().width <= 760;
+  if (mobile) {
+    await page
+      .locator(".daily-record")
+      .first()
+      .evaluate((element) => {
+        element.open = true;
+      });
+    const values = await page
+      .locator(".daily-record")
+      .first()
+      .locator("dd")
+      .allTextContents();
+    assert.deepEqual(
+      values,
+      await page
+        .locator("#daily-body tr")
+        .first()
+        .locator("td")
+        .allTextContents()
+        .then((cells) => cells.slice(1)),
+    );
+    assert.equal(
+      await page.locator(".daily-history > .table-scroll").isVisible(),
+      false,
+    );
+    assert.ok(
+      await page
+        .locator("#daily-history-mobile")
+        .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+    );
+  }
+  const ratios = await page.locator(".daily-best").evaluateAll((cells) => {
+    const luminance = (color) => {
+      const [r, g, b] = color
+        .match(/[\d.]+/g)
+        .slice(0, 3)
+        .map((value) => {
+          const channel = Number(value) / 255;
+          return channel <= 0.04045
+            ? channel / 12.92
+            : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    return cells.map((cell) => {
+      const style = getComputedStyle(cell);
+      const a = luminance(style.color);
+      const b = luminance(style.backgroundColor);
+      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+  });
+  assert.ok(
+    ratios.length > 0 && ratios.every((ratio) => ratio >= 4.5),
+    `${theme} daily history winners stay readable: ${ratios.join(",")}`,
+  );
+  assert.ok(await page.locator(".daily-best:visible").first().isVisible());
+}
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -126,6 +188,7 @@ const history = JSON.parse(
         contrast.length >= 6 && contrast.every((value) => value >= 4.5),
         "dark highlight text stays readable: " + contrast.join(","),
       );
+      await checkDailyHistoryContrast(page, "dark");
       assert.equal(
         await page.locator("[data-range].selected").getAttribute("data-range"),
         "6",
@@ -181,6 +244,7 @@ const history = JSON.parse(
           .evaluate((e) => getComputedStyle(e).backgroundColor),
         "rgb(255, 255, 255)",
       );
+      await checkDailyHistoryContrast(page, "light");
       await page.screenshot({
         path: `qa-output/theme-${mobile ? "mobile" : "desktop"}-light.png`,
         fullPage: true,

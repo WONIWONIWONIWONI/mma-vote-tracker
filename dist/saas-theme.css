@@ -1,4 +1,64 @@
 /* Theme adapted from wittyu's SaaS Dashboard visual reference. */
+#daily-history-mobile {
+  display: none;
+}
+@media (max-width: 760px) {
+  .daily-history > .table-scroll {
+    display: none;
+  }
+  #daily-history-mobile {
+    display: block;
+  }
+  .daily-record {
+    border-top: 0.5px solid var(--line);
+  }
+  .daily-record > summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .daily-record > summary::before {
+    content: "+";
+    width: 12px;
+    color: var(--muted);
+  }
+  .daily-record[open] > summary::before {
+    content: "−";
+  }
+  .daily-record summary strong {
+    margin-left: auto;
+    color: var(--text);
+  }
+  .daily-record p {
+    margin: 0 0 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .daily-record dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0 0 12px;
+  }
+  .daily-record dl > div {
+    min-width: 0;
+    padding: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .daily-record dt {
+    overflow-wrap: anywhere;
+  }
+  .daily-record dd {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
 :root {
   color-scheme: var(--theme-scheme);
   --bg: var(--tone-f7f8fc);
