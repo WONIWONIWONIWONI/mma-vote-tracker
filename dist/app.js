@@ -72,8 +72,8 @@
     const id = normalizedId(team);
     if (colors[id]) return colors[id];
     const used = new Set(Object.values(colors));
-    const extra = ["#f5f278", "#ffffff", "#ed94df", "#b3b98a"];
-    return (colors[id] = extra.find((c) => !used.has(c)) || "#d3c8bd");
+    const extra = ["#bde56c", "#edeef0", "#ff92ad", "#b0b4ba"];
+    return (colors[id] = extra.find((c) => !used.has(c)) || "#b0b4ba");
   }
   function kst(iso, mode = "full") {
     const d = new Date(iso);
@@ -144,21 +144,20 @@
     let note = stopped
       ? "수집 기간이 끝났습니다. 마지막 기록을 표시합니다."
       : state.loadFailed
-        ? "멜론 직접 조회에 실패해 마지막 확인값을 표시합니다. 새로고침으로 다시 시도하세요."
-        : "접속·새로고침 시 멜론 직접 조회 · 자동 조회 없음 · 추이용 서버 기록은 약 5분 간격입니다.";
+        ? "최신 조회에 실패했습니다. 마지막 관측값을 표시합니다."
+        : "";
     if (state.archive?.collector?.state === "error")
-      note += " 추이용 수집기가 오류를 재시도하고 있습니다.";
-    if (state.archiveFailed)
-      note += " 과거 기록 동기화가 지연되어 기존 기록을 유지합니다.";
+      note += " 수집기 재시도 중.";
+    if (state.archiveFailed) note += " 과거 기록을 불러오는 중입니다.";
     const archiveLast = state.archive?.snapshots.at(-1),
       archiveAge = archiveLast
         ? Math.floor((Date.now() - Date.parse(archiveLast.sourceAt)) / 60000)
         : 0;
-    if (archiveLast && archiveAge >= 2 && !stopped)
+    if (archiveLast && archiveAge >= 15 && !stopped)
       note += ` 추이용 공용 이력은 ${kst(archiveLast.sourceAt, "time")}까지입니다 (${archiveAge}분 전).`;
-    if (age >= 2 && !stopped)
-      note += " 현재 수치가 필요하면 새로고침을 눌러 주세요.";
+
     $("notice-text").textContent = note;
+    $("notice").hidden = !note.trim();
     $("notice").className =
       "notice " + (!state.loadFailed && age < 2 ? "good" : "");
   }
@@ -167,7 +166,7 @@
     $("leaders").innerHTML = last.top4
       .map(
         (t, i) =>
-          `<article id="leader-rank-${i + 1}" ${i >= 2 && !state.leadersExpanded ? "hidden" : ""} class="leader ${i === 0 ? "first" : ""}" style="--color:${colorOf(t)}"><div class="leader-top"><span class="rank-badge"><b>${String(i + 1).padStart(2, "0")}</b> RANK</span>${i === 0 ? '<span class="mini-label">현재 선두</span>' : ""}</div><h2 class="artist" title="${escapeHTML(t.name)}"><i class="artist-dot"></i><span class="artist-name">${escapeHTML(t.name)}</span></h2><div class="count-row"><span class="vote-total"><strong class="vote-value">${fmt(t.votes)}</strong><span class="unit">표</span></span><span class="share-value">${displayShare(t, last)}<span>%</span></span></div><div class="leader-bottom"><span>전체 투표 중 점유율</span><b>${i === 0 ? `2위와 ${fmt(t.votes - last.top4[1].votes)}표 차이` : `${i}위와 ${fmt(last.top4[i - 1].votes - t.votes)}표 차이`}</b></div></article>`,
+          `<article id="leader-rank-${i + 1}" ${i >= 2 && !state.leadersExpanded ? "hidden" : ""} class="leader ${i === 0 ? "first" : ""}" style="--color:${colorOf(t)}"><div class="leader-top"><span class="rank-badge"><b>${String(i + 1).padStart(2, "0")}</b>위</span></div><h2 class="artist" title="${escapeHTML(t.name)}"><i class="artist-dot"></i><span class="artist-name">${escapeHTML(t.name)}</span></h2><div class="count-row"><span class="vote-total"><strong class="vote-value">${fmt(t.votes)}</strong><span class="unit">표</span></span><span class="share-value">${displayShare(t, last)}<span>%</span></span></div><div class="leader-bottom"><b>${i === 0 ? `2위와 ${fmt(t.votes - last.top4[1].votes)}표 차이` : `${i}위와 ${fmt(last.top4[i - 1].votes - t.votes)}표 차이`}</b></div></article>`,
       )
       .join("");
     $("leaders-toggle").setAttribute(
@@ -191,7 +190,7 @@
             `<i style="width:${share(t, last)}%;background:${colorOf(t)}" title="${escapeHTML(t.name)} ${displayShare(t, last)}%"></i>`,
         )
         .join("") +
-      `<i style="width:${100 - (sum / last.totalVotes) * 100}%;background:#453d51" title="그 외"></i>`;
+      `<i style="width:${100 - (sum / last.totalVotes) * 100}%;background:#363a3f" title="그 외"></i>`;
   }
   function renderDaily() {
     const now = Math.min(Date.now(), operationEnd() - 1),
@@ -211,7 +210,7 @@
     $("daily-date").innerHTML = days
       .map(
         (d) =>
-          `<option value="${d.date}" ${d.date === selected ? "selected" : ""}>${d.date.replaceAll("-", ".")} KST${d.ongoing ? " · 오늘" : ""}</option>`,
+          `<option value="${d.date}" ${d.date === selected ? "selected" : ""}>${d.date.replaceAll("-", ".")} KST${d.ongoing ? " / 오늘" : ""}</option>`,
       )
       .join("");
     if (!today) {
@@ -234,7 +233,7 @@
     $("daily-title").textContent =
       `${today.date.replaceAll("-", ".")} 하루 누적 득표 증가량`;
     $("daily-summary").innerHTML =
-      `<span class="panel-tag">${today.ongoing ? "집계 중" : "마감"}${today.partial ? " · 일부 구간" : ""}</span><span>전체 후보 합계 <strong>${number(today.total)}</strong></span><small>${range(today)} KST</small>`;
+      `<span class="panel-tag">${today.ongoing ? "집계 중" : "마감"}${today.partial ? " / 일부 구간" : ""}</span><span>전체 후보 합계 <strong>${number(today.total)}</strong></span><small>${range(today)} KST</small>`;
     const ranked = today.values
         .slice()
         .sort((a, b) => (b.delta ?? -Infinity) - (a.delta ?? -Infinity)),
@@ -245,8 +244,7 @@
           `<div class="daily-team ${v.delta === max && max > 0 ? "daily-winner" : ""}" style="--color:${colorOf(v)}"><span class="daily-name"><i></i>${escapeHTML(v.name)}${v.delta === max && max > 0 ? " <b>최다 증가</b>" : ""}</span><strong>${number(v.delta)}</strong><div class="daily-bar"><i style="width:${max ? (Math.max(0, v.delta ?? 0) / max) * 100 : 0}%"></i></div></div>`,
       )
       .join("");
-    $("daily-note").textContent =
-      "한국 시간 00시 기준 하루 증가량입니다. 첫날은 둘째 날 00시의 누적표수로 복원합니다(이후 증가량을 차감하는 방식과 동일). 해당 경계 기록이 없으면 관측된 일부 구간만 표시합니다. 날짜를 선택해 비교할 수 있으며 오늘 수치는 접속·새로고침 때 갱신합니다. 자정 기록이 1분 이내 늦게 찍힌 경우 그 실제 관측을 전날 끝·다음 날 시작에 공통으로 사용합니다. 정확한 자정 기록이 없는 날은 일부 구간, 계산할 수 없는 팀은 —로 표시합니다.";
+    $("daily-note").textContent = "";
     $("daily-head").innerHTML =
       '<tr><th scope="col">날짜 / 상태</th><th scope="col">전체 후보</th>' +
       teams
@@ -261,7 +259,7 @@
         .slice(1)
         .map((d) => {
           const peak = Math.max(0, ...d.values.map((v) => v.delta ?? 0));
-          return `<tr><th scope="row">${d.date}<small>마감${d.partial ? " · 일부 구간" : ""}</small><small>${range(d)}</small></th><td>${number(d.total)}</td>${d.values.map((v) => `<td class="${v.delta === peak && peak > 0 ? "daily-best" : ""}">${number(v.delta)}${v.delta === peak && peak > 0 ? " ★" : ""}</td>`).join("")}</tr>`;
+          return `<tr><th scope="row">${d.date}<small>마감${d.partial ? " / 일부 구간" : ""}</small><small>${range(d)}</small></th><td>${number(d.total)}</td>${d.values.map((v) => `<td class="${v.delta === peak && peak > 0 ? "daily-best" : ""}">${number(v.delta)}${v.delta === peak && peak > 0 ? " ★" : ""}</td>`).join("")}</tr>`;
         })
         .join("") ||
       `<tr><td colspan="${teams.length + 2}">아직 마감한 날짜가 없습니다.</td></tr>`;
@@ -278,7 +276,7 @@
             ? `<td><span class="history-name">${escapeHTML(t.name)}</span>${fmt(t.votes)}<span class="history-name" style="display:inline;margin-left:7px">${displayShare(t, s)}%</span></td>`
             : '<td class="no-value">—</td>';
         }).join("");
-        return `<tr><td>${kst(s.sourceAt, "short")}${s.origin === "user_capture" ? " · 캡처" : ""}</td>${teamCells}${gapDefs.map((g) => `<td>${fmt(rankGap(s, g))}표</td>`).join("")}</tr>`;
+        return `<tr><td>${kst(s.sourceAt, "short")}${s.origin === "user_capture" ? " / 캡처" : ""}</td>${teamCells}${gapDefs.map((g) => `<td>${fmt(rankGap(s, g))}표</td>`).join("")}</tr>`;
       })
       .join("");
     $("load-more").hidden = all.length <= state.historyLimit;
@@ -328,7 +326,7 @@
                 ? "24:00"
                 : kst(row.end, "time");
           return (
-            `<tr><th><b>${kst(row.start, "time")}–${end}</b><small>${best.length ? escapeHTML(best.map((t) => t.name).join(" · ")) + " ★" : winner.label}</small><em>${row.ongoing ? "집계 중" : row.values.every((v) => v.complete) ? "1시간 전체" : "일부 구간"}</em></th>` +
+            `<tr><th><b>${kst(row.start, "time")}–${end}</b><small>${best.length ? escapeHTML(best.map((t) => t.name).join(" / ")) + " ★" : winner.label}</small><em>${row.ongoing ? "집계 중" : row.values.every((v) => v.complete) ? "1시간 전체" : "일부 구간"}</em></th>` +
             teams
               .map((t) => {
                 const v = row.values.find((v) => v.id === t.id),
@@ -359,7 +357,7 @@
             ? "1시간 전체"
             : "일부 구간";
         const lead = best.length
-          ? `${best.length > 1 ? "공동 " : ""}최다 증가 · ${escapeHTML(best.map(shortName).join(" · "))} <b>${change(row.values.find((v) => v.id === best[0].id).delta)}표</b>`
+          ? `${best.length > 1 ? "공동 " : ""}최다 증가 / ${escapeHTML(best.map(shortName).join(" / "))} <b>${change(row.values.find((v) => v.id === best[0].id).delta)}표</b>`
           : winner.label;
         return (
           `<article class="hour-card"><div class="hour-card-head"><h3>${kst(row.start, "time")}–${end}</h3><span>${label}</span></div><p class="hour-card-winner">${lead}</p><div class="hour-card-grid">` +
@@ -383,8 +381,7 @@
       `<div class="hourly-desktop">${table}</div><div class="hourly-cards">${cards}</div>`;
     $("hourly-more").hidden = rows.length <= limit;
     $("hourly-more").textContent = `이날 전체 시간 보기 (${rows.length}개)`;
-    $("hourly-note").textContent =
-      "같은 관측 구간에서 가장 많이 증가한 팀을 강조합니다. 일부 구간은 실제 관측 시각을 표시하며, 관측 구간이 다른 팀들은 최다 증가를 정하지 않습니다.";
+    $("hourly-note").textContent = "";
   }
   function axisLabel(value, axis) {
     return state.metric === "share"
@@ -392,7 +389,7 @@
       : fmt(Math.round(value));
   }
   function axisRangeLabel(g) {
-    return `세로축 표시 범위 · ${axisLabel(g.ymin, g.axis)}–${axisLabel(g.ymax, g.axis)}${state.metric === "share" ? "" : "표"}`;
+    return `세로축 표시 범위 / ${axisLabel(g.ymin, g.axis)}–${axisLabel(g.ymax, g.axis)}${state.metric === "share" ? "" : "표"}`;
   }
   function graphGeometry() {
     const rows = windowSnapshots(),
@@ -578,7 +575,7 @@
     $("chart-unit").textContent =
       state.metric === "share" ? "전체 대비 점유율 (%)" : "득표수 (표)";
     $("chart-axis-note").textContent =
-      `시간축 ${Number(state.timeZoom.toFixed(1))}배 · 세로 ${Number(state.zoom.toFixed(1))}배 · ${axisRangeLabel(g)}`;
+      `시간축 ${Number(state.timeZoom.toFixed(1))}배 / 세로 ${Number(state.zoom.toFixed(1))}배 / ${axisRangeLabel(g)}`;
     $("chart-legend").innerHTML = latest()
       .top4.map(
         (t) =>
@@ -587,20 +584,20 @@
       .join("");
     const grid = axis.ticks.map(
       (v) =>
-        `<line x1="${box.x}" y1="${y(v)}" x2="${box.x + box.w}" y2="${y(v)}" stroke="#3b374d" stroke-dasharray="3 5"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end" fill="#aaa3b8" font-size="10">${axisLabel(v, axis)}</text>`,
+        `<line x1="${box.x}" y1="${y(v)}" x2="${box.x + box.w}" y2="${y(v)}" stroke="#363a3f" stroke-dasharray="3 5"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end" fill="#b0b4ba" font-size="12">${axisLabel(v, axis)}</text>`,
     );
     const n = W < 480 ? 3 : 6;
     for (let i = 0; i < n; i++) {
       const t = xmin + ((xmax - xmin) * i) / (n - 1);
       grid.push(
-        `<text x="${x(t)}" y="${H - 20}" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}" fill="#aaa3b8" font-size="10">${kst(t, "time")}</text>`,
+        `<text x="${x(t)}" y="${H - 20}" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}" fill="#b0b4ba" font-size="12">${kst(t, "time")}</text>`,
       );
     }
     const futureX = Math.max(box.x, Math.min(box.x + box.w, x(lastTime))),
       futureWidth = box.x + box.w - futureX;
     if (forecasts.length && xmax > lastTime)
       grid.push(
-        `<rect x="${futureX}" y="${box.y}" width="${futureWidth}" height="${box.h}" fill="#b997ff0b"/><line x1="${futureX}" x2="${futureX}" y1="${box.y}" y2="${box.y + box.h}" stroke="#aaa3b8" stroke-dasharray="3 5"/><text x="${futureX + 5}" y="15" fill="#c4b3e9" font-size="10">점선: 조건부 예측</text>`,
+        `<rect x="${futureX}" y="${box.y}" width="${futureWidth}" height="${box.h}" fill="#b1a9ff"/><line x1="${futureX}" x2="${futureX}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b0b4ba" stroke-dasharray="3 5"/><text x="${futureX + 5}" y="15" fill="#b1a9ff" font-size="12">점선: 조건부 예측</text>`,
       );
     const path = (points) => {
       let active = false;
@@ -619,13 +616,13 @@
     let lines = series
       .map(
         (line) =>
-          `<path d="${path(rows.map((r) => ({ time: Date.parse(r.sourceAt), value: getValue(r, line) })))}" fill="none" stroke="${line.color}" stroke-width="1.6"/>`,
+          `<path d="${path(rows.map((r) => ({ time: Date.parse(r.sourceAt), value: getValue(r, line) })))}" fill="none" stroke="${line.color}" stroke-width="0.5"/>`,
       )
       .join("");
     lines += forecasts
       .map(
         (f) =>
-          `<path d="${path(f.points)}" fill="none" stroke="${f.color}" stroke-width="1.6" stroke-dasharray="5 5"/>`,
+          `<path d="${path(f.points)}" fill="none" stroke="${f.color}" stroke-width="0.5" stroke-dasharray="5 5"/>`,
       )
       .join("");
     const hits = rows
@@ -660,7 +657,7 @@
           );
         const tt = $("tooltip");
         tt.innerHTML =
-          `<strong>${kst(t)} · 예측(실제값 아님)</strong>` +
+          `<strong>${kst(t)} / 예측(실제값 아님)</strong>` +
           forecasts
             .filter((f) => t <= f.points.at(-1).time)
             .map(
@@ -683,10 +680,10 @@
     }
     const gapModels = forecasts.filter((f) => f.hasGaps),
       gapNote = gapModels.length
-        ? ` · 최대 ${Math.max(...gapModels.map((f) => f.maxGap)).toFixed(1)}분 관측 공백 포함 · 추정 신뢰도 낮음`
+        ? ` / 최대 ${Math.max(...gapModels.map((f) => f.maxGap)).toFixed(1)}분 관측 공백 포함 / 추정 신뢰도 낮음`
         : "";
     $("chart-note").textContent =
-      `실선: 실제 관측 · ${state.forecast ? (forecasts.length ? `점선: 최근 60분 가중 선형회귀 (${forecasts.length}/${series.length}팀) · ${state.forecastMinutes}분 조건부 추정` : "예측 대기: 관측 부족·30분 초과 공백·득표 정정 또는 불안정한 추세") : "예측 끔"} · 미관측 구간은 직선 연결${gapNote}${state.forecast && state.forecastMinutes > 30 ? " · 긴 예측일수록 오차가 커질 수 있습니다." : ""}${forecasts.length && xmax <= lastTime ? " · 예측선은 현재 화면 오른쪽에 있습니다. 최신으로 버튼을 눌러 확인하세요." : ""}`;
+      `실선: 관측값${state.forecast ? ` / 점선: ${state.forecastMinutes}분 조건부 예측` : ""}${gapModels.length ? " / 관측 공백 포함" : ""}`;
     $("chart-window").textContent =
       `${kst(xmin, "short")} — ${kst(xmax, "short")}${xmax > lastTime ? " (예측 구간 포함)" : " 실제 관측 구간"}`;
   }
@@ -802,7 +799,7 @@
     } catch {
       state.loadFailed = true;
       render();
-      if (manual) toast("멜론 직접 조회 실패 · 마지막 확인값을 유지합니다.");
+      if (manual) toast("멜론 직접 조회 실패 / 마지막 확인값을 유지합니다.");
     } finally {
       state.fetching = false;
       $("refresh-button").disabled = false;
@@ -873,7 +870,7 @@
       ...gapDefs.map((g) => `${g.name} 표차: ${fmt(rankGap(s, g))}표`),
       `총투표수 ${fmt(s.totalVotes)}표`,
       s.origin === "user_capture"
-        ? "첨부 화면에서 확인한 기록 · 실시간 연결 전"
+        ? "첨부 화면에서 확인한 기록 / 실시간 연결 전"
         : "Melon 공개 투표 집계",
       location.protocol === "file:" ? config.sources[0].url : location.href,
     ];
@@ -909,7 +906,7 @@
       return {
         ...common,
         title: "현재 득표 현황",
-        subtitle: "전체 후보 중 점유율 · 순위별 득표와 바로 위 순위 표차",
+        subtitle: "득표수, 득표율, 순위 간 표차",
         leaders,
       };
     if (type === "trend") {
@@ -917,7 +914,7 @@
       return {
         ...common,
         title: "현재 득표 현황과 추이",
-        subtitle: "그래프 기간 · " + $("chart-window").textContent + " KST",
+        subtitle: "그래프 기간 / " + $("chart-window").textContent + " KST",
         chartTitle: $("chart-unit").textContent + " 추이",
         leaders,
         xmin: g.xmin,
@@ -953,7 +950,7 @@
       return {
         ...common,
         title: "시간대별 득표 증가량",
-        subtitle: date.replaceAll("-", ".") + " · 선택 날짜의 모든 시간대",
+        subtitle: date.replaceAll("-", ".") + " / 전체 시간대",
         filename: `${config.id}-hourly-${date}.png`,
         max: Math.max(
           1,

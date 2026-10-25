@@ -3,38 +3,39 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#100e19" />
+    <meta name="theme-color" content="#111113" />
     <title>MMA TOP 6 — 투표 트래커</title>
     <meta
       name="description"
-      content="2026 MMA 상위 6팀의 득표수, 점유율, 추이를 한눈에."
+      content="2026 MMA 상위 6팀의 득표수와 득표율, 일별 증가량과 표차 추이."
     />
     <link
       rel="icon"
-      href="./favicon.svg?v=20261022-share4"
+      href="./favicon.svg?v=20261025-radix1"
       type="image/svg+xml"
     />
-    <link rel="stylesheet" href="./style.css?v=20261022-share4" />
-    <link rel="stylesheet" href="./candles.css?v=20261022-share4" />
+    <link rel="stylesheet" href="./radix.css?v=20261025-radix1" />
+    <link rel="stylesheet" href="./style.css?v=20261025-radix1" />
+    <link rel="stylesheet" href="./candles.css?v=20261025-radix1" />
     <script src="./data/seed.js"></script>
-    <script src="./config.js?v=20261022-share4" defer></script>
-    <script src="./http.js?v=20261022-share4" defer></script>
-    <script src="./daily.js?v=20261022-share4" defer></script>
-    <script src="./hourly.js?v=20261022-share4" defer></script>
-    <script src="./axis.js?v=20261022-share4" defer></script>
-    <script src="./analytics.js?v=20261022-share4" defer></script>
-    <script src="./exports.js?v=20261022-share4" defer></script>
-    <script src="./sources.js?v=20261022-share4" defer></script>
-    <script src="./data.js?v=20261022-share4" defer></script>
-    <script src="./app.js?v=20261022-share4" defer></script>
-    <script src="./gap-model.js?v=20261022-share4" defer></script>
-    <script src="./gap-history.js?v=20261022-share4" defer></script>
-    <script src="./gap-candidates.js?v=20261022-share4" defer></script>
-    <script src="./candles.js?v=20261023-board2" defer></script>
-    <script src="./gap-forecast-ui.js?v=20261022-share4" defer></script>
+    <script src="./config.js?v=20261025-radix1" defer></script>
+    <script src="./http.js?v=20261025-radix1" defer></script>
+    <script src="./daily.js?v=20261025-radix1" defer></script>
+    <script src="./hourly.js?v=20261025-radix1" defer></script>
+    <script src="./axis.js?v=20261025-radix1" defer></script>
+    <script src="./analytics.js?v=20261025-radix1" defer></script>
+    <script src="./exports.js?v=20261025-radix1" defer></script>
+    <script src="./sources.js?v=20261025-radix1" defer></script>
+    <script src="./data.js?v=20261025-radix1" defer></script>
+    <script src="./app.js?v=20261025-radix1" defer></script>
+    <script src="./gap-model.js?v=20261025-radix1" defer></script>
+    <script src="./gap-history.js?v=20261025-radix1" defer></script>
+    <script src="./gap-candidates.js?v=20261025-radix1" defer></script>
+    <script src="./candles.js?v=20261025-radix1" defer></script>
+    <script src="./gap-forecast-ui.js?v=20261025-radix1" defer></script>
     <script src="./vendor/html-to-image.js?v=1.11.13" defer></script>
-    <script src="./native-sharing.js?v=20261023-fit5" defer></script>
-    <script src="./sharing.js?v=20261023-fit5" defer></script>
+    <script src="./native-sharing.js?v=20261025-radix1" defer></script>
+    <script src="./sharing.js?v=20261025-radix1" defer></script>
   </head>
   <body>
     <div class="site-shell">
@@ -50,17 +51,13 @@
           href="https://www.melon.com/mma/2026/vote/top10/"
           target="_blank"
           rel="noopener noreferrer"
-          >공식 투표 바로가기 <span aria-hidden="true">↗</span></a
+          >공식 투표 <span aria-hidden="true">↗</span></a
         >
       </header>
       <main>
         <div class="hero">
           <div>
-            <div class="eyebrow">
-              <span class="eyebrow-line"></span>MELON MUSIC AWARDS · TOP10
-            </div>
-            <h1>지금, 선두의 흐름.</h1>
-            <p class="hero-copy">상위 6팀의 득표와 흐름을 한눈에.</p>
+            <h1>MMA 득표 현황</h1>
           </div>
           <div class="hero-right">
             <div class="status-pill" id="status-pill">
@@ -68,7 +65,7 @@
               ><span id="status-label">기록 불러오는 중</span>
             </div>
             <p class="source-time" id="source-time">—</p>
-            <span class="time-hint">관측 시각 · KST</span>
+            <span class="time-hint">KST</span>
             <div class="source-controls">
               <div class="refresh-controls">
                 <span id="collected-time" class="time-hint"></span
@@ -127,7 +124,7 @@
         >
           <div class="panel-heading">
             <div>
-              <div class="section-kicker">THE TREND</div>
+              <span class="section-kicker" hidden></span>
               <h2 id="trend-title">시간에 따른 변화</h2>
             </div>
             <div class="range-selector" role="group" aria-label="표시 기간">
@@ -167,14 +164,7 @@
               </select></label
             >
           </div>
-          <p class="trend-help">
-            기본 표시: 리센느·임영웅. 다른 팀은 아래 이름을 눌러 표시할 수
-            있습니다. 그래프를 잡고 원하는 방향으로 끌어보세요. 확대하지 않아도
-            이전 시간으로 이동합니다. 모바일은 두 손가락을 벌리거나 오므려
-            확대·축소합니다. PC는 Ctrl+마우스 휠로 확대·축소하며, 일반 휠은
-            페이지를 스크롤합니다. Ctrl+휠은 마우스 위치를 중심으로 작동합니다.
-            예측선은 현재 추세를 연장한 조건부 추정입니다.
-          </p>
+
           <div class="chart-controls">
             <div class="metric-selector" role="group" aria-label="그래프 지표">
               <button data-metric="votes" class="selected" aria-pressed="true">
@@ -209,7 +199,7 @@
         <section class="panel daily-panel" aria-labelledby="daily-title">
           <div class="daily-heading">
             <div>
-              <span class="section-kicker">BY THE DAY · KST 00:00</span>
+              <span class="section-kicker" hidden></span>
               <h2 id="daily-title">하루 누적 득표 증가량</h2>
             </div>
             <label class="hourly-date-label"
@@ -239,11 +229,8 @@
         >
           <div class="panel-heading compact">
             <div>
-              <div class="section-kicker">BY THE HOUR</div>
+              <span class="section-kicker" hidden></span>
               <h2 id="hourly-title">시간대별 득표 증가량</h2>
-              <p class="hourly-intro">
-                한 시간 동안 여섯 팀의 득표 증가를 비교해요.
-              </p>
             </div>
             <label class="hourly-date-label"
               >날짜 선택<select
@@ -256,7 +243,7 @@
           <div
             class="hourly-scroll"
             tabindex="0"
-            aria-label="시간대별 득표 증가량 · 세로 스크롤"
+            aria-label="시간대별 득표 증가량 / 세로 스크롤"
           >
             <div id="hourly-list"></div>
           </div>
@@ -267,10 +254,7 @@
         </section>
         <details class="panel history-panel" id="history-details">
           <summary class="history-summary">
-            <span
-              ><span class="section-kicker">THE RECORD</span
-              ><span class="history-title" id="history-title"
-                >집계 기록 <small id="history-count"></small></span></span
+            <span><span class="section-kicker" hidden></span></span
             ><span class="history-toggle"
               ><span id="history-toggle-label">펼치기</span
               ><span class="history-chevron" aria-hidden="true">⌄</span></span
@@ -286,18 +270,18 @@
             <div
               class="table-scroll history-scroll"
               tabindex="0"
-              aria-label="집계 기록 표 · 가로 세로 스크롤"
+              aria-label="집계 기록 표 / 가로 세로 스크롤"
             >
               <table class="history-table">
                 <thead>
                   <tr>
                     <th scope="col">집계 시각 (KST)</th>
-                    <th scope="col">1위 · 득표수</th>
-                    <th scope="col">2위 · 득표수</th>
-                    <th>3위 · 득표수</th>
-                    <th>4위 · 득표수</th>
-                    <th>5위 · 득표수</th>
-                    <th>6위 · 득표수</th>
+                    <th scope="col">1위 / 득표수</th>
+                    <th scope="col">2위 / 득표수</th>
+                    <th>3위 / 득표수</th>
+                    <th>4위 / 득표수</th>
+                    <th>5위 / 득표수</th>
+                    <th>6위 / 득표수</th>
                     <th>1–2위 표차</th>
                     <th>2–3위 표차</th>
                     <th>3–4위 표차</th>
@@ -315,13 +299,11 @@
           </div>
         </details>
         <details class="method">
-          <summary>수치와 그래프는 어떻게 읽나요?</summary>
+          <summary>집계 기준</summary>
           <div>
             <p>
-              카드 득표율은 멜론에서 표시한 정수 비율이며, 그래프는 전체 후보의
-              표수를 합산한 총표수로 계산합니다. 전체 6팀을 함께 표시하며 팀
-              이름을 눌러 숨기거나 확대·그래프 드래그로 자세히 볼 수 있습니다.
-              시간은 원본 집계 시각이 아닌 조회에 성공한 관측 시각입니다.
+              득표율은 팀 득표수를 전체 투표수로 나누어 계산합니다. 날짜와
+              시각은 KST 기준이며, 조회에 성공한 관측 시각을 표시합니다.
             </p>
             <p>
               현재 상위 6팀을 팀별로 추적합니다. 표차 흐름 분석은 리센느와
@@ -340,17 +322,17 @@
           </div>
         </details>
         <details class="method">
-          <summary>예측 점선은 어떻게 계산하나요?</summary>
+          <summary>예측 기준</summary>
           <div>
             <p>
               최근 60분의 실제 시각과 수치에 가중 선형회귀를 적용합니다. 최근
               관측에 더 큰 비중(30분 반감기)을 두고, 마지막 실제 값에서 추정
-              기울기를 연장합니다. 기본 예측 기간은 30분이며 1·3·6·12·24시간으로
+              기울기를 연장합니다. 기본 예측 기간은 30분이며 1 3 6 12 24시간으로
               변경할 수 있습니다. 기간이 길수록 오차가 커질 수 있습니다. 점선은
               조건부 추정이며 실제 관측이나 확정 결과가 아닙니다.
             </p>
             <p>
-              6개 이상·15분 이상 관측이 필요하며, 10~30분의 관측 공백은 실제
+              6개 이상 15분 이상 관측이 필요하며, 10~30분의 관측 공백은 실제
               시각 간격을 반영해 추정하며 신뢰도 저하를 표시합니다. 30분 초과
               공백 또는 낮은 적합도(R²&lt;0.3)에서는 예측을 보류합니다. 득표수가
               감소한 정정 구간도 보류합니다. 하루치 자료로 시간대별 반복 패턴을
@@ -363,7 +345,7 @@
       <footer>
         <span class="footer-brand">VOTE/TRACK</span>
         <p>
-          팬이 만든 비공식 대시보드 · 데이터 출처
+          팬이 만든 비공식 대시보드 / 데이터 출처
           <a
             href="https://www.melon.com/mma/2026/vote/top10/"
             target="_blank"

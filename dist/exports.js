@@ -1,11 +1,11 @@
 /* Draw standalone panel images locally, without screenshots or remote services. */
 ((root) => {
   "use strict";
-  const bg = "#10121b",
-    panel = "#1a1e2b",
-    muted = "#a4adbf",
-    ink = "#f5f6fa",
-    lime = "#f2aac2";
+  const bg = "#111113",
+    panel = "#18191b",
+    muted = "#b0b4ba",
+    ink = "#edeef0",
+    lime = "#ff92ad";
   const font = '"DM Sans", "Noto Sans KR", sans-serif';
   function surface(model, height) {
     const width = 1000;
@@ -23,11 +23,6 @@
     c.scale(scale, scale);
     c.fillStyle = bg;
     c.fillRect(0, 0, width, height);
-    const wash = c.createLinearGradient(0, 0, width, 220);
-    wash.addColorStop(0, "#29243a");
-    wash.addColorStop(1, bg);
-    c.fillStyle = wash;
-    c.fillRect(0, 0, width, 168);
     const text = (
       value,
       x,
@@ -39,30 +34,31 @@
       maxWidth = 900,
     ) => {
       value = String(value);
+      size = size <= 13 ? 12 : size <= 25 ? 16 : 32;
       c.fillStyle = color;
       c.textAlign = align;
       do {
         c.font = `${weight} ${size}px ${font}`;
-        if (c.measureText(value).width <= maxWidth || size <= 10) break;
-        size--;
+        if (c.measureText(value).width <= maxWidth || size <= 12) break;
+        size = size === 32 ? 16 : 12;
       } while (true);
       c.fillText(value, x, y, maxWidth);
     };
-    const line = (x1, y1, x2, y2, color = "#41374f") => {
+    const line = (x1, y1, x2, y2, color = "#363a3f") => {
       c.beginPath();
       c.strokeStyle = color;
-      c.lineWidth = 1;
+      c.lineWidth = 0.5;
       c.moveTo(x1, y1);
       c.lineTo(x2, y2);
       c.stroke();
     };
-    const rect = (x, y, w, h, color = panel, radius = 12) => {
+    const rect = (x, y, w, h, color = panel, radius = 4) => {
       c.fillStyle = color;
       c.beginPath();
-      c.roundRect(x, y, w, h, Math.min(radius, h / 2));
+      c.roundRect(x, y, w, h, Math.min(radius, 4, h / 2));
       c.fill();
     };
-    text("VOTE/TRACK · " + TrackerConfig.edition, 48, 44, 12, lime, 700);
+    text("VOTE/TRACK / " + TrackerConfig.edition, 48, 44, 12, lime, 700);
     text(
       "최신 관측 " + model.sourceAt + " KST",
       952,
@@ -75,9 +71,9 @@
     );
     text(model.title, 48, 98, 30, ink, 700);
     text(model.subtitle, 48, 130, 12, muted);
-    line(48, 158, 952, 158, "#303648");
+    line(48, 158, 952, 158, "#363a3f");
     line(48, height - 54, 952, height - 54);
-    text("데이터 출처 Melon · 비공식 팬 대시보드", 48, height - 27, 10, muted);
+    text("데이터 출처 Melon / 비공식 팬 대시보드", 48, height - 27, 10, muted);
     text(
       "모든 시각은 한국 시간 (KST)",
       952,
@@ -94,14 +90,14 @@
     model.leaders.forEach((team, i) => {
       const x = 48 + (i % 2) * 464,
         y = start + Math.floor(i / 2) * 152;
-      rect(x, y, 440, 136, i < 2 ? "#212536" : panel, 14);
-      rect(x + 18, y + 20, 3, 22, team.color);
-      text(String(team.rank).padStart(2, "0"), x + 32, y + 36, 12, muted, 600);
+      rect(x, y, 440, 136, i < 2 ? "#212225" : panel, 14);
+
+      text(String(team.rank).padStart(2, "0"), x + 24, y + 36, 12, muted, 600);
       text(team.name, x + 66, y + 36, 17, ink, 600, "left", 348);
       text(team.votes, x + 24, y + 77, 30, ink, 600, "left", 285);
       text(team.share, x + 416, y + 77, 21, team.color, 600, "right", 112);
       text(team.gap, x + 24, y + 105, 11, muted, 400, "left", 394);
-      rect(x + 24, y + 119, 392, 3, "#33394c");
+      rect(x + 24, y + 119, 392, 3, "#363a3f");
       rect(
         x + 24,
         y + 119,
@@ -115,7 +111,7 @@
     const draw = surface(model, 760);
     leaderCards(model, draw);
     draw.text(
-      "득표율 = 팀 득표수 ÷ 전체 투표수 · 소수점 둘째 자리 반올림",
+      "득표율 = 팀 득표수 ÷ 전체 투표수 / 소수점 둘째 자리 반올림",
       48,
       680,
       11,
@@ -169,7 +165,7 @@
     for (const series of model.series) {
       c.beginPath();
       c.strokeStyle = series.color;
-      c.lineWidth = 2.2;
+      c.lineWidth = 0.5;
       let active = false;
       for (const point of series.points) {
         if (point.value == null) continue;
@@ -201,7 +197,7 @@
       for (const f of model.forecasts) {
         c.beginPath();
         c.strokeStyle = f.color;
-        c.lineWidth = 2.2;
+        c.lineWidth = 0.5;
         f.points.forEach((p, i) => {
           if (i) c.lineTo(x(p.time), y(p.value));
           else c.moveTo(x(p.time), y(p.value));
@@ -242,7 +238,7 @@
       text(row.label, 64, y + 12, 14, ink, 600, "left", 190);
       text(
         winners.length
-          ? winners.map((v) => v.name).join(" · ")
+          ? winners.map((v) => v.name).join(" / ")
           : "구간 다름 / 기록 대기",
         64,
         y + 38,

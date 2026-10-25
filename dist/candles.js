@@ -1,13 +1,13 @@
 /* 표차 캔들차트 — dist/candles.js
- * 리센느를 기준으로 TOP6 다섯 팀과의 표차를 캔들(5분봉·1시간봉·4시간봉·일봉)로 보여줍니다.
+ * 리센느를 기준으로 TOP6 다섯 팀과의 표차를 캔들(5분봉 1시간봉 4시간봉 일봉)로 보여줍니다.
  * app.js가 검증한 동일한 기록을 받아 모든 패널의 관측 시각을 맞춥니다. */
 (function () {
   "use strict";
 
-  /* ===== 설정 (색·주소는 여기서만 바꾸면 돼요) ===== */
-  var UP_COLOR = "#ff4757"; // 부호 표차 상승 (빨강)
-  var DOWN_COLOR = "#4fc8e0"; // 부호 표차 하락 (파랑)
-  var FLAT_COLOR = "#a58e9c"; // 변화 없음
+  /* ===== 설정 (색 주소는 여기서만 바꾸면 돼요) ===== */
+  var UP_COLOR = "#e5484d"; // 부호 표차 상승 (빨강)
+  var DOWN_COLOR = "#4ccce6"; // 부호 표차 하락 (파랑)
+  var FLAT_COLOR = "#b0b4ba"; // 변화 없음
   var FRAMES = {
     5: { min: 5, label: "5분봉", show: 144 },
     60: { min: 60, label: "1시간봉", show: 96 },
@@ -125,7 +125,7 @@
               esc(String(team.id)) +
               '">' +
               (team.rank || i + 1) +
-              "위 · 리센느 − " +
+              "위 / 리센느 − " +
               esc(team.name) +
               "</option>"
             );
@@ -160,7 +160,7 @@
     };
   }
 
-  /* ===== 점들 → 캔들 (시가=직전 관측 표차, 종가=구간 마지막, 고가·저가=구간 최대·최소) ===== */
+  /* ===== 점들 → 캔들 (시가=직전 관측 표차, 종가=구간 마지막, 고가 저가=구간 최대 최소) ===== */
   function buildCandles(points, minutes) {
     var size = minutes * 60000,
       out = [],
@@ -373,13 +373,13 @@
         c.kind === "tied"
           ? "현재 동률"
           : c.kind === "uncertain"
-            ? "자료 부족·추세 불안정"
+            ? "자료 부족 추세 불안정"
             : c.kind === "flat"
               ? "격차 보합"
               : c.kind === "away"
                 ? "현재 추세상 역전 없음"
                 : c.kind === "distant"
-                  ? "먼 미래 · 추정 보류"
+                  ? "먼 미래 / 추정 보류"
                   : etaText(c.minutes) +
                     " 후 " +
                     (c.kind === "overtake"
@@ -441,7 +441,7 @@
     }
     if (!d) {
       el.paceBody.innerHTML =
-        '<div class="pc-empty">계산할 기록이 아직 부족해요.</div>';
+        '<div class="pc-empty">관측 기록이 부족합니다.</div>';
       return;
     }
     var labels = paceLabels(d),
@@ -464,7 +464,7 @@
       "분 평균</small></div>" +
       '<div class="pc-metric"><span>' +
       distanceLabel(d.first.a - d.first.b, d.gap) +
-      ' · 부호 표차 변화</span><strong class="' +
+      ' / 부호 표차 변화</span><strong class="' +
       (d.gapChange < 0 ? "down" : d.gapChange > 0 ? "up" : "") +
       '">' +
       signed(d.gapChange) +
@@ -475,7 +475,7 @@
       eta +
       "</strong><small>" +
       trendLabel +
-      " · 회귀 " +
+      " / 회귀 " +
       rateText(d.trend) +
       "</small></div>";
   }
@@ -520,14 +520,14 @@
           y +
           '" y2="' +
           y +
-          '" stroke="#3b374d" stroke-dasharray="2 4" stroke-width="1"/>',
+          '" stroke="#363a3f" stroke-dasharray="2 4" stroke-width="0.5"/>',
       );
       s.push(
         '<text x="' +
           (m.l - 8) +
           '" y="' +
           (y + 4) +
-          '" text-anchor="end" font-size="10" fill="#aaa3b8" font-family=\'' +
+          '" text-anchor="end" font-size="12" fill="#b0b4ba" font-family=\'' +
           FONT +
           "'>" +
           num(t) +
@@ -563,7 +563,7 @@
             f1(slot) +
             '" height="' +
             ph +
-            '" fill="#ffffff0f"/>',
+            '" fill="#edeef0"/>',
         );
       if (Math.round(c.t / size) % k === 0) {
         var day = kst(c.t).D;
@@ -572,7 +572,7 @@
             f1(cx) +
             '" y="' +
             (H - m.b + 16) +
-            '" text-anchor="middle" font-size="10" fill="#aaa3b8" font-family=\'' +
+            '" text-anchor="middle" font-size="12" fill="#b0b4ba" font-family=\'' +
             FONT +
             "'>" +
             hm(c.t) +
@@ -584,7 +584,7 @@
               f1(cx) +
               '" y="' +
               (H - m.b + 30) +
-              '" text-anchor="middle" font-size="9" fill="#79816f" font-family=\'' +
+              '" text-anchor="middle" font-size="12" fill="#b0b4ba" font-family=\'' +
               FONT +
               "'>" +
               md(c.t) +
@@ -614,7 +614,7 @@
           '" stroke="' +
           col +
           '" stroke-width="' +
-          (slot < 7 ? 0.65 : slot < 12 ? 0.85 : 1) +
+          0.5 +
           '" opacity="' +
           op +
           '"/>',
@@ -648,14 +648,14 @@
           ly +
           '" y2="' +
           ly +
-          '" stroke="#ff7594" stroke-opacity="0.5" stroke-dasharray="3 4"/>',
+          '" stroke="#ff92ad" stroke-opacity="0.5" stroke-dasharray="3 4"/>',
       );
       s.push(
         '<text x="' +
           (m.l + 4) +
           '" y="' +
           (ly - 5) +
-          '" text-anchor="start" font-size="10" fill="#ff7594" font-family=\'' +
+          '" text-anchor="start" font-size="12" fill="#ff92ad" font-family=\'' +
           FONT +
           "'>현재 " +
           num(lc.c) +
@@ -696,7 +696,7 @@
         md(b.t) +
         " " +
         hm(state.tf === "5" ? b.t : b.t + size) +
-        " · " +
+        " / " +
         vis.length +
         "봉 / 전체 " +
         state.candles.length +
@@ -717,7 +717,7 @@
       btns[i].setAttribute("aria-pressed", on ? "true" : "false");
     }
     el.unit.textContent =
-      "리센느 − 선택 팀 표차 (표) · " + FRAMES[state.tf].label;
+      "리센느 − 선택 팀 표차 (표) / " + FRAMES[state.tf].label;
     renderPace();
   }
 
@@ -738,7 +738,7 @@
           hm(c.t) +
           "–" +
           hm(c.t + size) +
-          " · " +
+          " / " +
           FRAMES[state.tf].label;
     var d = c.c - c.o,
       col = gapColor(c.o, c.c);
@@ -772,7 +772,7 @@
           row("종가", num(c.c))) +
       "<p><span>" +
       distanceLabel(c.o, c.c) +
-      ' · 부호 변화</span><b style="color:' +
+      ' / 부호 변화</span><b style="color:' +
       col +
       '">' +
       signed(d) +
@@ -789,9 +789,9 @@
       '<div class="cd-dim">관측 ' +
       c.n +
       "회";
-    if (c.gapped) h += " · 직전 관측과 " + c.gapMin + "분 간격";
+    if (c.gapped) h += " / 직전 관측과 " + c.gapMin + "분 간격";
     if (last && state.tf !== "5" && c.t + size - c.lastT > 5 * 60000)
-      h += " · 집계 중";
+      h += " / 집계 중";
     h += "</div>";
     el.tip.innerHTML = h;
     el.tip.hidden = false;
@@ -868,13 +868,13 @@
           pd.last.an,
           rateText(pd.aRate),
           "최근 " + Math.round(pd.elapsed) + "분 평균",
-          "#f2f4ee",
+          "#edeef0",
         ],
         [
           pd.last.bn,
           rateText(pd.bRate),
           "최근 " + Math.round(pd.elapsed) + "분 평균",
-          "#f2f4ee",
+          "#edeef0",
         ],
         [
           "표차 변화",
@@ -885,8 +885,8 @@
         [
           "현재 추세가 지속된다면",
           eta,
-          trendLabel + " · 회귀 " + rateText(pd.trend),
-          "#f2f4ee",
+          trendLabel + " / 회귀 " + rateText(pd.trend),
+          "#edeef0",
         ],
       ];
       items.forEach(function (it, i) {
@@ -903,12 +903,12 @@
           cw +
           '" height="' +
           ch +
-          '" rx="14" fill="#1a1e2b" stroke="#30374a"/>' +
+          '" rx="4" fill="#18191b" stroke="#363a3f"/>' +
           '<text x="' +
           (x + 13) +
           '" y="' +
           (y + 22) +
-          '" font-size="12" fill="#a4adbf"' +
+          '" font-size="12" fill="#b0b4ba"' +
           font +
           ">" +
           esc(it[0]) +
@@ -917,7 +917,7 @@
           (x + 13) +
           '" y="' +
           (y + 50) +
-          '" font-size="23" font-weight="650" fill="' +
+          '" font-size="16" font-weight="650" fill="' +
           it[3] +
           '"' +
           font +
@@ -928,7 +928,7 @@
           (x + 13) +
           '" y="' +
           (y + 72) +
-          '" font-size="11" fill="#a4adbf"' +
+          '" font-size="12" fill="#b0b4ba"' +
           font +
           ">" +
           esc(it[2]) +
@@ -945,26 +945,26 @@
       " " +
       totalH +
       '">' +
-      '<rect width="100%" height="100%" fill="#10121b"/>' +
-      '<text x="28" y="32" font-size="24" font-weight="700" fill="#f2f4ee"' +
+      '<rect width="100%" height="100%" fill="#111113"/>' +
+      '<text x="28" y="32" font-size="16" font-weight="700" fill="#edeef0"' +
       font +
-      ">VOTE/TRACK · 리센느 기준 표차 흐름 분석</text>" +
-      '<text x="28" y="55" font-size="12" fill="#a4adbf"' +
+      ">VOTE/TRACK / 리센느 기준 표차 분석</text>" +
+      '<text x="28" y="55" font-size="12" fill="#b0b4ba"' +
       font +
-      ">현재 득표 페이스 · " +
+      ">현재 득표 페이스 / " +
       paceLabel +
       " 기준  |  캔들 " +
       FRAMES[state.tf].label +
       "</text>" +
-      '<text x="28" y="75" font-size="12" fill="#a4adbf"' +
+      '<text x="28" y="75" font-size="12" fill="#b0b4ba"' +
       font +
       ">" +
       md(last.t) +
       " " +
       hm(last.t) +
-      " KST · 최신 표차 " +
+      " KST / 최신 표차 " +
       signed(lc.c) +
-      "표 · 리센느 " +
+      "표 / 리센느 " +
       num(last.a) +
       " − " +
       esc(last.bn) +
@@ -972,9 +972,9 @@
       num(last.b) +
       "</text>" +
       cards +
-      '<text x="28" y="335" font-size="12" fill="#a4adbf"' +
+      '<text x="28" y="335" font-size="12" fill="#b0b4ba"' +
       font +
-      ">표차 캔들 · " +
+      ">표차 캔들 / " +
       md(a.t) +
       " " +
       hm(a.t) +
@@ -990,13 +990,13 @@
       "</g>" +
       '<text x="28" y="' +
       (H + HDR + 21) +
-      '" font-size="11" fill="#a4adbf"' +
+      '" font-size="12" fill="#b0b4ba"' +
       font +
       '><tspan fill="' +
       UP_COLOR +
       '">■</tspan> 표차 상승  <tspan fill="' +
       DOWN_COLOR +
-      '">■</tspan> 표차 하락  · 표차 = 리센느 − 선택한 상대 팀 · 데이터 출처 Melon</text>' +
+      '">■</tspan> 표차 하락  / 표차 = 리센느 − 선택한 상대 팀 / 데이터 출처 Melon</text>' +
       "</svg>";
     var img = new Image();
     img.onload = function () {
@@ -1023,7 +1023,7 @@
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
 
-  /* ===== 기록 읽기 · 갱신 ===== */
+  /* ===== 기록 읽기 / 갱신 ===== */
   function addSnaps(list) {
     list.forEach(function (s) {
       var minute = Math.floor(Date.parse(s.sourceAt) / 60000);
@@ -1075,11 +1075,11 @@
     }
     if (root.className.indexOf("cd-panel") < 0) root.className += " cd-panel";
     root.innerHTML =
-      '' +
-      '<div class="panel-heading"><div><div class="section-kicker">GAP ANALYSIS</div><h2 id="cd-title">표차 흐름 분석</h2></div>' +
-      '<label class="cd-pair-control" for="gap-pair"><span>상대 팀 (순위순)</span><select id="gap-pair" class="control-select"><option value="">상대 팀 기록 대기</option></select></label></div>' +
-      '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>현재 득표 페이스 · 선택 구간 평균</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="240">4시간</button><button data-min="1440">24시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note">리센느−상대 팀의 부호 표차를 가중 선형회귀합니다. 음수에서 상승하면 리센느의 추격, 양수에서 하락하면 상대 팀의 추격입니다. 6개·15분 미만, 긴 공백·득표 정정·낮은 적합도는 보류하며, 먼 미래(최대 6시간)는 수치로 단정하지 않습니다.</p></div>' +
-      '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들 · 시간 흐름</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="240">4시간</button><button data-tf="1440">일봉</button></div></div><div class="cd-legend"><span><i style="background:' +
+      "" +
+      '<div class="panel-heading"><div><span class="section-kicker" hidden></span><h2 id="cd-title">표차 분석</h2></div>' +
+      '<label class="cd-pair-control" for="gap-pair"><span>상대 팀</span><select id="gap-pair" class="control-select"><option value="">상대 팀 기록 대기</option></select></label></div>' +
+      '<div class="pc-summary" id="pc-summary"><div class="pc-summary-head"><span>분당 득표 증가</span><div class="pc-tf" id="pc-tf" role="group" aria-label="분석 기간"><button data-min="60" class="selected" aria-pressed="true">1시간</button><button data-min="240">4시간</button><button data-min="1440">24시간</button></div></div><div class="pc-body" id="pc-body"></div><p class="pc-note"></p></div>' +
+      '<div class="cd-controls"><div class="pc-summary-head"><span>표차 캔들</span><div class="cd-tf" role="group" aria-label="봉 간격" id="cd-tf"><button data-tf="5" class="selected" aria-pressed="true">5분</button><button data-tf="60">1시간</button><button data-tf="240">4시간</button><button data-tf="1440">일봉</button></div></div><div class="cd-legend"><span><i style="background:' +
       UP_COLOR +
       '"></i>표차 상승</span><span><i style="background:' +
       DOWN_COLOR +
@@ -1088,7 +1088,7 @@
       ';opacity:.5"></i>관측 공백 뒤</span></div></div>' +
       '<div class="cd-wrap" id="cd-wrap"><span class="cd-unit" id="cd-unit"></span><svg id="cd-svg" role="img" aria-label="리센느와 선택한 상대 팀의 표차 캔들차트"></svg><div class="cd-tip" id="cd-tip" role="status" hidden></div></div>' +
       '<div class="cd-nav"><button class="quiet-button" id="cd-prev" type="button">◀ 이전</button><button class="quiet-button" id="cd-next" type="button">다음 ▶</button><button class="quiet-button" id="cd-latest" type="button">최신</button><button class="quiet-button" id="cd-zoom-in" type="button">＋ 확대</button><button class="quiet-button" id="cd-zoom-out" type="button">− 축소</button><button class="quiet-button" id="cd-reset" type="button">전체 보기</button></div>' +
-      '<div class="cd-bottom"><p>※ 표차는 리센느 득표수 − 선택한 상대 팀 득표수예요. 상대 팀은 현재 TOP6에서 리센느를 제외한 다섯 팀이며, 선택지는 상대 순위순입니다. 양수는 리센느가 앞서고, 음수는 상대 팀이 앞섭니다. 색상은 표차 방향 기준: 빨강=상승, 파랑=하락입니다. 확대·축소 문구는 절대 격차 기준입니다. 음수에서 0에 가까워지면 격차 축소·빨강, 양수에서 멀어지면 격차 확대·빨강입니다. 4시간봉은 한국 시간 00·04·08·12·16·20시, 일봉은 00시 기준입니다. 캔들 몸통은 직전 관측부터 구간 마지막까지의 변화, 위·아래 선은 구간 중 최고·최저예요. 관측 공백은 채우지 않아요. PC: 마우스 드래그·휠로 좌우 이동, Ctrl+휠로 커서 주변 확대. 버튼으로도 확대·축소·전체 보기 가능. 모바일: 좌우 드래그·두 손가락 핀치로 조절할 수 있어요.</p><span id="cd-range"></span></div>';
+      '<div class="cd-bottom"><span id="cd-range"></span></div>';
     syncGapOptions();
     document.getElementById("gap-pair").addEventListener("change", function () {
       state.map = {};
@@ -1414,4 +1414,3 @@
     document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
-
