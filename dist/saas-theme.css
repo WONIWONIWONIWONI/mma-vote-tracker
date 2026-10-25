@@ -1123,12 +1123,9 @@ footer {
   }
 }
 
-/* One panel at a time, with the same tab controls on desktop and mobile. */
+/* Persistent navigation and shared controls on desktop and mobile. */
 .dashboard-view[hidden] {
   display: none !important;
-}
-html:not([data-panel]) .dashboard-view:not(#overview-panel) {
-  display: none;
 }
 .hero-right {
   display: flex;
@@ -1332,10 +1329,7 @@ html:not([data-panel]) .dashboard-view:not(#overview-panel) {
   }
   .daily-panel .daily-team {
     display: grid;
-    grid-template-columns: minmax(148px, 0.9fr) minmax(72px, 1.3fr) minmax(
-        96px,
-        max-content
-      );
+    grid-template-columns: minmax(148px, 0.9fr) minmax(72px, 1.3fr) 112px;
     grid-template-areas: "name bar value";
     align-items: center;
     column-gap: 12px;

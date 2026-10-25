@@ -86,7 +86,7 @@ const history = JSON.parse(
           );
         }
         const before = requests;
-        assert.equal(await page.locator(".dashboard-view:visible").count(), 1);
+        assert.equal(await page.locator(".dashboard-view:visible").count(), 7);
         const alignment = await page
           .locator(".header-actions button")
           .evaluateAll((es) =>
@@ -121,17 +121,24 @@ const history = JSON.parse(
           await page.locator(`.dashboard-nav a[href="#${id}"]`).click();
           assert.equal(
             await page.locator(".dashboard-view:visible").count(),
-            1,
-            id + " is the only visible panel",
+            7,
+            "section links leave every panel visible",
           );
+          assert.ok(await page.locator(`#${id}`).isVisible());
           assert.equal(
-            await page.locator(".dashboard-view:visible").getAttribute("id"),
+            await page.locator("html").getAttribute("data-panel"),
             id,
           );
-          assert.equal(
-            await page.locator('[role="tab"][aria-selected="true"]').count(),
-            1,
-          );
+          const geometry = await page.locator(`#${id}`).boundingBox();
+          const header = await page.locator(".dashboard-sidebar").boundingBox();
+          if (id === "overview-panel")
+            assert.equal(await page.evaluate(() => scrollY), 0);
+          else
+            assert.ok(
+              geometry.y >= (mobile ? header.height : 0) - 1 &&
+                geometry.y < 860,
+              "target section is visible below the fixed menu",
+            );
           if (id === "daily-panel") {
             const layout = await page.evaluate(() => {
               const box = (e) => {
@@ -175,9 +182,8 @@ const history = JSON.parse(
                 "desktop totals use the right column",
               );
             }
-            await page.screenshot({
+            await page.locator("#daily-panel").screenshot({
               path: `qa-output/panel-daily-${mobile ? "mobile" : "desktop"}-${theme}.png`,
-              fullPage: true,
             });
           }
           assert.ok(
@@ -210,7 +216,7 @@ const history = JSON.parse(
         });
         await page.goBack();
         assert.equal(
-          await page.locator(".dashboard-view:visible").getAttribute("id"),
+          await page.locator("html").getAttribute("data-panel"),
           "trend-panel",
         );
         assert.equal(
@@ -231,9 +237,9 @@ const history = JSON.parse(
         );
         await page.reload();
         assert.equal(
-          await page.locator(".dashboard-view:visible").getAttribute("id"),
+          await page.locator("html").getAttribute("data-panel"),
           "trend-panel",
-          "direct refresh restores the linked tab",
+          "direct refresh reaches the linked section",
         );
         await page.waitForFunction(
           (n) => window.MMA_DATA?.snapshots.length >= n,
@@ -255,17 +261,17 @@ const history = JSON.parse(
           });
           await page.locator('.dashboard-nav a[href="#daily-panel"]').click();
           assert.equal(
-            await page.locator(".dashboard-view:visible").getAttribute("id"),
+            await page.locator("html").getAttribute("data-panel"),
             "daily-panel",
           );
         }
-        // Keyboard users can change panels without moving through hidden controls.
+        // Keyboard users can move between section links.
         await page.locator('.dashboard-nav a[href="#daily-panel"]').click();
         await page
           .locator('.dashboard-nav a[href="#daily-panel"]')
           .press("ArrowRight");
         assert.equal(
-          await page.locator(".dashboard-view:visible").getAttribute("id"),
+          await page.locator("html").getAttribute("data-panel"),
           "hourly-panel",
         );
         // Reloads above legitimately fetch data; a plain tab switch must not.
@@ -284,7 +290,7 @@ const history = JSON.parse(
     await browser.close();
   }
   console.log(
-    "Single-panel tabs, header alignment, sticky mobile navigation, keyboard/back/direct links, preserved chart choices, forecast stroke widths and no tab polling passed.",
+    "Continuous-page section links, header alignment, sticky mobile navigation, keyboard/back/direct links, preserved chart choices, forecast stroke widths and no navigation polling passed.",
   );
 })().catch((e) => {
   console.error(e);
