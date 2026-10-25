@@ -116,7 +116,7 @@ a {
   font-size: 12px;
 }
 .site-shell {
-  max-width: 1556px;
+  max-width: none;
   margin-left: 212px;
   padding: 0 32px;
 }
