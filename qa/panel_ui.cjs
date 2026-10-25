@@ -155,14 +155,56 @@ const history = JSON.parse(
             assert.equal(layout.rows.length, 6);
             if (mobile) {
               assert.ok(
-                Math.abs(layout.rows[0].y - layout.rows[1].y) < 1 &&
-                  layout.rows[2].y > layout.rows[0].y,
-                "mobile keeps the two-column cards",
+                layout.rows.every(
+                  (row, index) =>
+                    index === 0 || row.y > layout.rows[index - 1].y,
+                ),
+                "mobile candidates use six horizontal rows",
+              );
+              assert.ok(
+                layout.bars.every(
+                  (bar) => Math.abs(bar.width - layout.bars[0].width) < 1,
+                ),
+                "mobile bars share the same comparison width",
               );
               assert.ok(
                 layout.summary.y < layout.teams.y,
-                "mobile summary remains above the cards",
+                "mobile summary sits above the rows",
               );
+              for (const width of [320, 390]) {
+                await page.setViewportSize({ width, height: 960 });
+                assert.ok(
+                  await page.locator("#daily-panel").evaluate((panel) => {
+                    const bounds = panel.getBoundingClientRect();
+                    return [
+                      ...panel.querySelectorAll(
+                        ".daily-team, .daily-name, .daily-team > strong, .daily-bar, #daily-summary, #daily-summary strong, #daily-summary small",
+                      ),
+                    ].every((element) => {
+                      const rect = element.getBoundingClientRect();
+                      return (
+                        rect.left >= bounds.left &&
+                        rect.right <= bounds.right &&
+                        element.scrollWidth <= element.clientWidth + 1
+                      );
+                    });
+                  }),
+                  `daily rows and totals fit ${width}px`,
+                );
+                const dates = await page
+                  .locator("#daily-date, #hourly-date")
+                  .evaluateAll((elements) =>
+                    elements.map((element) => {
+                      const r = element.getBoundingClientRect();
+                      return { x: r.x, width: r.width };
+                    }),
+                  );
+                assert.ok(
+                  Math.abs(dates[0].x - dates[1].x) < 1 &&
+                    Math.abs(dates[0].width - dates[1].width) < 1,
+                  `mobile date selectors align at ${width}px`,
+                );
+              }
             } else {
               assert.ok(
                 layout.rows.every(
@@ -185,6 +227,21 @@ const history = JSON.parse(
             await page.locator("#daily-panel").screenshot({
               path: `qa-output/panel-daily-${mobile ? "mobile" : "desktop"}-${theme}.png`,
             });
+          }
+          if (id === "hourly-panel") {
+            const dates = await page
+              .locator("#daily-date, #hourly-date")
+              .evaluateAll((elements) =>
+                elements.map((element) => {
+                  const r = element.getBoundingClientRect();
+                  return { x: r.x, width: r.width };
+                }),
+              );
+            assert.ok(
+              Math.abs(dates[0].x - dates[1].x) < 1 &&
+                Math.abs(dates[0].width - dates[1].width) < 1,
+              "daily and hourly date selectors align",
+            );
           }
           assert.ok(
             await page.evaluate(

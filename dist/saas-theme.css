@@ -1334,6 +1334,128 @@ footer {
 }
 
 /* Wide daily view: common bar lengths on the left, date totals on the right. */
+.hourly-panel.has-image-button > .panel-heading.compact {
+  padding: 0;
+}
+.daily-panel .hourly-date-label,
+.hourly-panel .hourly-date-label {
+  width: 224px;
+  align-items: stretch;
+}
+.daily-panel .hourly-date-label select,
+.hourly-panel .hourly-date-label select {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+@media (max-width: 760px) {
+  .daily-panel .hourly-date-label,
+  .hourly-panel .hourly-date-label {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  .daily-panel .hourly-date-label select,
+  .hourly-panel .hourly-date-label select {
+    width: min(220px, calc(100% - 76px));
+  }
+}
+@media (max-width: 999px) {
+  .daily-panel #daily-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 12px;
+    margin: 0 0 12px;
+    padding: 12px;
+    background: var(--tone-f7f8fc);
+    border: 0.5px solid var(--line);
+    border-radius: 4px;
+  }
+  .daily-panel #daily-summary .panel-tag {
+    justify-self: start;
+  }
+  .daily-panel #daily-summary > span:not(.panel-tag) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 4px 8px;
+    font-size: 12px;
+  }
+  .daily-panel #daily-summary strong {
+    margin: 0;
+    white-space: nowrap;
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .daily-panel #daily-summary small {
+    grid-column: 1 / -1;
+    width: auto;
+    margin: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.6;
+  }
+  .daily-panel .daily-teams {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin: 0;
+  }
+  .daily-panel .daily-team {
+    display: grid;
+    grid-template-columns: minmax(88px, 1fr) minmax(16px, 1fr) 92px;
+    grid-template-areas: "name bar value";
+    align-items: center;
+    gap: 6px;
+    min-height: 58px;
+    padding: 10px 6px;
+    background: transparent;
+    border: 0;
+    border-bottom: 0.5px solid var(--line);
+    border-radius: 0;
+  }
+  .daily-panel .daily-team:last-child {
+    border-bottom: 0;
+  }
+  .daily-panel .daily-team.daily-winner {
+    background: color-mix(in srgb, var(--color) 5%, var(--tone-fff));
+    border-radius: 4px;
+  }
+  .daily-panel .daily-name {
+    grid-area: name;
+    display: block;
+    min-width: 0;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .daily-panel .daily-name i {
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .daily-panel .daily-name b {
+    display: block;
+    margin: 0;
+  }
+  .daily-panel .daily-team > strong {
+    grid-area: value;
+    margin: 0;
+    text-align: right;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .daily-panel .daily-bar {
+    grid-area: bar;
+    height: 8px;
+    margin: 0;
+    border-radius: 2px;
+  }
+  .daily-panel #daily-note:empty {
+    display: none;
+  }
+}
 @media (min-width: 1000px) {
   .daily-panel.panel {
     display: grid;
