@@ -616,13 +616,13 @@
     let lines = series
       .map(
         (line) =>
-          `<path d="${path(rows.map((r) => ({ time: Date.parse(r.sourceAt), value: getValue(r, line) })))}" fill="none" stroke="${line.color}" stroke-width="0.5"/>`,
+          `<path d="${path(rows.map((r) => ({ time: Date.parse(r.sourceAt), value: getValue(r, line) })))}" fill="none" stroke="${line.color}" stroke-width="1.2"/>`,
       )
       .join("");
     lines += forecasts
       .map(
         (f) =>
-          `<path d="${path(f.points)}" fill="none" stroke="${f.color}" stroke-width="0.5" stroke-dasharray="5 5"/>`,
+          `<path d="${path(f.points)}" fill="none" stroke="${f.color}" stroke-width="1.2" stroke-dasharray="5 5"/>`,
       )
       .join("");
     const hits = rows

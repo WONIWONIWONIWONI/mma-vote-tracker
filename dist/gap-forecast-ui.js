@@ -482,14 +482,7 @@
     }
     const m = active;
     $("gf-content").innerHTML =
-      `<p class="gf-stamp">현재 12시간 예측 / ${date(m.cutoff)} ~ ${date(m.cutoff + MMAGapModel.HORIZON)} KST / 학습 ${date(m.trainingFrom)} ~ ${date(m.trainingTo)} / ${m.observations}회${ledgerFailed ? " / 공용 기록 연결 지연" : ""}</p>${selectionInfo(m)}<div class="gf-cards">` +
-      [0, 4, 8, 12]
-        .map((h) => {
-          const p = m.path[h * 12];
-          return `<div><span>${h ? h + "시간 후" : "기준 시점"} 예측 표차</span><strong>${signed(p.g)}표</strong><small>${h ? "기준 대비 " + signed(p.g - m.gap) + "표" : m.gap >= 0 ? "리센느 우세" : "임영웅 우세"}</small></div>`;
-        })
-        .join("") +
-      `</div><p class="gf-legend"><span>━━ 실제 표차</span><span>┄┄ 5분 간격 조건부 예측</span></p>${currentSummary(m)}<svg id="gf-chart" role="img" aria-label="리센느와 임영웅 현재 12시간 표차 예측 및 실제 비교"></svg><p id="gf-hover" class="gf-hover">차트에서 시각별 예측값을 확인할 수 있습니다.</p><div class="gf-accuracy"><span>현재 예측의 12시간 실제값 비교</span><p>${comparison(m)}</p></div><details><summary>시간별 예측 수치와 실제 오차 (12시간)</summary>${table(m, 12)}</details><details id="gf-detail"><summary>5분 단위 상세 수치 (144구간)</summary><div id="gf-fine"></div></details>`;
+      `<p class="gf-stamp">현재 12시간 예측 / ${date(m.cutoff)} ~ ${date(m.cutoff + MMAGapModel.HORIZON)} KST / 학습 ${date(m.trainingFrom)} ~ ${date(m.trainingTo)} / ${m.observations}회${ledgerFailed ? " / 공용 기록 연결 지연" : ""}</p>${selectionInfo(m)}<p class="gf-legend"><span>━━ 실제 표차</span><span>┄┄ 5분 간격 조건부 예측</span></p>${currentSummary(m)}<svg id="gf-chart" role="img" aria-label="리센느와 임영웅 현재 12시간 표차 예측 및 실제 비교"></svg><p id="gf-hover" class="gf-hover">차트에서 시각별 예측값을 확인할 수 있습니다.</p><div class="gf-accuracy"><span>현재 예측의 12시간 실제값 비교</span><p>${comparison(m)}</p></div><details><summary>시간별 예측 수치와 실제 오차 (12시간)</summary>${table(m, 12)}</details><details id="gf-detail"><summary>5분 단위 상세 수치 (144구간)</summary><div id="gf-fine"></div></details>`;
     $("gf-detail").addEventListener("toggle", (e) => {
       if (e.target.open && !$("gf-fine").children.length)
         $("gf-fine").innerHTML = table(m, 1);
