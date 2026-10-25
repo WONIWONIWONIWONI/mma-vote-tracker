@@ -190,7 +190,7 @@ async function setup(browser, mobile = false) {
           ) {
             const size = getComputedStyle(e).fontSize;
             sizes.add(
-              ["12px", "16px", "32px"].includes(size)
+              parseFloat(size) >= 12
                 ? size
                 : size +
                     " " +
@@ -205,8 +205,8 @@ async function setup(browser, mobile = false) {
       return [...sizes];
     });
   assert.ok(
-    typography.every((size) => ["12px", "16px", "32px"].includes(size)),
-    "visible UI uses three readable sizes: " + typography.join(","),
+    typography.every((size) => parseFloat(size) >= 12),
+    "visible UI text is at least 12px: " + typography.join(","),
   );
   assert.ok(
     !(await page.locator("body").innerText()).includes("·"),
@@ -218,7 +218,7 @@ async function setup(browser, mobile = false) {
       rows.map((e) => e.style.getPropertyValue("--color")),
     );
   assert.equal(new Set(colors).size, 6, "all six teams have distinct colors");
-  assert.equal(colors[1], "#bde56c");
+  assert.equal(colors[1], "#e6ff54");
   assert.equal(
     await page.locator("[data-range].selected").getAttribute("data-range"),
     "24",
@@ -421,7 +421,7 @@ async function setup(browser, mobile = false) {
   async function noRightBlank() {
     const gap = await page.locator("#cd-svg").evaluate((e) => {
       const bars = [...e.querySelectorAll("rect")].filter((r) =>
-        ["#e5484d", "#4ccce6", "#b0b4ba"].includes(r.getAttribute("fill")),
+        ["#ff4757", "#4fc8e0", "#a58e9c"].includes(r.getAttribute("fill")),
       );
       const last = bars.at(-1);
       return (
@@ -560,10 +560,10 @@ async function setup(browser, mobile = false) {
   if (!mobile) {
     await page.locator("#gap-pair").selectOption(ids[0]);
     for (const [first, last, label, color] of [
-      [-100, -50, "격차 축소", "#e5484d"],
-      [100, 150, "격차 확대", "#e5484d"],
-      [-100, -150, "격차 확대", "#4ccce6"],
-      [100, 50, "격차 축소", "#4ccce6"],
+      [-100, -50, "격차 축소", "#ff4757"],
+      [100, 150, "격차 확대", "#ff4757"],
+      [-100, -150, "격차 확대", "#4fc8e0"],
+      [100, 50, "격차 축소", "#4fc8e0"],
     ]) {
       const rows = Array.from({ length: 7 }, (_, i) => {
         const s = snapshot(714 + i),
@@ -589,7 +589,7 @@ async function setup(browser, mobile = false) {
         await metric
           .locator("strong")
           .evaluate((e) => getComputedStyle(e).color),
-        color === "#e5484d" ? "rgb(229, 72, 77)" : "rgb(76, 204, 230)",
+        color === "#ff4757" ? "rgb(255, 71, 87)" : "rgb(79, 200, 224)",
       );
     }
   }

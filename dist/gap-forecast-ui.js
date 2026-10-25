@@ -251,7 +251,7 @@
     const ticks = tickValues
       .map(
         (v) =>
-          `<g class="gf-y-tick"><line x1="${box.x}" x2="${W - 18}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#b0b4ba" : "#363a3f"}" stroke-dasharray="${v === 0 ? "3 3" : "2 4"}"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text></g>`,
+          `<g class="gf-y-tick"><line x1="${box.x}" x2="${W - 18}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#a295b0" : "#393346"}" stroke-dasharray="${v === 0 ? "3 3" : "2 4"}"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text></g>`,
       )
       .join("");
     const clock = Date.now(),
@@ -282,16 +282,16 @@
           }).join("")
         : endpoint(xmin, "시작", "start") + endpoint(xmax, "끝", "end");
     const clockLine = showClock
-      ? `<g class="gf-current-time" data-time="${clock}"><line x1="${x(clock)}" x2="${x(clock)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b0b4ba" stroke-dasharray="3 4"/><text x="${Math.max(box.x + 32, Math.min(W - 52, x(clock)))}" y="${H - 9}" text-anchor="middle" fill="#b0b4ba" font-size="12">현재 ${time(clock)}</text></g>`
+      ? `<g class="gf-current-time" data-time="${clock}"><line x1="${x(clock)}" x2="${x(clock)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#c6b7d1" stroke-dasharray="3 4"/><text x="${Math.max(box.x + 32, Math.min(W - 52, x(clock)))}" y="${H - 9}" text-anchor="middle" fill="#aba3b8" font-size="12">현재 ${time(clock)}</text></g>`
       : "";
     const annotations = now
       ? `<g class="gf-now-markers">${[
-          { g: now.actual, color: "#4ccce6" },
-          { g: now.predicted, color: "#ff92ad" },
+          { g: now.actual, color: "#4fc8e0" },
+          { g: now.predicted, color: "#ff789a" },
         ]
           .map(
             (p) =>
-              `<line x1="${box.x}" x2="${x(now.t)}" y1="${y(p.g)}" y2="${y(p.g)}" stroke="${p.color}" stroke-dasharray="3 3"/><circle cx="${x(now.t)}" cy="${y(p.g)}" r="3" fill="${p.color}" stroke="#111113" stroke-width="0.5"/>`,
+              `<line x1="${box.x}" x2="${x(now.t)}" y1="${y(p.g)}" y2="${y(p.g)}" stroke="${p.color}" stroke-dasharray="3 3"/><circle cx="${x(now.t)}" cy="${y(p.g)}" r="3" fill="${p.color}" stroke="#151321" stroke-width="0.5"/>`,
           )
           .join("")}</g>`
       : "";
@@ -300,11 +300,11 @@
           .filter((m) => m.origin > xmin && m.origin < xmax)
           .map(
             (m) =>
-              `<line x1="${x(m.origin)}" x2="${x(m.origin)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#777b84" stroke-opacity=".3" stroke-dasharray="2 5"/>`,
+              `<line x1="${x(m.origin)}" x2="${x(m.origin)}" y1="${box.y}" y2="${box.y + box.h}" stroke="#877b95" stroke-opacity=".3" stroke-dasharray="2 5"/>`,
           )
           .join("")
       : "";
-    svg.innerHTML = `<title>${historical ? "완료된 12시간 예측과 실제의 전체 경로" : "리센느와 임영웅의 현재 12시간 예측과 실제"} (KST)</title><defs><clipPath id="gf-plot"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><g fill="#b0b4ba" font-size="12">${ticks}<line x1="${box.x}" x2="${W - 18}" y1="${box.y + box.h}" y2="${box.y + box.h}" stroke="#777b84"/>${labels}</g><g clip-path="url(#gf-plot)">${boundaries}${segments.map((p) => `<path class="gf-predicted-path" d="${path(p)}" stroke="#ff92ad" stroke-width="0.5" stroke-dasharray="5 4" fill="none"/>`).join("")}<path class="gf-actual-path" d="${path(actual)}" stroke="#4ccce6" stroke-width="0.5" fill="none"/>${annotations}</g>${clockLine}`;
+    svg.innerHTML = `<title>${historical ? "완료된 12시간 예측과 실제의 전체 경로" : "리센느와 임영웅의 현재 12시간 예측과 실제"} (KST)</title><defs><clipPath id="gf-plot"><rect x="${box.x}" y="${box.y}" width="${box.w}" height="${box.h}"/></clipPath></defs><g fill="#aba3b8" font-size="12">${ticks}<line x1="${box.x}" x2="${W - 18}" y1="${box.y + box.h}" y2="${box.y + box.h}" stroke="#877b95"/>${labels}</g><g clip-path="url(#gf-plot)">${boundaries}${segments.map((p) => `<path class="gf-predicted-path" d="${path(p)}" stroke="#ff789a" stroke-width="0.5" stroke-dasharray="5 4" fill="none"/>`).join("")}<path class="gf-actual-path" d="${path(actual)}" stroke="#4fc8e0" stroke-width="0.5" fill="none"/>${annotations}</g>${clockLine}`;
     if (historical)
       $("gf-history-range").textContent =
         `${date(xmin)} ~ ${date(xmax)} KST / 전체 ${model.models.length}개 예측`;

@@ -1,11 +1,11 @@
 /* Draw standalone panel images locally, without screenshots or remote services. */
 ((root) => {
   "use strict";
-  const bg = "#111113",
-    panel = "#18191b",
-    muted = "#b0b4ba",
-    ink = "#edeef0",
-    lime = "#ff92ad";
+  const bg = "#10121b",
+    panel = "#1a1e2b",
+    muted = "#a4adbf",
+    ink = "#f5f6fa",
+    lime = "#f2aac2";
   const font = '"DM Sans", "Noto Sans KR", sans-serif';
   function surface(model, height) {
     const width = 1000;
@@ -34,17 +34,17 @@
       maxWidth = 900,
     ) => {
       value = String(value);
-      size = size <= 13 ? 12 : size <= 25 ? 16 : 32;
+      size = Math.max(12, size);
       c.fillStyle = color;
       c.textAlign = align;
       do {
         c.font = `${weight} ${size}px ${font}`;
         if (c.measureText(value).width <= maxWidth || size <= 12) break;
-        size = size === 32 ? 16 : 12;
+        size--;
       } while (true);
       c.fillText(value, x, y, maxWidth);
     };
-    const line = (x1, y1, x2, y2, color = "#363a3f") => {
+    const line = (x1, y1, x2, y2, color = "#41374f") => {
       c.beginPath();
       c.strokeStyle = color;
       c.lineWidth = 0.5;
@@ -52,10 +52,10 @@
       c.lineTo(x2, y2);
       c.stroke();
     };
-    const rect = (x, y, w, h, color = panel, radius = 4) => {
+    const rect = (x, y, w, h, color = panel, radius = 12) => {
       c.fillStyle = color;
       c.beginPath();
-      c.roundRect(x, y, w, h, Math.min(radius, 4, h / 2));
+      c.roundRect(x, y, w, h, Math.min(radius, h / 2));
       c.fill();
     };
     text("VOTE/TRACK / " + TrackerConfig.edition, 48, 44, 12, lime, 700);
@@ -71,7 +71,7 @@
     );
     text(model.title, 48, 98, 30, ink, 700);
     text(model.subtitle, 48, 130, 12, muted);
-    line(48, 158, 952, 158, "#363a3f");
+    line(48, 158, 952, 158, "#303648");
     line(48, height - 54, 952, height - 54);
     text("데이터 출처 Melon / 비공식 팬 대시보드", 48, height - 27, 10, muted);
     text(
@@ -90,14 +90,14 @@
     model.leaders.forEach((team, i) => {
       const x = 48 + (i % 2) * 464,
         y = start + Math.floor(i / 2) * 152;
-      rect(x, y, 440, 136, i < 2 ? "#212225" : panel, 14);
+      rect(x, y, 440, 136, i < 2 ? "#212536" : panel, 14);
 
       text(String(team.rank).padStart(2, "0"), x + 24, y + 36, 12, muted, 600);
       text(team.name, x + 66, y + 36, 17, ink, 600, "left", 348);
       text(team.votes, x + 24, y + 77, 30, ink, 600, "left", 285);
       text(team.share, x + 416, y + 77, 21, team.color, 600, "right", 112);
       text(team.gap, x + 24, y + 105, 11, muted, 400, "left", 394);
-      rect(x + 24, y + 119, 392, 3, "#363a3f");
+      rect(x + 24, y + 119, 392, 3, "#33394c");
       rect(
         x + 24,
         y + 119,

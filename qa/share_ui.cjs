@@ -222,12 +222,12 @@ const root = path.resolve(__dirname, "../dist"),
             .locator("b")
             .evaluateAll((es) =>
               es
-                .filter((e) => e.style.fontSize === "32px")
+                .filter((e) => e.style.fontSize === "30px")
                 .map((e) => getComputedStyle(e).color),
             );
           assert.deepEqual(
             voteColors,
-            Array(6).fill("rgb(237, 238, 240)"),
+            Array(6).fill("rgb(245, 246, 250)"),
             "rank votes remain readable on dark cards",
           );
           assert.ok(
