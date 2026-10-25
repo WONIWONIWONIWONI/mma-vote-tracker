@@ -81,9 +81,13 @@ const root = path.resolve(__dirname, "../dist"),
               "button,.cd-legend span,.pc-summary-head > span,.chart-legend button",
             )) {
               if (!node.textContent.trim() || !node.getClientRects().length) continue;
-              const range = document.createRange();
-              range.selectNodeContents(node);
-              const lines = [...range.getClientRects()].filter((r) => r.width > 0);
+              const lines = [...node.childNodes]
+                .filter((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim())
+                .flatMap((child) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(child);
+                  return [...range.getClientRects()].filter((r) => r.width > 0);
+                });
               const rows = new Set(lines.map((r) => Math.round(r.top)));
               const box = node.getBoundingClientRect();
               if (
