@@ -89,7 +89,9 @@ const root = path.resolve(__dirname, "../dist"),
           0,
           "downloads are consolidated in sharing",
         );
+        await page.locator('.dashboard-nav a[href="#daily-panel"]').click();
         await page.selectOption("#daily-date", "2026-10-15");
+        await page.locator('.dashboard-nav a[href="#hourly-panel"]').click();
         await page.selectOption("#hourly-date", "2026-10-22");
         assert.match(
           await page.locator(".daily-winner").textContent(),
@@ -103,6 +105,15 @@ const root = path.resolve(__dirname, "../dist"),
           "daily",
           "hourly",
         ]) {
+          const panelId = {
+            leaders: "overview-panel",
+            trend: "trend-panel",
+            candles: "candle-panel",
+            forecast: "gap-future",
+            daily: "daily-panel",
+            hourly: "hourly-panel",
+          }[key];
+          await page.locator(`.dashboard-nav a[href="#${panelId}"]`).click();
           await page.locator(`[data-share-panel="${key}"]`).click();
           await page.waitForFunction(
             () => !document.querySelector("[data-copy-image]").disabled,
@@ -456,6 +467,7 @@ const root = path.resolve(__dirname, "../dist"),
           await page.locator("[data-close-share]").click();
         }
         // New copies reflect the user's changed chart window and selected day.
+        await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
         await page.locator('[data-share-panel="trend"]').click();
         await page.waitForFunction(
           () => !document.querySelector("[data-copy-image]").disabled,
@@ -469,6 +481,7 @@ const root = path.resolve(__dirname, "../dist"),
           .locator(".share-preview img")
           .getAttribute("src");
         await page.locator("[data-close-share]").click();
+        await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
         await page.locator('[data-share-panel="trend"]').click();
         await page.waitForFunction(
           () => !document.querySelector("[data-copy-image]").disabled,

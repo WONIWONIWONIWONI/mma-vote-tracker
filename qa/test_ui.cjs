@@ -249,6 +249,7 @@ async function setup(browser, mobile = false) {
     );
   assert.equal(new Set(colors).size, 6, "all six teams have distinct colors");
   assert.equal(colors[1], "#617d00");
+  await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
   assert.equal(
     await page.locator("[data-range].selected").getAttribute("data-range"),
     "24",
@@ -412,6 +413,7 @@ async function setup(browser, mobile = false) {
     (await page.locator("#trend-chart path[stroke-dasharray]").count()) > 0,
   );
   if (mobile) {
+    await page.locator('.dashboard-nav a[href="#hourly-panel"]').click();
     await page.locator(".hourly-cards").scrollIntoViewIfNeeded();
     assert.equal(await page.locator(".hourly-cards .hour-card").count(), 3);
     assert.equal(
@@ -436,6 +438,7 @@ async function setup(browser, mobile = false) {
       "mobile can expand to the full selected day",
     );
   }
+  await page.locator('.dashboard-nav a[href="#candle-panel"]').click();
   await page.locator("#cd-zoom-in").click();
   await page.locator("#cd-zoom-in").click();
   await page.locator("#cd-svg").scrollIntoViewIfNeeded();
@@ -650,6 +653,7 @@ async function setup(browser, mobile = false) {
       window.dispatchEvent(new CustomEvent("mma:data", { detail: data })),
     actual,
   );
+  await page.locator('.dashboard-nav a[href="#gap-future"]').click();
   await page
     .locator("#gf-chart path[stroke-dasharray]")
     .waitFor({ state: "attached" });

@@ -63,6 +63,7 @@ const { chromium } = require("playwright");
       await page.locator("[data-range].selected").getAttribute("data-range"),
       "24",
     );
+    await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
     await page.locator('[data-range="1"]').click();
     await page.locator("#trend-chart").scrollIntoViewIfNeeded();
     const r = await page.locator("#trend-chart").boundingBox();
@@ -113,6 +114,7 @@ const { chromium } = require("playwright");
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(200);
+    await page.locator('.dashboard-nav a[href="#hourly-panel"]').click();
     assert.ok(await page.locator(".hourly-cards").isVisible());
     assert.equal(
       await page

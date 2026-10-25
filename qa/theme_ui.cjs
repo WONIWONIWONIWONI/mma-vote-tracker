@@ -48,8 +48,10 @@ const history = JSON.parse(
       await page.waitForFunction(() =>
         document.querySelector("#refresh-button:not(:disabled)"),
       );
+      await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
       await page.locator('[data-range="6"]').click();
       await page.locator('[data-metric="share"]').click();
+      await page.locator('.dashboard-nav a[href="#overview-panel"]').click();
       await page.locator("#leaders-toggle").click();
       const values = await page.locator(".vote-value").allTextContents();
       const range = await page.locator("#chart-window").textContent();

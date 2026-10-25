@@ -1105,6 +1105,9 @@
   window.addEventListener("tracker:theme", () => {
     if (state.data) render();
   });
+  window.addEventListener("tracker:panel", (event) => {
+    if (event.detail === "trend-panel") renderChart();
+  });
   let resizeTimer;
   addEventListener("resize", () => {
     clearTimeout(resizeTimer);
