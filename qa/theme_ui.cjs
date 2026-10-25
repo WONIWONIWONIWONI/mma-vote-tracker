@@ -43,28 +43,30 @@ async function checkDailyHistoryContrast(page, theme) {
         .evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
     );
   }
-  const ratios = await page.locator(".daily-best").evaluateAll((cells) => {
-    const luminance = (color) => {
-      const [r, g, b] = color
-        .match(/[\d.]+/g)
-        .slice(0, 3)
-        .map((value) => {
-          const channel = Number(value) / 255;
-          return channel <= 0.04045
-            ? channel / 12.92
-            : ((channel + 0.055) / 1.055) ** 2.4;
-        });
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    return cells.map((cell) => {
-      const style = getComputedStyle(cell);
-      const a = luminance(style.color);
-      const b = luminance(style.backgroundColor);
-      return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  const ratios = await page
+    .locator("td.daily-best, .daily-best dd")
+    .evaluateAll((cells) => {
+      const luminance = (color) => {
+        const [r, g, b] = color
+          .match(/[\d.]+/g)
+          .slice(0, 3)
+          .map((value) => {
+            const channel = Number(value) / 255;
+            return channel <= 0.04045
+              ? channel / 12.92
+              : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      return cells.map((cell) => {
+        const style = getComputedStyle(cell);
+        const a = luminance(style.color);
+        const b = luminance(style.backgroundColor);
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+      });
     });
-  });
   assert.ok(
-    ratios.length > 0 && ratios.every((ratio) => ratio >= 4.5),
+    ratios.length > 0 && ratios.every((ratio) => ratio >= 7),
     `${theme} daily history winners stay readable: ${ratios.join(",")}`,
   );
   assert.ok(await page.locator(".daily-best:visible").first().isVisible());
@@ -97,6 +99,18 @@ async function checkDailyHistoryContrast(page, theme) {
               headers: { "Access-Control-Allow-Origin": "*" },
             });
           return route.abort();
+        }
+        // Reproduce a returning visitor receiving the previous cached stylesheet.
+        if (
+          name === "style.css" &&
+          u.searchParams.get("v") === "20261025-scroll-page1"
+        ) {
+          return route.fulfill({
+            contentType: "text/css",
+            body:
+              fs.readFileSync(path.join(root, "style.css"), "utf8") +
+              "\n.daily-history .daily-best { color: var(--tone-ffffff); background: var(--tone-f7f8fc); }",
+          });
         }
         return route.fulfill({
           path: path.join(root, u.pathname === "/" ? "index.html" : u.pathname),
