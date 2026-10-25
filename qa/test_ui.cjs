@@ -171,6 +171,11 @@ async function setup(browser, mobile = false) {
   );
   await page.locator("#leaders-toggle").click();
   assert.equal(await page.locator(".leader:visible").count(), 2);
+  fs.mkdirSync("qa-output", { recursive: true });
+  await page.screenshot({
+    path: `qa-output/${mobile ? "mobile" : "desktop"}-initial.png`,
+    fullPage: true,
+  });
   const typography = await page
     .locator("main,header,footer")
     .evaluateAll((roots) => {
@@ -182,8 +187,20 @@ async function setup(browser, mobile = false) {
             [...e.childNodes].some(
               (n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim(),
             )
-          )
-            sizes.add(getComputedStyle(e).fontSize);
+          ) {
+            const size = getComputedStyle(e).fontSize;
+            sizes.add(
+              ["12px", "16px", "32px"].includes(size)
+                ? size
+                : size +
+                    " " +
+                    e.tagName +
+                    "#" +
+                    e.id +
+                    " " +
+                    e.textContent.slice(0, 40),
+            );
+          }
         }
       return [...sizes];
     });

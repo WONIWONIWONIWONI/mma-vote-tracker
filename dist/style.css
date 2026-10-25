@@ -3116,3 +3116,7 @@ svg line,
 svg path {
   stroke-width: 0.5;
 }
+small,
+svg text {
+  font-size: 12px;
+}
