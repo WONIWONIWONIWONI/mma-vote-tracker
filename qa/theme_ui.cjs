@@ -40,10 +40,6 @@ const history = JSON.parse(
           path: path.join(root, u.pathname === "/" ? "index.html" : u.pathname),
         });
       });
-      await page.addInitScript(() => {
-        if (localStorage.getItem("vote-track-theme") === null)
-          localStorage.setItem("vote-track-theme", "light");
-      });
       await page.goto("https://theme.test/");
       await page.waitForFunction(
         (n) => MMA_DATA?.snapshots.length >= n,
@@ -52,6 +48,12 @@ const history = JSON.parse(
       await page.waitForFunction(() =>
         document.querySelector("#refresh-button:not(:disabled)"),
       );
+      assert.equal(
+        await page.locator("html").getAttribute("data-theme"),
+        "dark",
+        "first visit defaults to dark mode",
+      );
+      await page.locator('[data-theme-choice="light"]').click();
       await page.locator('.dashboard-nav a[href="#trend-panel"]').click();
       await page.locator('[data-range="6"]').click();
       await page.locator('[data-metric="share"]').click();
