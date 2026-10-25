@@ -95,6 +95,19 @@ const root = path.resolve(__dirname, "../dist"),
                 lines.some((r) => r.bottom > box.bottom + 2 || r.right > box.right + 2)
               ) broken.push(node.textContent.trim());
             }
+            for (const heading of stage.querySelectorAll("h1,h2,h3")) {
+              for (const child of heading.childNodes) {
+                if (child.nodeType !== Node.TEXT_NODE) continue;
+                for (const match of child.textContent.matchAll(/\S+/g)) {
+                  const range = document.createRange();
+                  range.setStart(child, match.index);
+                  range.setEnd(child, match.index + match[0].length);
+                  const rows = new Set([...range.getClientRects()]
+                    .filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+                  if (rows.size > 1) broken.push(match[0]);
+                }
+              }
+            }
             if (broken.length)
               throw new Error("Shared labels wrap or overflow: " + broken.join(", "));
             return original(stage, options);
