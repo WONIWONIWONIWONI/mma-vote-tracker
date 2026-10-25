@@ -129,7 +129,7 @@
       clone.style.setProperty(name, style.getPropertyValue(name));
     clone.style.animation = "none";
     clone.style.transition = "none";
-    if (source.matches(".gap-future,#gf-content,.chart-panel"))
+    if (source.matches(".gap-future,#gf-content,.chart-panel,.daily-panel"))
       clone.style.height = "auto";
     if (source instanceof HTMLSelectElement) {
       for (const child of source.childNodes) clone.append(freeze(child));
@@ -187,12 +187,11 @@
       for (const selector of [".cd-controls", ".cd-wrap"])
         append(panel.querySelector(selector));
     } else if (key === "daily") {
-      for (const selector of [
-        ".daily-heading",
-        "#daily-summary",
-        "#daily-teams",
-      ])
-        append(panel.querySelector(selector));
+      // Preserve the desktop two-column layout. Excluded history/actions are
+      // already removed by freeze(), so let only the captured rows size it.
+      const daily = append(panel);
+      if (getComputedStyle(panel).display === "grid")
+        daily.style.gridTemplateRows = "auto auto";
     } else append(panel);
     // Avoid duplicate SVG clipping IDs, and keep references local to this capture.
     const ids = new Map();
@@ -371,6 +370,8 @@
         // captures when zoom, day, data, metric or team visibility changes.
         const fingerprint = JSON.stringify([
           panel.outerHTML,
+          panel.clientWidth,
+          window.innerWidth,
           [...panel.querySelectorAll("input,select")].map((n) => [
             n.value,
             n.checked,

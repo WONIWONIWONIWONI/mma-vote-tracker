@@ -1,4 +1,4 @@
-/* Accessible single-panel navigation. Switching views never requests data. */
+/* Persistent section navigation on one continuous page, without data requests. */
 (() => {
   const nav = document.querySelector(".dashboard-nav");
   const links = [...nav.querySelectorAll("a")];
@@ -19,48 +19,63 @@
     "share-daily": "daily-panel",
     "share-hourly": "hourly-panel",
   };
-  nav.setAttribute("role", "tablist");
+  let active = null,
+    frame;
   for (const item of items) {
-    item.link.id = "tab-" + item.id;
-    item.link.setAttribute("role", "tab");
-    item.link.setAttribute("aria-controls", item.id);
-    item.panel.setAttribute("role", "tabpanel");
-    item.panel.setAttribute("aria-labelledby", item.link.id);
-    item.panel.tabIndex = 0;
+    item.panel.hidden = false;
+    item.panel.removeAttribute("role");
+    item.panel.removeAttribute("tabindex");
+    item.link.removeAttribute("role");
+    item.link.removeAttribute("aria-selected");
+    item.link.tabIndex = 0;
   }
-  function select(value, { write = false, scroll = false } = {}) {
-    const requested = aliases[value] || value;
-    const current = items.find((item) => item.id === requested) || items[0];
-    for (const item of items) {
-      const selected = item === current;
-      item.panel.hidden = !selected;
-      item.link.setAttribute("aria-selected", String(selected));
-      item.link.tabIndex = selected ? 0 : -1;
-      if (selected) item.link.setAttribute("aria-current", "page");
-      else item.link.removeAttribute("aria-current");
+  nav.removeAttribute("role");
+  nav.removeAttribute("aria-orientation");
+  for (const help of document.querySelectorAll("[data-panel-for]"))
+    help.hidden = false;
+  function mark(item) {
+    if (active === item) return;
+    active = item;
+    document.documentElement.dataset.panel = item.id;
+    for (const entry of items) {
+      if (entry === item) entry.link.setAttribute("aria-current", "location");
+      else entry.link.removeAttribute("aria-current");
     }
-    for (const help of document.querySelectorAll("[data-panel-for]"))
-      help.hidden = !help.dataset.panelFor.split(" ").includes(current.id);
-    if (current.panel instanceof HTMLDetailsElement) current.panel.open = true;
-    document.documentElement.dataset.panel = current.id;
-    if (write && location.hash !== "#" + current.id)
-      history.pushState(null, "", "#" + current.id);
-    window.dispatchEvent(
-      new CustomEvent("tracker:panel", { detail: current.id }),
-    );
+  }
+  function inset() {
+    return matchMedia("(max-width:760px)").matches
+      ? document.querySelector(".dashboard-sidebar").getBoundingClientRect()
+          .height + 16
+      : 24;
+  }
+  function go(value, { write = false, scroll = true } = {}) {
+    const item =
+      items.find((entry) => entry.id === (aliases[value] || value)) || items[0];
+    if (item.panel instanceof HTMLDetailsElement) item.panel.open = true;
+    mark(item);
+    if (write && location.hash !== "#" + item.id)
+      history.pushState(null, "", "#" + item.id);
+    window.dispatchEvent(new CustomEvent("tracker:panel", { detail: item.id }));
     if (scroll) {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-      current.link.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-        behavior: "auto",
-      });
+      const top =
+        item === items[0]
+          ? 0
+          : Math.max(
+              0,
+              item.panel.getBoundingClientRect().top + window.scrollY - inset(),
+            );
+      window.scrollTo({ top, left: 0, behavior: "auto" });
+      // Scroll the horizontal menu without moving the page away from its panel.
+      const tab = item.link.getBoundingClientRect(),
+        rail = nav.getBoundingClientRect();
+      if (tab.left < rail.left) nav.scrollLeft -= rail.left - tab.left;
+      else if (tab.right > rail.right) nav.scrollLeft += tab.right - rail.right;
     }
   }
   for (const [index, item] of items.entries()) {
     item.link.addEventListener("click", (event) => {
       event.preventDefault();
-      select(item.id, { write: true, scroll: true });
+      go(item.id, { write: true });
     });
     item.link.addEventListener("keydown", (event) => {
       let next;
@@ -72,23 +87,38 @@
       if (event.key === "End") next = items.length - 1;
       if (next == null) return;
       event.preventDefault();
-      select(items[next].id, { write: true, scroll: true });
+      go(items[next].id, { write: true });
       items[next].link.focus({ preventScroll: true });
     });
   }
-  const media = matchMedia("(max-width:760px)");
-  const orientation = () =>
-    nav.setAttribute(
-      "aria-orientation",
-      media.matches ? "horizontal" : "vertical",
-    );
-  orientation();
-  media.addEventListener("change", orientation);
-  window.addEventListener("popstate", () =>
-    select(location.hash.slice(1), { scroll: true }),
+  function track() {
+    frame = null;
+    if (
+      window.scrollY + innerHeight >=
+      document.documentElement.scrollHeight - 2
+    ) {
+      mark(items.at(-1));
+      return;
+    }
+    const line = inset() + 48;
+    let item = items[0];
+    for (const entry of items)
+      if (entry.panel.getBoundingClientRect().top <= line) item = entry;
+    mark(item);
+  }
+  addEventListener(
+    "scroll",
+    () => {
+      if (!frame) frame = requestAnimationFrame(track);
+    },
+    { passive: true },
   );
-  window.addEventListener("hashchange", () =>
-    select(location.hash.slice(1), { scroll: true }),
-  );
-  select(location.hash.slice(1));
+  addEventListener("popstate", () => go(location.hash.slice(1)));
+  addEventListener("hashchange", () => go(location.hash.slice(1)));
+  mark(items[0]);
+  if (location.hash) {
+    const value = aliases[location.hash.slice(1)] || location.hash.slice(1);
+    mark(items.find((item) => item.id === value) || items[0]);
+    requestAnimationFrame(() => go(location.hash.slice(1)));
+  }
 })();

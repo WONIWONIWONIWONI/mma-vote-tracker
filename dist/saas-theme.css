@@ -1124,12 +1124,9 @@ footer {
   }
 }
 
-/* One panel at a time, with the same tab controls on desktop and mobile. */
+/* Persistent navigation and shared controls on desktop and mobile. */
 .dashboard-view[hidden] {
   display: none !important;
-}
-html:not([data-panel]) .dashboard-view:not(#overview-panel) {
-  display: none;
 }
 .hero-right {
   display: flex;
@@ -1266,5 +1263,151 @@ html:not([data-panel]) .dashboard-view:not(#overview-panel) {
     display: block;
     line-height: inherit;
     padding: 1px 0;
+  }
+}
+
+/* Wide daily view: common bar lengths on the left, date totals on the right. */
+@media (min-width: 1000px) {
+  .daily-panel.panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 224px;
+    column-gap: 24px;
+    row-gap: 20px;
+    align-items: start;
+  }
+  .daily-panel .daily-heading {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin: 0;
+  }
+  .daily-panel .daily-heading .hourly-date-label {
+    width: 224px;
+    align-items: stretch;
+  }
+  .daily-panel .daily-heading select {
+    width: 100%;
+  }
+  .daily-panel #daily-summary {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 20px;
+    margin: 0;
+    padding: 20px;
+    background: var(--tone-f7f8fc);
+    border: 0.5px solid var(--line);
+    border-radius: 7px;
+  }
+  .daily-panel #daily-summary .panel-tag {
+    align-self: flex-start;
+  }
+  .daily-panel #daily-summary > span:not(.panel-tag) {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .daily-panel #daily-summary strong {
+    display: block;
+    font-size: 28px;
+    line-height: 1.25;
+    margin: 0;
+    letter-spacing: -0.8px;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .daily-panel #daily-summary small {
+    margin: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.7;
+  }
+  .daily-panel .daily-teams {
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin: 0;
+  }
+  .daily-panel .daily-team {
+    display: grid;
+    grid-template-columns: minmax(148px, 0.9fr) minmax(72px, 1.3fr) 112px;
+    grid-template-areas: "name bar value";
+    align-items: center;
+    column-gap: 12px;
+    min-height: 58px;
+    padding: 14px 12px;
+    background: transparent;
+    border: 0;
+    border-bottom: 0.5px solid var(--line);
+    border-radius: 0;
+  }
+  .daily-panel .daily-team:last-child {
+    border-bottom: 0;
+  }
+  .daily-panel .daily-team.daily-winner {
+    background: color-mix(in srgb, var(--color) 5%, var(--tone-fff));
+    border-bottom-color: color-mix(in srgb, var(--color) 30%, var(--tone-fff));
+    border-radius: 4px;
+  }
+  .daily-panel .daily-name {
+    grid-area: name;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    line-height: 1.5;
+  }
+  .daily-panel .daily-name b {
+    margin: 0;
+  }
+  .daily-panel .daily-team > strong {
+    grid-area: value;
+    margin: 0;
+    text-align: right;
+    font-size: 20px;
+    line-height: 1.4;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .daily-panel .daily-bar {
+    grid-area: bar;
+    height: 8px;
+    margin: 0;
+    border-radius: 2px;
+  }
+  .daily-panel .daily-history {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0;
+  }
+  .daily-panel .daily-history[open] {
+    grid-column: 1 / -1;
+  }
+  .daily-panel > .panel-share-controls {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 0;
+  }
+  .daily-panel .daily-history[open] ~ .panel-share-controls {
+    grid-row: 4;
+  }
+}
+
+@media (min-width: 1000px) {
+  .daily-panel .daily-heading > div:first-child {
+    flex: 1;
+    min-width: 0;
+  }
+  .daily-panel #daily-note:empty {
+    display: none;
+  }
+  .daily-panel .daily-name b {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 }
