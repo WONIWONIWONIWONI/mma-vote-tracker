@@ -243,8 +243,11 @@
       ".cd-tf,.pc-tf,.range-selector,.metric-selector,.chart-legend,.cd-legend",
     )) {
       node.style.width = "auto";
-      node.style.minWidth = "max-content";
-      node.style.flexShrink = "0";
+      node.style.minWidth = "0";
+      node.style.maxWidth = "100%";
+      node.style.display = "flex";
+      node.style.flexWrap = "wrap";
+      node.style.flexShrink = "1";
     }
     for (const node of stage.querySelectorAll(
       ".panel-heading,.daily-heading,.pc-summary-head,.chart-controls,.trend-tools,.gf-heading",
