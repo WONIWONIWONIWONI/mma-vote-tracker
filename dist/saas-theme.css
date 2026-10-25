@@ -1428,7 +1428,8 @@ footer {
     display: block;
     min-width: 0;
     line-height: 1.6;
-    overflow-wrap: anywhere;
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
   .daily-panel .daily-name i {
     display: inline-block;
