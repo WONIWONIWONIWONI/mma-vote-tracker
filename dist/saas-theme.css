@@ -1292,6 +1292,7 @@ footer {
     grid-row: 2;
     display: flex;
     flex-direction: column;
+    flex-wrap: nowrap;
     align-items: stretch;
     gap: 20px;
     margin: 0;
@@ -1319,6 +1320,9 @@ footer {
   }
   .daily-panel #daily-summary small {
     margin: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
     line-height: 1.7;
   }
   .daily-panel .daily-teams {
