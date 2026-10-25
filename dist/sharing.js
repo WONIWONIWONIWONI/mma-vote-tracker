@@ -231,6 +231,21 @@
       node.style.wordBreak = "normal";
       node.style.overflowWrap = "normal";
     }
+    for (const node of stage.querySelectorAll("div,section")) {
+      if (!node.textContent.trim() || node.closest("svg")) continue;
+      node.style.height = "auto";
+    }
+    for (const node of stage.querySelectorAll(
+      ".panel-heading > div:first-child,.daily-heading > div:first-child",
+    )) {
+      node.style.width = "auto";
+      node.style.minWidth = "0";
+      node.style.flex = "1 1 auto";
+    }
+    for (const node of stage.querySelectorAll("h1,h2,h3")) {
+      node.style.wordBreak = "keep-all";
+      node.style.overflowWrap = "normal";
+    }
     for (const node of stage.querySelectorAll(
       "button,.cd-legend span,.cd-unit,.chart-unit,.panel-tag,.small-label",
     )) {
