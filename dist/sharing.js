@@ -92,7 +92,7 @@
     }
     if (key === "leaders" || key === "hourly")
       html = MMANativeHTML.finalize(html);
-    html += `<p style="font:12px/1.5 system-ui,sans-serif;color:#b0b4ba;">복사 시점의 정적 기록 / <a href="${esc(link)}">원본 트래커</a></p>`;
+    html += `<p style="font:12px/1.5 system-ui,sans-serif;color:#777;">복사 시점의 정적 기록 / <a href="${esc(link)}">원본 트래커</a></p>`;
     if (html.length > htmlLimit)
       throw new Error(
         `HTML이 ${html.length.toLocaleString()}자로 제한을 넘습니다. 표시 구간을 좁혀 다시 공유하세요.`,
@@ -156,7 +156,7 @@
   function stagePanel(key, panel) {
     const stage = document.createElement("div"),
       width = Math.ceil(panel.getBoundingClientRect().width);
-    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#111113" : "#18191b"};color:#edeef0;box-sizing:border-box;pointer-events:none;z-index:-100;`;
+    stage.style.cssText = `position:fixed;left:-30000px;top:0;width:${width + 40}px;padding:20px;background:${key === "leaders" ? "#100e19" : "#191725"};color:#f5f0f6;box-sizing:border-box;pointer-events:none;z-index:-100;`;
     stage.dataset.snapshotStage = key;
     const append = (node) => {
       const c = freeze(node);

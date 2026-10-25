@@ -20,10 +20,10 @@
 .cd-tf {
   display: flex;
   gap: 4px;
-  background: #111113;
+  background: #151321;
   padding: 4px;
-  border-radius: 6px;
-  border: 0.5px solid #363a3f;
+  border-radius: 7px;
+  border: 0.5px solid #41374f;
 }
 .cd-tf button {
   border: 0;
@@ -34,7 +34,7 @@
   padding: 7px 11px;
 }
 .cd-tf button.selected {
-  background: #363a3f;
+  background: #4b2d49;
   color: var(--lime);
 }
 .cd-controls {
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #ffd1d9;
+  color: #ddced7;
   font-size: 12px;
 }
 .cd-legend i {
@@ -119,11 +119,11 @@
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  background: #212225;
+  background: #211823f2;
   box-shadow: none;
-  border: 0.5px solid #873356;
+  border: 0.5px solid #8b536a;
   padding: 11px 13px;
-  border-radius: 6px;
+  border-radius: 7px;
   font-size: 12px;
   min-width: 160px;
   white-space: nowrap;
@@ -179,10 +179,10 @@
 .pc-tf {
   display: flex;
   gap: 4px;
-  background: #111113;
+  background: #151321;
   padding: 4px;
-  border-radius: 6px;
-  border: 0.5px solid #363a3f;
+  border-radius: 7px;
+  border: 0.5px solid #41374f;
 }
 .pc-tf button {
   border: 0;
@@ -193,7 +193,7 @@
   padding: 7px 11px;
 }
 .pc-tf button.selected {
-  background: #363a3f;
+  background: #4b2d49;
   color: var(--lime);
 }
 .pc-body {
@@ -203,9 +203,9 @@
 }
 .pc-team,
 .pc-metric {
-  background: #111113;
+  background: #151321;
   border: 0.5px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 15px 16px;
   min-width: 0;
 }
@@ -222,7 +222,7 @@
 .pc-team strong,
 .pc-metric strong {
   display: block;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 650;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -236,13 +236,13 @@
   line-height: 1.4;
 }
 .pc-metric strong.down {
-  color: #4ccce6;
+  color: #4fc8e0;
 }
 .pc-metric strong.up {
-  color: #e5484d;
+  color: #ff4757;
 }
 .pc-eta strong {
-  font-size: 16px;
+  font-size: 15px;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: keep-all;
@@ -324,10 +324,10 @@
   }
   .pc-team strong,
   .pc-metric strong {
-    font-size: 16px;
+    font-size: 15px;
   }
   .pc-eta strong {
-    font-size: 12px;
+    font-size: 13px;
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: keep-all;

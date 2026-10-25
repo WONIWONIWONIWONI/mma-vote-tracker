@@ -72,8 +72,8 @@
     const id = normalizedId(team);
     if (colors[id]) return colors[id];
     const used = new Set(Object.values(colors));
-    const extra = ["#bde56c", "#edeef0", "#ff92ad", "#b0b4ba"];
-    return (colors[id] = extra.find((c) => !used.has(c)) || "#b0b4ba");
+    const extra = ["#f5f278", "#ffffff", "#ed94df", "#b3b98a"];
+    return (colors[id] = extra.find((c) => !used.has(c)) || "#d3c8bd");
   }
   function kst(iso, mode = "full") {
     const d = new Date(iso);
@@ -190,7 +190,7 @@
             `<i style="width:${share(t, last)}%;background:${colorOf(t)}" title="${escapeHTML(t.name)} ${displayShare(t, last)}%"></i>`,
         )
         .join("") +
-      `<i style="width:${100 - (sum / last.totalVotes) * 100}%;background:#363a3f" title="그 외"></i>`;
+      `<i style="width:${100 - (sum / last.totalVotes) * 100}%;background:#453d51" title="그 외"></i>`;
   }
   function renderDaily() {
     const now = Math.min(Date.now(), operationEnd() - 1),
@@ -584,20 +584,20 @@
       .join("");
     const grid = axis.ticks.map(
       (v) =>
-        `<line x1="${box.x}" y1="${y(v)}" x2="${box.x + box.w}" y2="${y(v)}" stroke="#363a3f" stroke-dasharray="3 5"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end" fill="#b0b4ba" font-size="12">${axisLabel(v, axis)}</text>`,
+        `<line x1="${box.x}" y1="${y(v)}" x2="${box.x + box.w}" y2="${y(v)}" stroke="#3b374d" stroke-dasharray="3 5"/><text x="${box.x - 9}" y="${y(v) + 4}" text-anchor="end" fill="#aaa3b8" font-size="12">${axisLabel(v, axis)}</text>`,
     );
     const n = W < 480 ? 3 : 6;
     for (let i = 0; i < n; i++) {
       const t = xmin + ((xmax - xmin) * i) / (n - 1);
       grid.push(
-        `<text x="${x(t)}" y="${H - 20}" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}" fill="#b0b4ba" font-size="12">${kst(t, "time")}</text>`,
+        `<text x="${x(t)}" y="${H - 20}" text-anchor="${i === 0 ? "start" : i === n - 1 ? "end" : "middle"}" fill="#aaa3b8" font-size="12">${kst(t, "time")}</text>`,
       );
     }
     const futureX = Math.max(box.x, Math.min(box.x + box.w, x(lastTime))),
       futureWidth = box.x + box.w - futureX;
     if (forecasts.length && xmax > lastTime)
       grid.push(
-        `<rect x="${futureX}" y="${box.y}" width="${futureWidth}" height="${box.h}" fill="#202248"/><line x1="${futureX}" x2="${futureX}" y1="${box.y}" y2="${box.y + box.h}" stroke="#b0b4ba" stroke-dasharray="3 5"/><text x="${futureX + 5}" y="15" fill="#b1a9ff" font-size="12">점선: 조건부 예측</text>`,
+        `<rect x="${futureX}" y="${box.y}" width="${futureWidth}" height="${box.h}" fill="#b997ff0b"/><line x1="${futureX}" x2="${futureX}" y1="${box.y}" y2="${box.y + box.h}" stroke="#aaa3b8" stroke-dasharray="3 5"/><text x="${futureX + 5}" y="15" fill="#c4b3e9" font-size="12">점선: 조건부 예측</text>`,
       );
     const path = (points) => {
       let active = false;
