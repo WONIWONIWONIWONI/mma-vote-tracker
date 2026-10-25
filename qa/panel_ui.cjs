@@ -191,6 +191,19 @@ const history = JSON.parse(
                   }),
                   `daily rows and totals fit ${width}px`,
                 );
+                const dates = await page
+                  .locator("#daily-date, #hourly-date")
+                  .evaluateAll((elements) =>
+                    elements.map((element) => {
+                      const r = element.getBoundingClientRect();
+                      return { x: r.x, width: r.width };
+                    }),
+                  );
+                assert.ok(
+                  Math.abs(dates[0].x - dates[1].x) < 1 &&
+                    Math.abs(dates[0].width - dates[1].width) < 1,
+                  `mobile date selectors align at ${width}px`,
+                );
               }
             } else {
               assert.ok(
@@ -214,6 +227,21 @@ const history = JSON.parse(
             await page.locator("#daily-panel").screenshot({
               path: `qa-output/panel-daily-${mobile ? "mobile" : "desktop"}-${theme}.png`,
             });
+          }
+          if (id === "hourly-panel") {
+            const dates = await page
+              .locator("#daily-date, #hourly-date")
+              .evaluateAll((elements) =>
+                elements.map((element) => {
+                  const r = element.getBoundingClientRect();
+                  return { x: r.x, width: r.width };
+                }),
+              );
+            assert.ok(
+              Math.abs(dates[0].x - dates[1].x) < 1 &&
+                Math.abs(dates[0].width - dates[1].width) < 1,
+              "daily and hourly date selectors align",
+            );
           }
           assert.ok(
             await page.evaluate(

@@ -1334,6 +1334,34 @@ footer {
 }
 
 /* Wide daily view: common bar lengths on the left, date totals on the right. */
+.hourly-panel.has-image-button > .panel-heading.compact {
+  padding: 0;
+}
+.daily-panel .hourly-date-label,
+.hourly-panel .hourly-date-label {
+  width: 224px;
+  align-items: stretch;
+}
+.daily-panel .hourly-date-label select,
+.hourly-panel .hourly-date-label select {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+@media (max-width: 760px) {
+  .daily-panel .hourly-date-label,
+  .hourly-panel .hourly-date-label {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+  .daily-panel .hourly-date-label select,
+  .hourly-panel .hourly-date-label select {
+    width: min(220px, calc(100% - 76px));
+  }
+}
 @media (max-width: 999px) {
   .daily-panel #daily-summary {
     display: grid;
