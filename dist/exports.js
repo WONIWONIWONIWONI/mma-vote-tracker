@@ -34,6 +34,7 @@
       maxWidth = 900,
     ) => {
       value = String(value);
+      size = Math.max(12, size);
       c.fillStyle = color;
       c.textAlign = align;
       do {

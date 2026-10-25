@@ -203,7 +203,7 @@ h1 {
 }
 .notice-mark {
   border: 0.5px solid #a58e9c;
-  font: 600 10px var(--font);
+  font: 600 12px var(--font);
   width: 15px;
   height: 15px;
   border-radius: 50%;

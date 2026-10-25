@@ -46,14 +46,14 @@
         table(
           `<tr>${cell(`<font color="${c}"><b>${String(t.rank).padStart(2, "0")}</b></font> <font color="#a4adbf">위</font>`)}${cell("", 'align="right" style="padding:4px 0;"')}</tr>`,
         ) +
-        `<p style="font-size:16px;font-weight:bold;margin:20px 0 12px;"><font color="${c}">●</font> ${esc(t.name)}</p>` +
+        `<p style="font-size:20px;font-weight:bold;margin:20px 0 12px;"><font color="${c}">●</font> ${esc(t.name)}</p>` +
         table(
-          `<tr>${cell(`<b style="font-size:30px;white-space:nowrap;">${esc(t.votes.replace(/표$/, ""))}</b> <font color="#a4adbf">표</font>`, 'width="65%" style="padding:4px 0;"')}${cell(`<font color="${c}" style="font-size:16px;white-space:nowrap;">${esc(t.share)}</font>`, 'align="right" style="padding:4px 0;"')}</tr>`,
+          `<tr>${cell(`<b style="font-size:30px;white-space:nowrap;">${esc(t.votes.replace(/표$/, ""))}</b> <font color="#a4adbf">표</font>`, 'width="65%" style="padding:4px 0;"')}${cell(`<font color="${c}" style="font-size:clamp(16px,5vw,24px);white-space:nowrap;">${esc(t.share)}</font>`, 'align="right" style="padding:4px 0;"')}</tr>`,
         ) +
         `<p style="font-size:12px;color:${i === 0 ? "#ff789a" : "#a4adbf"};">${esc(t.gap)}</p>`;
       // Inline tables wrap without media queries. If a board strips display,
       // ordinary block tables still stack safely instead of clipping.
-      return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:460px;table-layout:fixed;vertical-align:top;margin:6px 0;font:16px/1.6 Arial,sans-serif;"><tbody><tr>${cell(`<font color="#f5f6fa">${body}</font>`, `bgcolor="${bg}" width="100%" style="padding:16px;text-align:left;border:0.5px solid #98456a;border-radius:4px;"`)}</tr></tbody></table>`;
+      return `<table width="100%" cellspacing="0" cellpadding="0" border="0" style="display:inline-table;width:100%;max-width:460px;table-layout:fixed;vertical-align:top;margin:6px 0;font:16px/1.6 Arial,sans-serif;"><tbody><tr>${cell(`<font color="#f5f6fa">${body}</font>`, `bgcolor="${bg}" width="100%" style="padding:16px;text-align:left;border:0.5px solid #98456a;border-radius:14px;"`)}</tr></tbody></table>`;
     });
 
     return table(
