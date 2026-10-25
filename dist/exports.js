@@ -35,6 +35,8 @@
     ) => {
       value = String(value);
       size = Math.max(12, size);
+      const edge = align === "right" ? x - 48 : 952 - x;
+      maxWidth = Math.max(1, Math.min(maxWidth, edge));
       c.fillStyle = TrackerTheme.color(color);
       c.textAlign = align;
       do {

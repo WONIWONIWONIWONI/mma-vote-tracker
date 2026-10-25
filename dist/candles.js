@@ -220,7 +220,7 @@
 
   /* ===== 화면에 보일 범위 계산 ===== */
   function margins(W) {
-    return { l: W < 520 ? 44 : 62, r: 8, t: 14, b: 40 };
+    return { l: W < 520 ? 78 : 62, r: 8, t: 14, b: 40 };
   }
   function zoomLimits(W) {
     var max = Math.max(1, state.candles.length);
@@ -538,19 +538,23 @@
     var size = FRAMES[state.tf].min * 60000;
     var steps =
         state.tf === "5"
-          ? [3, 6, 12, 24]
+          ? [3, 6, 12, 24, 36, 48, 72, 96, 144, 288]
           : state.tf === "60"
-            ? [1, 2, 3, 4, 6, 12]
-            : [1, 2, 3, 4],
-      want = Math.ceil(42 / slot),
-      k = steps[steps.length - 1];
-    for (var q = 0; q < steps.length; q++) {
-      if (steps[q] >= want) {
-        k = steps[q];
-        break;
-      }
+            ? [1, 2, 3, 4, 6, 8, 12, 24]
+            : state.tf === "240"
+              ? [1, 2, 3, 6]
+              : [1, 2, 3, 7, 14, 28],
+      minTickGap = 58,
+      want = Math.ceil(minTickGap / Math.max(1, slot)),
+      k = steps.find(function (step) {
+        return step >= want;
+      });
+    if (!k) {
+      var dailyStep = state.tf === "5" ? 288 : state.tf === "60" ? 24 : state.tf === "240" ? 6 : 28;
+      k = dailyStep * Math.ceil(want / dailyStep);
     }
-    var lastDay = -1;
+    var lastDay = -1,
+      lastTickX = -Infinity;
     vis.forEach(function (c, i) {
       var cx = firstX + slot * i;
       if (i === hover && !state.touch)
@@ -565,7 +569,8 @@
             ph +
             '" fill="#6055f50b"/>',
         );
-      if (Math.round(c.t / size) % k === 0) {
+      if (Math.round(c.t / size) % k === 0 && cx - lastTickX >= minTickGap) {
+        lastTickX = cx;
         var day = kst(c.t).D;
         s.push(
           '<text x="' +

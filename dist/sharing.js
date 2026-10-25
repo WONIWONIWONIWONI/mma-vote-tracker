@@ -218,6 +218,59 @@
       node.style.fontFamily =
         'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
     document.body.append(stage);
+    // Computed inline widths belong to the original font. Reflow text after
+    // switching capture fonts instead of wrapping glyphs inside those widths.
+    for (const node of stage.querySelectorAll(
+      "h1,h2,h3,p,span,b,strong,small,label,button,a",
+    )) {
+      if (node instanceof SVGElement) continue;
+      node.style.width = "auto";
+      node.style.height = "auto";
+      node.style.maxHeight = "none";
+      node.style.wordBreak = "keep-all";
+      node.style.overflowWrap = "normal";
+    }
+    for (const node of stage.querySelectorAll("div,section")) {
+      if (!node.textContent.trim() || node.closest("svg")) continue;
+      node.style.height = "auto";
+      node.style.wordBreak = "keep-all";
+    }
+    for (const node of stage.querySelectorAll(
+      ".panel-heading > div:first-child,.daily-heading > div:first-child,.gf-heading > div:first-child",
+    )) {
+      node.style.width = "auto";
+      node.style.minWidth = "0";
+      node.style.flex = "1 1 auto";
+    }
+    for (const node of stage.querySelectorAll("h1,h2,h3")) {
+      node.style.wordBreak = "keep-all";
+      node.style.overflowWrap = "normal";
+    }
+    for (const node of stage.querySelectorAll(
+      "button,.cd-legend span,.cd-unit,.chart-unit,.panel-tag,.small-label",
+    )) {
+      node.style.whiteSpace = "nowrap";
+      node.style.flexShrink = "0";
+      node.style.minWidth = "max-content";
+      node.style.maxWidth = "none";
+    }
+    for (const node of stage.querySelectorAll(
+      ".cd-tf,.pc-tf,.range-selector,.metric-selector,.chart-legend,.cd-legend",
+    )) {
+      node.style.width = "auto";
+      node.style.minWidth = "0";
+      node.style.maxWidth = "100%";
+      node.style.display = "flex";
+      node.style.flexWrap = "wrap";
+      node.style.flexShrink = "1";
+    }
+    for (const node of stage.querySelectorAll(
+      ".panel-heading,.daily-heading,.pc-summary-head,.chart-controls,.trend-tools,.gf-heading",
+    )) {
+      node.style.height = "auto";
+      node.style.flexWrap = "wrap";
+      node.style.rowGap = "12px";
+    }
     if (
       key === "leaders" &&
       [...stage.querySelectorAll(".leader")].some(

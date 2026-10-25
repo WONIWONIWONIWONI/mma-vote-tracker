@@ -116,5 +116,9 @@
   addEventListener("popstate", () => go(location.hash.slice(1)));
   addEventListener("hashchange", () => go(location.hash.slice(1)));
   mark(items[0]);
-  if (location.hash) requestAnimationFrame(() => go(location.hash.slice(1)));
+  if (location.hash) {
+    const value = aliases[location.hash.slice(1)] || location.hash.slice(1);
+    mark(items.find((item) => item.id === value) || items[0]);
+    requestAnimationFrame(() => go(location.hash.slice(1)));
+  }
 })();

@@ -536,7 +536,7 @@ async function setup(browser, mobile = false) {
     const zoomed = await view();
     await noRightBlank();
     assert.ok(zoomed.n < before.n, "pinch zooms");
-    const ratio = (x - r.x - 44) / (r.width - 44 - 8);
+    const ratio = (x - r.x - 78) / (r.width - 78 - 8);
     assert.ok(
       Math.abs(
         before.start + ratio * before.n - zoomed.start - ratio * zoomed.n,

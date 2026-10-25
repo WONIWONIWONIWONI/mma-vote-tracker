@@ -116,8 +116,9 @@ a {
   font-size: 12px;
 }
 .site-shell {
-  max-width: 1556px;
-  margin-left: 212px;
+  max-width: 1320px;
+  margin-left: max(212px, calc((100% + 212px - 1320px) / 2));
+  margin-right: auto;
   padding: 0 32px;
 }
 .topbar {

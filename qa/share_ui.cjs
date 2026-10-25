@@ -72,6 +72,47 @@ const root = path.resolve(__dirname, "../dist"),
           await page.locator(".share-value").first().textContent(),
           ((100 * first.top4[0].votes) / first.totalVotes).toFixed(2) + "%",
         );
+        // Inspect the actual PNG staging layout, including fallback fonts.
+        await page.evaluate(() => {
+          const original = htmlToImage.toPng;
+          htmlToImage.toPng = async (stage, options) => {
+            const broken = [];
+            for (const node of stage.querySelectorAll(
+              "button,.cd-legend span,.pc-summary-head > span,.chart-legend button",
+            )) {
+              if (!node.textContent.trim() || !node.getClientRects().length) continue;
+              const lines = [...node.childNodes]
+                .filter((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim())
+                .flatMap((child) => {
+                  const range = document.createRange();
+                  range.selectNodeContents(child);
+                  return [...range.getClientRects()].filter((r) => r.width > 0);
+                });
+              const rows = new Set(lines.map((r) => Math.round(r.top)));
+              const box = node.getBoundingClientRect();
+              if (
+                rows.size > 1 ||
+                lines.some((r) => r.bottom > box.bottom + 2 || r.right > box.right + 2)
+              ) broken.push(node.textContent.trim());
+            }
+            for (const heading of stage.querySelectorAll("h1,h2,h3")) {
+              for (const child of heading.childNodes) {
+                if (child.nodeType !== Node.TEXT_NODE) continue;
+                for (const match of child.textContent.matchAll(/\S+/g)) {
+                  const range = document.createRange();
+                  range.setStart(child, match.index);
+                  range.setEnd(child, match.index + match[0].length);
+                  const rows = new Set([...range.getClientRects()]
+                    .filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+                  if (rows.size > 1) broken.push(match[0]);
+                }
+              }
+            }
+            if (broken.length)
+              throw new Error("Shared labels wrap or overflow: " + broken.join(", "));
+            return original(stage, options);
+          };
+        });
         fs.mkdirSync("qa-output", { recursive: true });
         for (const type of ["leaders", "trend", "hourly"]) {
           const model = await page.evaluate(
