@@ -7,6 +7,11 @@ const { chromium } = require("playwright");
     const page = await browser.newPage({
       viewport: { width: 1280, height: 960 },
     });
+    const liveRequests = [];
+    page.on("request", (request) => {
+      if (request.url().includes("m2.melon.com"))
+        liveRequests.push(request.url());
+    });
     const url =
       process.env.SITE_URL ||
       "https://woniwoniwoniwoni.github.io/mma-vote-tracker/";
@@ -29,9 +34,15 @@ const { chromium } = require("playwright");
       } catch {}
     }
     assert.ok(ready, "new chart controls are present on the deployed site");
+    const archived = await page.evaluate(
+      () => Date.now() >= Date.parse(TrackerConfig.endsAt),
+    );
     await page.waitForFunction(
-      () => window.MMA_DATA?.snapshots.at(-1).origin === "melon_browser_api",
-      {},
+      (archived) =>
+        archived
+          ? window.MMA_DATA?.snapshots.length >= window.MMA_SEED.historyCount
+          : window.MMA_DATA?.snapshots.at(-1).origin === "melon_browser_api",
+      archived,
       { timeout: 20000 },
     );
     const data = await page.evaluate(() => {
@@ -45,7 +56,11 @@ const { chromium } = require("playwright");
         ),
       };
     });
-    assert.ok(Math.abs(Date.now() - Date.parse(data.at)) < 90000);
+    if (archived) {
+      const endsAt = await page.evaluate(() => TrackerConfig.endsAt);
+      assert.ok(Date.parse(data.at) <= Date.parse(endsAt));
+      assert.equal(liveRequests.length, 0, "archive never requests live votes");
+    } else assert.ok(Math.abs(Date.now() - Date.parse(data.at)) < 90000);
     assert.equal(data.teams.length, 6);
     assert.equal(new Set(data.colors).size, 6);
     await page.waitForFunction(
@@ -57,7 +72,7 @@ const { chromium } = require("playwright");
     );
     assert.equal(
       await page.locator("#status-label").textContent(),
-      "멜론 직접 조회",
+      archived ? "수집 종료" : "멜론 직접 조회",
     );
     assert.equal(
       await page.locator("[data-range].selected").getAttribute("data-range"),

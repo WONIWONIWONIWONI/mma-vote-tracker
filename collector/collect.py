@@ -1,10 +1,12 @@
 """Read only the public endpoint used by Melon's TOP10 page."""
 import json, urllib.request, datetime, pathlib, time, sys, subprocess
-from supervisor import Actions
+from supervisor import Actions, epoch
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATA = ROOT / 'dist/data'
 CONFIG = json.loads((ROOT / 'tracker.config.json').read_text())
 ENDS_AT = CONFIG['endsAt']
+ENDS_EPOCH = epoch(ENDS_AT)
+FINAL_WINDOW = 30
 URL = CONFIG['sources'][0]['endpoint']
 TOP_N = CONFIG['topN']
 
@@ -47,16 +49,27 @@ def save(data):
     write('latest.json',recent)
     (DATA/'seed.js').write_text('window.MMA_SEED='+json.dumps(recent,ensure_ascii=False,separators=(',',':'))+';\n')
 
-def collect():
+def collect(final=False):
     path=DATA/'history.json'
     data=json.loads(path.read_text()) if path.exists() else dict(schemaVersion=2,snapshots=[])
     stamp=now()
+    if epoch(stamp) >= ENDS_EPOCH:
+        if data.get('collector',{}).get('state') != 'stopped' or data.get('operation',{}).get('archived') is not True:
+            data['operation']={'endsAt':ENDS_AT,'archived':True}
+            data['collector']={'state':'stopped','checkedAt':stamp,'stoppedAt':ENDS_AT,
+                               'lastObservationAt':data['snapshots'][-1]['sourceAt'] if data['snapshots'] else None}
+            save(data)
+        return True
     data['operation']={'endsAt':ENDS_AT}
-    if stamp >= ENDS_AT:
-        data['collector']={'state':'stopped','checkedAt':stamp};save(data);return True
     try:
         request=urllib.request.Request(URL+'&t='+str(int(time.time())),headers={'User-Agent':'Mozilla/5.0','Referer':CONFIG['sources'][0]['url']})
-        with urllib.request.urlopen(request,timeout=20) as r: payload=json.load(r)
+        remaining=ENDS_EPOCH-time.time()
+        if remaining<=0:
+            return False
+        with urllib.request.urlopen(request,timeout=min(20,remaining)) as r: payload=json.load(r)
+        # A response received after the cutoff cannot be dated back into voting.
+        if time.time()>ENDS_EPOCH:
+            return False
         snapshot=parse(payload,now())
         if data['snapshots'] and data['snapshots'][-1]['sourceAt'][:16] == snapshot['sourceAt'][:16]:
             data['snapshots'][-1]=snapshot
@@ -65,6 +78,8 @@ def collect():
         data['collector']={'state':'ok','checkedAt':stamp}
         save(data)
         try:
+            if final:
+                return True
             subprocess.run(['node',str(ROOT/'collector/forecast.cjs')],cwd=ROOT,check=True,timeout=20)
         except (OSError,subprocess.SubprocessError) as error:
             print('Forecast update pending; collection retained:',type(error).__name__,flush=True)
@@ -75,6 +90,18 @@ def collect():
         print('Collection failed:',error,flush=True)
         return False
     return True
+
+def finish_collection(supervisor=None):
+    """Observe the last 30 seconds locally, then publish one frozen archive."""
+    while time.time()<ENDS_EPOCH:
+        collect(final=True)
+        remaining=ENDS_EPOCH-time.time()
+        if remaining>0:
+            time.sleep(min(1,remaining))
+    collect()  # Idempotent terminal metadata; never requests Melon after cutoff.
+    publish()
+    if supervisor:
+        supervisor.archive()
 
 def merge_history(remote, pending):
     # JSON lines cannot be text-merged safely: merge actual observations by minute.
@@ -152,6 +179,10 @@ def run_loop(duration=2*3600, interval=CONFIG['collectionIntervalSeconds'], supe
     next_collect=started;next_supervise=started
     successor=False;failures=0;last_good=-float('inf');last_published=False;handoff_checked=False
     while time.monotonic()<hard_end:
+        remaining=ENDS_EPOCH-epoch(now())
+        if remaining<=FINAL_WINDOW:
+            finish_collection(supervisor)
+            return
         tick=time.monotonic()
         if tick>=next_collect:
             succeeded=False
@@ -168,8 +199,9 @@ def run_loop(duration=2*3600, interval=CONFIG['collectionIntervalSeconds'], supe
             else:
                 failures+=1
                 next_collect=time.monotonic()+min(120,15*2**min(failures-1,3))
-            if now()>=ENDS_AT:
-                break
+            if epoch(now())>=ENDS_EPOCH:
+                finish_collection(supervisor)
+                return
         if supervisor and time.monotonic()>=next_supervise:
             try:
                 successor=supervisor.ensure_successor()
@@ -184,14 +216,15 @@ def run_loop(duration=2*3600, interval=CONFIG['collectionIntervalSeconds'], supe
             if not handoff_checked:
                 next_supervise=tick;handoff_checked=True
                 continue
-            if successor and last_published and failures==0:
+            if successor and last_published and failures==0 and ENDS_EPOCH-epoch(now())>FINAL_WINDOW+60:
                 if tick-last_good<=30:
                     print('Handoff: fresh observation saved and successor verified',flush=True)
                     break
                 # Take a final real observation immediately before releasing the runner.
                 next_collect=tick
         boundary=hard_end if supervisor else soft_end
-        wake=min(next_collect,next_supervise if supervisor else boundary,boundary)
+        final_wake=tick+max(0,ENDS_EPOCH-epoch(now())-FINAL_WINDOW)
+        wake=min(next_collect,next_supervise if supervisor else boundary,boundary,final_wake)
         if tick<soft_end:
             wake=min(wake,soft_end)
         if not supervisor and wake>=soft_end:
@@ -205,6 +238,9 @@ if __name__ == '__main__':
     if '--loop' in sys.argv:
         run_loop()
     else:
+        if ENDS_EPOCH-epoch(now())<=FINAL_WINDOW:
+            finish_collection(Actions.from_environment())
+            sys.exit(0)
         succeeded = collect()
         if succeeded:
             publish()
