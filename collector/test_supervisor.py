@@ -59,7 +59,17 @@ class SupervisorTests(unittest.TestCase):
 
     def test_event_end_does_not_restart_service(self):
         api=FakeActions()
-        self.assertEqual(api.recover('2020-01-01T00:00:00Z'),'event-ended');self.assertEqual(api.calls,[])
+        self.assertEqual(api.recover('2020-01-01T00:00:00Z'),'archive-finalization-pending')
+        self.assertTrue(any(c[1].endswith('/dispatches') and c[2]['inputs']['reason']=='archive-finalization' for c in api.calls))
+
+    def test_archive_deploys_final_data_disables_schedules_and_cancels_queued_workers(self):
+        api=FakeActions([run(99),run(100,'pending')])
+        api.archive()
+        self.assertIn(('POST','actions/workflows/publish.yml/dispatches',{'ref':'main'}),api.calls)
+        self.assertIn(('PUT','actions/workflows/collect.yml/disable',None),api.calls)
+        self.assertIn(('PUT','actions/workflows/recover.yml/disable',None),api.calls)
+        self.assertIn(('POST','actions/runs/100/cancel',{}),api.calls)
+        self.assertNotIn(('POST','actions/runs/99/cancel',{}),api.calls)
 
     def test_repeated_startup_failures_do_not_create_a_restart_storm(self):
         failed=[{**run(i,'completed'),'conclusion':'failure','updated_at':'2026-10-15T13:19:00Z'} for i in range(3)]

@@ -50,5 +50,6 @@ class LoopTests(unittest.TestCase):
         self.assertEqual(observed,[0,300,600,900]);self.assertGreaterEqual(end,900);self.assertLessEqual(end,930)
 
     def test_event_end_stops_before_dispatching_another_worker(self):
-        observed,count,_=self.simulate(601,stamp=collect.ENDS_AT)
+        with patch.object(collect,'finish_collection',side_effect=lambda api: (collect.collect(),collect.publish())):
+            observed,count,_=self.simulate(601,stamp=collect.ENDS_AT)
         self.assertEqual(observed,[0]);self.assertEqual(count,1)

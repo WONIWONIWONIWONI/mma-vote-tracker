@@ -83,7 +83,7 @@
     render();
     clearTimeout(retryTimer);
     const cutoff = MMAGapModel.scheduledCutoff(),
-      ends = Date.parse(data.operation?.endsAt || TrackerConfig.endsAt);
+      ends = Date.parse(TrackerConfig.endsAt);
     if (
       cutoff >= MMAGapModel.START + 86400000 &&
       Date.now() < ends &&
@@ -510,6 +510,10 @@
     }, 150);
   });
   function checkDue() {
+    if (Date.now() >= Date.parse(TrackerConfig.endsAt)) {
+      clearTimeout(dueTimer);
+      return;
+    }
     const next = MMAGapModel.scheduledCutoff();
     if (next !== lastDue) {
       lastDue = next;

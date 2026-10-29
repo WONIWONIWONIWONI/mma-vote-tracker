@@ -98,8 +98,8 @@
   }
   const normalize = MMAData.normalize;
   const melonURL = config.sources[0].endpoint;
-  const operationEnd = () =>
-    Date.parse(state.data.operation?.endsAt || config.endsAt);
+  const operationEnd = () => Date.parse(config.endsAt);
+  const votingEnd = () => Date.parse(config.votingEndsAt || config.endsAt);
   const latest = () => state.data.snapshots.at(-1);
   function getSeries() {
     return latest()
@@ -141,15 +141,18 @@
         : direct
           ? "멜론 직접 조회"
           : "보관 기록";
-    $("source-time").textContent = kst(last.sourceAt);
-    $("collected-time").textContent =
-      `${age < 1 ? "1분 미만" : age + "분"} 전 관측`;
+    $("source-time").textContent = stopped
+      ? `${kst(last.sourceAt)}:${String(new Date(last.sourceAt).getUTCSeconds()).padStart(2, "0")} KST`
+      : kst(last.sourceAt);
+    $("collected-time").textContent = stopped
+      ? "기록 보관용"
+      : `${age < 1 ? "1분 미만" : age + "분"} 전 관측`;
     let note = stopped
       ? "수집 기간이 끝났습니다. 마지막 기록을 표시합니다."
       : state.loadFailed
         ? "최신 조회에 실패했습니다. 마지막 관측값을 표시합니다."
         : "";
-    if (state.archive?.collector?.state === "error")
+    if (!stopped && state.archive?.collector?.state === "error")
       note += " 수집기 재시도 중.";
     if (state.archiveFailed) note += " 과거 기록을 불러오는 중입니다.";
     const archiveLast = state.archive?.snapshots.at(-1),
@@ -196,7 +199,7 @@
       `<i style="width:${100 - (sum / last.totalVotes) * 100}%;background:#e8eaf1" title="그 외"></i>`;
   }
   function renderDaily() {
-    const now = Math.min(Date.now(), operationEnd() - 1),
+    const now = Math.min(Date.now(), operationEnd()),
       teams = latest().top4,
       dailyRows = [
         ...new Map(
@@ -205,7 +208,9 @@
           ),
         ).values(),
       ],
-      days = MMADaily.build(dailyRows, teams, now);
+      days = MMADaily.build(dailyRows, teams, now).filter(
+        (day) => day.start < votingEnd(),
+      );
     const selected = days.some((d) => d.date === state.dailyDate)
         ? state.dailyDate
         : days[0]?.date,
@@ -306,7 +311,13 @@
   function hourlyModel() {
     const teams = latest().top4,
       all = MMAHourly.build(state.data.snapshots, teams),
-      dates = [...new Set(all.map((r) => r.date))];
+      dates = [
+        ...new Set(
+          all
+            .filter((row) => row.date <= MMADaily.dayKey(votingEnd() - 1))
+            .map((r) => r.date),
+        ),
+      ];
     const date = dates.includes(state.hourlyDate) ? state.hourlyDate : dates[0];
     return { teams, dates, date, rows: all.filter((r) => r.date === date) };
   }
@@ -759,6 +770,7 @@
   }
   const fetchRecord = (file) => TrackerHTTP.record(file, normalize);
   function applyData() {
+    if (Date.now() >= operationEnd()) state.localObservations = [];
     state.data = normalize(
       MMAData.combine(state.archive || state.data, state.localObservations),
     );
@@ -810,6 +822,7 @@
     try {
       if (Date.now() < operationEnd()) {
         const payload = await TrackerHTTP.json(melonURL, { timeout: 10000 });
+        if (Date.now() >= operationEnd()) return;
         const snapshot = MMAData.parse(payload, new Date().toISOString());
         state.localObservations = MMAData.merge(state.localObservations, [
           snapshot,
@@ -1102,8 +1115,7 @@
   });
   $("daily-date").addEventListener("change", (e) => {
     state.dailyDate =
-      e.target.value ===
-      MMADaily.dayKey(Math.min(Date.now(), operationEnd() - 1))
+      e.target.value === MMADaily.dayKey(Math.min(Date.now(), votingEnd() - 1))
         ? null
         : e.target.value;
     renderDaily();
@@ -1364,6 +1376,9 @@
   state.archive = state.data;
   render();
   if (location.protocol !== "file:") refresh();
+  if (Date.now() < operationEnd()) {
+    setTimeout(() => refresh(), operationEnd() - Date.now() + 30000);
+  }
   setInterval(() => {
     status();
     renderDaily();

@@ -4,8 +4,15 @@ const assert = require("node:assert/strict"),
   M = require("../dist/gap-model"),
   S = require("../dist/gap-selector"),
   F = require("../collector/forecast.cjs");
-const data = JSON.parse(fs.readFileSync("dist/data/history.json")),
-  HOUR = 3600000,
+const config = require("../dist/config.js");
+const data = JSON.parse(fs.readFileSync("dist/data/history.json"));
+// Exercise successive issues while voting is open, independently of archive age.
+data.snapshots = data.snapshots.filter(
+  (row) =>
+    Date.parse(row.sourceAt) <
+    Date.parse(config.votingEndsAt || config.endsAt) - 12 * 3600000,
+);
+const HOUR = 3600000,
   cutoff = M.scheduledCutoff(Date.parse(data.snapshots.at(-1).sourceAt));
 const selected = S.select(data.snapshots, cutoff);
 assert.ok(selected);
@@ -87,6 +94,16 @@ assert.deepEqual(
   F.update(newData, next, cutoff + 43200000 + 400000),
   next,
   "same cutoff is issued once",
+);
+assert.deepEqual(
+  F.update(newData, next, Date.parse(config.votingEndsAt || config.endsAt)),
+  next,
+  "voting closure never issues a forecast for a new voting period",
+);
+assert.deepEqual(
+  F.update(newData, next, Date.parse(config.endsAt) + 86400000),
+  next,
+  "archival invocation preserves the issued ledger without new forecasts",
 );
 console.log(
   "Adaptive selection passed: strict guards, no future leakage, 12h horizon, legacy ledger preserved, immutable ledger and twice-daily issuance.",

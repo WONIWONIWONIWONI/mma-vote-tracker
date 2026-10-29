@@ -5,7 +5,7 @@
   "scripts": {
     "config": "node scripts/build-config.cjs",
     "test": "node scripts/test.cjs",
-    "test:ui": "node qa/test_ui.cjs && node qa/test_multi_ui.cjs && node qa/share_ui.cjs && node qa/theme_ui.cjs && node qa/panel_ui.cjs",
+    "test:ui": "node qa/test_ui.cjs && node qa/test_multi_ui.cjs && node qa/share_ui.cjs && node qa/theme_ui.cjs && node qa/panel_ui.cjs && node qa/archive_ui.cjs",
     "format": "prettier --write dist/*.js dist/*.css dist/*.html scripts/*.cjs qa/*.cjs templates/multi-source/*.{js,css,html,cjs} docs/*.md README.md tracker.config.json",
     "new": "node scripts/new-tracker.cjs"
   },

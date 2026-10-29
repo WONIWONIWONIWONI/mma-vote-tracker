@@ -45,10 +45,26 @@ class Actions:
             self.dispatch('handoff')
         return False  # Verify it appears in the queue before allowing a handoff.
 
+    def archive(self):
+        # Dispatch explicitly: pushes made by GITHUB_TOKEN do not trigger Pages.
+        self.request('POST','actions/workflows/publish.yml/dispatches',{'ref':'main'})
+        for workflow in ('collect.yml','recover.yml'):
+            self.request('PUT',f'actions/workflows/{workflow}/disable')
+        for run in self.runs():
+            if run['id']!=self.run_id and run['status'] in ACTIVE:
+                self.request('POST',f"actions/runs/{run['id']}/cancel",{})
+        print('Final archive published; collection and recovery workflows disabled',flush=True)
+
     def recover(self, ends_at, stale_after=900):
         current=time.time()
         if current>=epoch(ends_at):
-            return 'event-ended'
+            latest=self.request('GET','contents/dist/data/latest.json?ref=main',raw=True)
+            if latest.get('operation',{}).get('archived') and latest.get('collector',{}).get('state')=='stopped':
+                self.archive()
+                return 'event-archived'
+            if not any(r['status'] in ACTIVE for r in self.runs()):
+                self.dispatch('archive-finalization')
+            return 'archive-finalization-pending'
         history=self.runs()
         runs=[r for r in history if r['id']!=self.run_id and r['status'] in ACTIVE and r.get('head_branch','main')=='main']
         active=[r for r in runs if r['status']=='in_progress']
